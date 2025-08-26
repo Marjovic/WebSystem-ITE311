@@ -26,6 +26,12 @@
                     <li class="nav-item">
                         <a class="nav-link" href="<?= base_url('contact') ?>">Contact</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= base_url('login') ?>">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= base_url('register') ?>">Register</a>
+                    </li>
                 </ul>
             </div>
         </div>    

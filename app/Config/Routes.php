@@ -5,13 +5,17 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Home::index');
-$routes->get('/about', 'Home::about');
-$routes->get('/contact', 'Home::contact');
+$routes->get(from: '/', to: 'Home::index');
+$routes->get(from: '/about', to: 'Home::about');
+$routes->get(from: '/contact', to: 'Home::contact');
 
-$routes->get('/register', 'Auth::register');
-$routes->post('/register', 'Auth::register');
-$routes->get('/login', 'Auth::login');
-$routes->post('/login', 'Auth::login');
-$routes->get('/logout', 'Auth::logout');
-$routes->get('/dashboard', 'Auth::dashboard');
+$routes->get(from: '/register', to: 'Auth::register');
+$routes->post(from: '/register', to: 'Auth::register');
+$routes->get(from: '/login', to: 'Auth::login');
+$routes->post(from: '/login', to: 'Auth::login');
+$routes->get(from: '/logout', to: 'Auth::logout');
+$routes->get(from: '/dashboard', to: 'Auth::dashboard');
+
+$routes->get(from: '/admin/dashboard', to: 'AdminController::dashboard');
+$routes->get(from: '/teacher/dashboard', to: 'TeacherController::dashboard');
+$routes->get(from: '/student/dashboard', to: 'StudentController::dashboard');

@@ -32,7 +32,7 @@ class StudentController extends BaseController
         // Get dashboard data
         $data = $this->getDashboardData();
         
-        return view('student/student', $data);
+        return view('student/dashboard', $data);
     }
 
     private function getDashboardData()

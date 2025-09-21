@@ -84,15 +84,13 @@ class Auth extends BaseController
                 
                 // Step 3a: Make password safe using hash function
                 // This scrambles the password so hackers can't read it
-                $hashedPassword = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
-
-                // Step 3b: Prepare user data to save in database
+                $hashedPassword = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);                // Step 3b: Prepare user data to save in database
                 // Get form data and organize it for database
                 $userData = [
                     'name'       => $this->request->getPost('name'),      // Get name from form
                     'email'      => $this->request->getPost('email'),     // Get email from form
                     'password'   => $hashedPassword,                      // Use hashed password (safe version)
-                    'role'       => 'user',                               // Set default role as regular user
+                    'role'       => 'student',                            // Set default role as student
                     'created_at' => date('Y-m-d H:i:s'),                  // Set creation time to now
                     'updated_at' => date('Y-m-d H:i:s')                   // Set update time to now
                 ];
@@ -199,17 +197,17 @@ class Auth extends BaseController
      */
     private function redirectByRole()
     {
-        $role = $this->session->get('role');
+        $role = $this->session->get(key: 'role');
         
         switch ($role) {
             case 'admin':
-                return redirect()->to(base_url('admin/dashboard'));
+                return redirect()->to(uri: base_url(relativePath: 'admin/dashboard'));
             case 'teacher':
-                return redirect()->to(base_url('teacher/dashboard'));
+                return redirect()->to(uri: base_url(relativePath: 'teacher/dashboard'));
             case 'student':
-                return redirect()->to(base_url('student/dashboard'));
+                return redirect()->to(uri: base_url(relativePath: 'student/dashboard'));
             default:
-                return redirect()->to(base_url('dashboard'));
+                return redirect()->to(uri: base_url(relativePath: 'dashboard'));
         }
     }
 

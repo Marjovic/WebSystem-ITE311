@@ -32,7 +32,7 @@ class AdminController extends BaseController
         // Get dashboard data
         $data = $this->getDashboardData();
         
-        return view('admin/admin', $data);
+        return view('admin/dashboard', $data);
     }
 
     private function getDashboardData()

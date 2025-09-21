@@ -120,19 +120,13 @@ class Auth extends BaseController
     }
 
     /**
-     * Login Method - Handles user sign-in
-     * Shows login form and processes user authentication
-     * Step 1: Check if user is already logged in
-     * Step 2: If form submitted, validate email and password
-     * Step 3: Check if user exists and password is correct
-     * Step 4: Create user session and redirect to dashboard
+     * Login Method - Handles user sign-in with role-based redirection
      */
     public function login()
     {
         // Step 1: If user is already logged in, send them to dashboard
-        // No need to login again if already logged in
         if ($this->isLoggedIn()) {
-            return redirect()->to(base_url('dashboard'));
+            return $this->redirectByRole();
         }
 
         // Step 2: Check if login form was submitted
@@ -140,18 +134,18 @@ class Auth extends BaseController
             
             // Step 2a: Set validation rules for login form
             $rules = [
-                'email'    => 'required|valid_email',  // Email must be provided and valid format
-                'password' => 'required'               // Password must be provided
+                'email'    => 'required|valid_email',
+                'password' => 'required'
             ];
 
             // Step 2b: Set error messages for login validation
             $messages = [
                 'email' => [
-                    'required'    => 'Email is required.',                  // Show if email is empty
-                    'valid_email' => 'Please enter a valid email address.'  // Show if email format wrong
+                    'required'    => 'Email is required.',
+                    'valid_email' => 'Please enter a valid email address.'
                 ],
                 'password' => [
-                    'required' => 'Password is required.'                   // Show if password is empty
+                    'required' => 'Password is required.'
                 ]
             ];
 
@@ -163,29 +157,28 @@ class Auth extends BaseController
 
                 // Step 3a: Look for user in database using email
                 $builder = $this->db->table('users');
-                $user = $builder->where('email', $email)  // Find user with this email
-                               ->get()                    // Execute the search
-                               ->getRowArray();           // Get result as array
+                $user = $builder->where('email', $email)
+                               ->get()
+                               ->getRowArray();
 
                 // Step 3b: Check if user exists and password is correct
                 if ($user && password_verify($password, $user['password'])) {
                     
                     // Step 4a: Login successful - create user session
-                    // Session stores user information while they browse the site
                     $sessionData = [
-                        'userID'     => $user['id'],      // Store user ID
-                        'name'       => $user['name'],    // Store user name
-                        'email'      => $user['email'],   // Store user email
-                        'role'       => $user['role'],    // Store user role (admin or user)
-                        'isLoggedIn' => true              // Mark as logged in
+                        'userID'     => $user['id'],
+                        'name'       => $user['name'],
+                        'email'      => $user['email'],
+                        'role'       => $user['role'],
+                        'isLoggedIn' => true
                     ];
 
                     // Save session data
                     $this->session->set($sessionData);
                     
-                    // Step 4b: Show welcome message and go to dashboard
+                    // Step 4b: Show welcome message and redirect by role
                     $this->session->setFlashdata('success', 'Welcome back, ' . $user['name'] . '!');
-                    return redirect()->to(base_url('dashboard'));
+                    return $this->redirectByRole();
                     
                 } else {
                     // Step 3c: Login failed - wrong email or password
@@ -199,6 +192,25 @@ class Auth extends BaseController
 
         // Step 5: Show the login form page
         return view('auth/login');
+    }
+
+    /**
+     * Helper method to redirect users based on their role
+     */
+    private function redirectByRole()
+    {
+        $role = $this->session->get('role');
+        
+        switch ($role) {
+            case 'admin':
+                return redirect()->to(base_url('admin/dashboard'));
+            case 'teacher':
+                return redirect()->to(base_url('teacher/dashboard'));
+            case 'student':
+                return redirect()->to(base_url('student/dashboard'));
+            default:
+                return redirect()->to(base_url('dashboard'));
+        }
     }
 
     /**
@@ -224,36 +236,17 @@ class Auth extends BaseController
     /**
      * Dashboard Method - Shows user dashboard (main page after login)
      * Only accessible to logged-in users
-     * Step 1: Check if user is logged in
-     * Step 2: Get user information from session
-     * Step 3: Show dashboard page with user data
      */
     public function dashboard()
     {
-        // Step 1: Check if user is logged in at the start
-        // If not logged in, send them to login page
+        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $this->session->setFlashdata('error', 'Please login to access the dashboard.');
             return redirect()->to(base_url('login'));
         }
 
-        // Step 2: Get current user data from session
-        // This gets the information we saved when user logged in
-        $userData = [
-            'userID' => $this->session->get('userID'),  // Get user ID
-            'name'   => $this->session->get('name'),    // Get user name
-            'email'  => $this->session->get('email'),   // Get user email
-            'role'   => $this->session->get('role')     // Get user role
-        ];
-        
-        // Step 3: Prepare data for dashboard page
-        $data = [
-            'user' => $userData,                    // Send user data to page
-            'title' => 'Dashboard - MGOD LMS'      // Set page title
-        ];
-
-        // Show dashboard page with user information
-        return view('auth/dashboard', $data);
+        // Redirect to role-specific dashboard
+        return $this->redirectByRole();
     }
 
     /**

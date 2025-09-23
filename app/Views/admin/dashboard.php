@@ -2,7 +2,6 @@
 
 <div class="bg-light min-vh-100">
     <div class="container py-4">
-        <!-- Welcome Section -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3">
@@ -13,8 +12,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">
@@ -49,8 +46,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Management Links and Recent Activity -->
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="card border-0 shadow-sm rounded-3 h-100">
@@ -76,7 +71,6 @@
                     </div>
                 </div>
             </div>
-            
             <div class="col-md-6 mb-4">
                 <div class="card border-0 shadow-sm rounded-3 h-100">
                     <div class="card-header bg-white border-0 pb-0">

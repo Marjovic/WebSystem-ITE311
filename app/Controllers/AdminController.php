@@ -3,73 +3,88 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
 
+// AdminController class - This handles all admin-related functions
+// Admin is the highest level user who can manage the whole system
 class AdminController extends BaseController
 {
-    protected $session;
-    protected $db;
+    // These are class properties (variables that belong to this class)
+    protected $session; // This stores user session data (login info)
+    protected $db;      // This connects to the database
 
+    // Constructor - This runs automatically when we create AdminController object
     public function __construct()
     {
+        // Get the session service - this tracks if user is logged in
         $this->session = \Config\Services::session();
+        
+        // Connect to database - this lets us read/write data
         $this->db = \Config\Database::connect();
     }
 
-    public function index()
-    {
-        //
-    }
-
+    // Dashboard function - This shows the main admin page
     public function dashboard()
     {
-        // Check if user is logged in and has admin role
+        // First, we check if user is allowed to see admin page
+        // We check two things: 1) Is user logged in? 2) Is user an admin?
         if (!$this->isLoggedIn() || $this->session->get('role') !== 'admin') {
+            // If user is not admin, show error message
             $this->session->setFlashdata('error', 'Access denied. Admin privileges required.');
-            return redirect()->to(base_url('login'));
+            
+            // Send user back to login page
+            return redirect()->to(uri: base_url(relativePath: 'login'));
         }
 
-        // Get dashboard data
+        // If user is admin, get data to show on dashboard
         $data = $this->getDashboardData();
         
-        return view('admin/dashboard', $data);
+        // Show the admin dashboard page with the data
+        return view(name: 'admin/dashboard', data: $data);
     }
 
-    private function getDashboardData()
+    // Private function - This gets data to show on admin dashboard
+    private function getDashboardData(): array
     {
-        // Get total users count
-        $totalUsers = $this->db->table('users')->countAll();
+        // Count how many total users are in the system
+        $totalUsers = $this->db->table(tableName: 'users')->countAll();
         
-        // Get users by role
-        $totalAdmins = $this->db->table('users')->where('role', 'admin')->countAllResults();
-        $totalTeachers = $this->db->table('users')->where('role', 'teacher')->countAllResults();
-        $totalStudents = $this->db->table('users')->where('role', 'student')->countAllResults();
+        // Count users by their roles (admin, teacher, student)
+        // Count how many admins exist
+        $totalAdmins = $this->db->table(tableName: 'users')->where(key: 'role', value: 'admin')->countAllResults();
         
-        // Get recent users (last 5)
-        $recentUsers = $this->db->table('users')
-                                ->orderBy('created_at', 'DESC')
-                                ->limit(5)
-                                ->get()
-                                ->getResultArray();
+        // Count how many teachers exist
+        $totalTeachers = $this->db->table(tableName: 'users')->where(key: 'role', value: 'teacher')->countAllResults();
+        
+        // Count how many students exist
+        $totalStudents = $this->db->table(tableName: 'users')->where(key: 'role', value: 'student')->countAllResults();
+        
+        // Get the 5 newest users (most recently registered)
+        // Order by created_at DESC means newest first, limit 5 means only 5 users
+        $recentUsers = $this->db->table(tableName: 'users')->orderBy(orderBy: 'created_at', direction: 'DESC')->limit(value: 5)->get()->getResultArray();
 
+        // Return all data as an array to send to the view
         return [
+            // Current logged in user information
             'user' => [
-                'userID' => $this->session->get('userID'),
-                'name'   => $this->session->get('name'),
-                'email'  => $this->session->get('email'),
-                'role'   => $this->session->get('role')
+                'userID' => $this->session->get(key: 'userID'), // User's ID number
+                'name'   => $this->session->get(key: 'name'),   // User's full name
+                'email'  => $this->session->get(key: 'email'), // User's email address
+                'role'   => $this->session->get(key: 'role')   // User's role (admin)
             ],
-            'title' => 'Admin Dashboard - MGOD LMS',
-            'totalUsers' => $totalUsers,
-            'totalAdmins' => $totalAdmins,
-            'totalTeachers' => $totalTeachers,
-            'totalStudents' => $totalStudents,
-            'recentUsers' => $recentUsers
+            'title' => 'Admin Dashboard - MGOD LMS',  // Page title
+            'totalUsers' => $totalUsers,              // Total number of users
+            'totalAdmins' => $totalAdmins,            // Number of admin users
+            'totalTeachers' => $totalTeachers,        // Number of teacher users
+            'totalStudents' => $totalStudents,        // Number of student users
+            'recentUsers' => $recentUsers             // List of 5 newest users
         ];
     }
 
+    // Private function - This checks if user is logged in
     private function isLoggedIn(): bool
     {
-        return $this->session->get('isLoggedIn') === true;
+        // Check if session has 'isLoggedIn' set to true
+        // This returns true if logged in, false if not logged in
+        return $this->session->get(key: 'isLoggedIn') === true;
     }
 }

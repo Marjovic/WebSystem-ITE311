@@ -1,113 +1,336 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?? 'Dashboard - MGOD LMS' ?></title>
+<?= $this->include('templates/header') ?>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-</head>
-<body class="bg-white text-dark">
-
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="<?= base_url() ?>">MGOD LMS</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="<?= base_url('dashboard') ?>">Dashboard</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <?= esc($user['name']) ?>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Profile</a></li>
-                            <li><a class="dropdown-item" href="#">Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="<?= base_url('logout') ?>">Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
+<!-- Unified Dashboard View - This single file handles all user roles (Admin, Teacher, Student) -->
+<!-- Uses conditional PHP statements to show different content based on user's role -->
+<div class="bg-light min-vh-100">
+    <div class="container py-4">
         
-        <?php if (session()->getFlashdata('success')): ?>
-            <div class="alert alert-success alert-dismissible fade show">
-                <?= session()->getFlashdata('success') ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-
-        <?php if (session()->getFlashdata('error')): ?>
-            <div class="alert alert-danger alert-dismissible fade show">
-                <?= session()->getFlashdata('error') ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-
-        <div class="row">
+        <!-- Dynamic Header Section - Changes based on user role -->
+        <div class="row mb-4">
             <div class="col-12">
-                <div class="card border-dark">
-                    <div class="card-header bg-dark text-white">
-                        <h4 class="mb-0">Welcome to MGOD LMS Dashboard</h4>
-                    </div>
-                    <div class="card-body">
-                        <h5>Hello, <?= esc($user['name']) ?>!</h5>
-                        <p class="lead">Welcome to your learning management system dashboard.</p>
-                        
-                        <div class="row mt-4">
-                            <div class="col-md-6">
-                                <div class="card border-secondary">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">User Information</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <p><strong>Name:</strong> <?= esc($user['name']) ?></p>
-                                        <p><strong>Email:</strong> <?= esc($user['email']) ?></p>
-                                        <p><strong>Role:</strong> 
-                                            <span class="badge bg-<?= $user['role'] === 'admin' ? 'danger' : 'primary' ?>">
-                                                <?= ucfirst(esc($user['role'])) ?>
-                                            </span>
-                                        </p>
-                                        <p class="mb-0"><strong>User ID:</strong> <?= esc($user['userID']) ?></p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card border-secondary">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">Quick Actions</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <?php if ($user['role'] === 'admin'): ?>
-                                            <a href="#" class="btn btn-outline-dark me-2 mb-2">Manage Users</a>
-                                            <a href="#" class="btn btn-outline-dark me-2 mb-2">System Settings</a>
-                                            <a href="#" class="btn btn-outline-dark me-2 mb-2">View Reports</a>
-                                        <?php else: ?>
-                                            <a href="#" class="btn btn-outline-dark me-2 mb-2">My Courses</a>
-                                            <a href="#" class="btn btn-outline-dark me-2 mb-2">Browse Courses</a>
-                                            <a href="#" class="btn btn-outline-dark me-2 mb-2">Assignments</a>
-                                        <?php endif; ?>
-                                        <a href="#" class="btn btn-outline-dark me-2 mb-2">View Profile</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body bg-primary text-white p-4 rounded-3">
+                        <!-- Admin Header -->
+                        <?php if ($user['role'] === 'admin'): ?>
+                            <h2 class="mb-2 fw-bold">📊 Admin Dashboard</h2>
+                            <p class="mb-0 opacity-75">Welcome back, <?= esc($user['name']) ?>! Manage your learning management system with powerful tools.</p>
+                        <!-- Teacher Header -->
+                        <?php elseif ($user['role'] === 'teacher'): ?>
+                            <h2 class="mb-2 fw-bold">👨‍🏫 Teacher Dashboard</h2>
+                            <p class="mb-0 opacity-75">Welcome back, <?= esc($user['name']) ?>! Manage your courses and students with ease.</p>
+                        <!-- Student Header -->
+                        <?php elseif ($user['role'] === 'student'): ?>
+                            <h2 class="mb-2 fw-bold">🎓 Student Dashboard</h2>
+                            <p class="mb-0 opacity-75">Welcome back, <?= esc($user['name']) ?>! Continue your learning journey and achieve your goals.</p>
+                        <!-- Default Header for unknown roles -->
+                        <?php else: ?>
+                            <h2 class="mb-2 fw-bold">🏠 Dashboard</h2>
+                            <p class="mb-0 opacity-75">Welcome back, <?= esc($user['name']) ?>!</p>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-</body>
-</html>
+        <!-- Statistics Cards Section - Different stats based on user role -->
+        <div class="row mb-4">
+            
+            <!-- ADMIN STATISTICS CARDS -->
+            <?php if ($user['role'] === 'admin'): ?>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">👥</div>
+                        <div class="display-5 fw-bold"><?= $totalUsers ?></div>
+                        <div class="fw-semibold">Total Users</div>
+                        <small class="opacity-75">Active in system</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">📚</div>
+                        <div class="display-5 fw-bold"><?= $totalCourses ?? '0' ?></div>
+                        <div class="fw-semibold">Total Courses</div>
+                        <small class="opacity-75">Available to students</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-info text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">👨‍🏫</div>
+                        <div class="display-5 fw-bold"><?= $totalTeachers ?></div>
+                        <div class="fw-semibold">Teachers</div>
+                        <small class="opacity-75">Creating content</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-warning text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">🎓</div>
+                        <div class="display-5 fw-bold"><?= $totalStudents ?></div>
+                        <div class="fw-semibold">Students</div>
+                        <small class="opacity-75">Learning actively</small>
+                    </div>
+                </div>
+
+            <!-- TEACHER STATISTICS CARDS -->
+            <?php elseif ($user['role'] === 'teacher'): ?>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">📚</div>
+                        <div class="display-5 fw-bold"><?= $totalCourses ?? '0' ?></div>
+                        <div class="fw-semibold">My Courses</div>
+                        <small class="opacity-75">Active courses</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">👥</div>
+                        <div class="display-5 fw-bold"><?= $totalStudents ?? '3' ?></div>
+                        <div class="fw-semibold">Students</div>
+                        <small class="opacity-75">Enrolled students</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-info text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">📝</div>
+                        <div class="display-5 fw-bold"><?= $pendingAssignments ?? '0' ?></div>
+                        <div class="fw-semibold">Pending</div>
+                        <small class="opacity-75">To be graded</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-warning text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">📊</div>
+                        <div class="display-5 fw-bold"><?= $averageGrade ?? '0' ?>%</div>
+                        <div class="fw-semibold">Avg Grade</div>
+                        <small class="opacity-75">Class average</small>
+                    </div>
+                </div>
+
+            <!-- STUDENT STATISTICS CARDS -->
+            <?php elseif ($user['role'] === 'student'): ?>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">📚</div>
+                        <div class="display-5 fw-bold"><?= $enrolledCourses ?? '0' ?></div>
+                        <div class="fw-semibold">Enrolled Courses</div>
+                        <small class="opacity-75">Active learning paths</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">✅</div>
+                        <div class="display-5 fw-bold"><?= $completedAssignments ?? '0' ?></div>
+                        <div class="fw-semibold">Completed</div>
+                        <small class="opacity-75">Assignments finished</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-warning text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">⏰</div>
+                        <div class="display-5 fw-bold"><?= $pendingAssignments ?? '0' ?></div>
+                        <div class="fw-semibold">Pending</div>
+                        <small class="opacity-75">Awaiting completion</small>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm text-white bg-info text-center p-4 rounded-3 h-100">
+                        <div class="display-4 mb-2">📊</div>
+                        <div class="display-5 fw-bold"><?= $averageGrade ?? '0' ?>%</div>
+                        <div class="fw-semibold">Average Grade</div>
+                        <small class="opacity-75">Overall performance</small>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+        </div>
+
+        <!-- Quick Actions Section - Different actions based on user role -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-header bg-white border-0 pb-0">
+                        <h5 class="mb-0 fw-bold text-dark">⚡ Quick Actions</h5>
+                        
+                        <!-- Role-specific subtitle -->
+                        <?php if ($user['role'] === 'admin'): ?>
+                            <small class="text-muted">Manage your LMS components</small>
+                        <?php elseif ($user['role'] === 'teacher'): ?>
+                            <small class="text-muted">Manage your teaching activities</small>
+                        <?php elseif ($user['role'] === 'student'): ?>
+                            <small class="text-muted">Shortcuts to important features</small>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body pt-3">
+                        
+                        <!-- ADMIN QUICK ACTIONS -->
+                        <?php if ($user['role'] === 'admin'): ?>
+                            <div class="d-grid gap-3">
+                                <a href="<?= base_url('admin/users') ?>" class="btn btn-outline-primary rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                    <span class="me-2">👥</span> Manage Users
+                                </a>
+                                <a href="<?= base_url('admin/courses') ?>" class="btn btn-outline-success rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                    <span class="me-2">📚</span> Manage Courses
+                                </a>
+                                <a href="<?= base_url('admin/reports') ?>" class="btn btn-outline-info rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                    <span class="me-2">📊</span> View Reports
+                                </a>
+                                <a href="<?= base_url('admin/settings') ?>" class="btn btn-outline-warning rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                    <span class="me-2">⚙️</span> System Settings
+                                </a>
+                            </div>
+
+                        <!-- TEACHER QUICK ACTIONS -->
+                        <?php elseif ($user['role'] === 'teacher'): ?>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <a href="<?= base_url('teacher/courses/create') ?>" class="btn btn-outline-success rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                        <span class="me-2">➕</span> Create Course
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="<?= base_url('teacher/lessons/create') ?>" class="btn btn-outline-primary rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                        <span class="me-2">📝</span> Create Lesson
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="<?= base_url('teacher/assignments/create') ?>" class="btn btn-outline-info rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                        <span class="me-2">📋</span> Create Assignment
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="<?= base_url('teacher/gradebook') ?>" class="btn btn-outline-warning rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                        <span class="me-2">📊</span> Gradebook
+                                    </a>
+                                </div>
+                            </div>
+
+                        <!-- STUDENT QUICK ACTIONS -->
+                        <?php elseif ($user['role'] === 'student'): ?>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <a href="#" class="btn btn-outline-primary rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                        <span class="me-2">🔍</span> Browse Courses
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="#" class="btn btn-outline-success rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                        <span class="me-2">📝</span> Submit Assignment
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="#" class="btn btn-outline-info rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                        <span class="me-2">📅</span> View Schedule
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="#" class="btn btn-outline-secondary rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                        <span class="me-2">💬</span> Contact Teacher
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Content Section - Role-specific content -->
+        <div class="row">
+            
+            <!-- ADMIN ADDITIONAL CONTENT -->
+            <?php if ($user['role'] === 'admin'): ?>
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="mb-0 fw-bold text-dark">⏰ Recent Activity</h5>
+                            <small class="text-muted">Latest system activities</small>
+                        </div>
+                        <div class="card-body pt-3">
+                            <p class="text-muted">Recent user registrations and system updates will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- TEACHER ADDITIONAL CONTENT -->
+            <?php elseif ($user['role'] === 'teacher'): ?>
+                <div class="col-md-8 mb-4">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="mb-0 fw-bold text-dark">📚 My Courses</h5>
+                            <small class="text-muted">Manage your active courses</small>
+                        </div>
+                        <div class="card-body pt-3">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="fw-semibold border-0">Course</th>
+                                            <th class="fw-semibold border-0">Students</th>
+                                            <th class="fw-semibold border-0">Status</th>
+                                            <th class="fw-semibold border-0">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="4" class="text-muted text-center py-4">No courses available. Create your first course to get started!</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="mb-0 fw-bold text-dark">🔔 Recent Activity</h5>
+                            <small class="text-muted">Latest student activities</small>
+                        </div>
+                        <div class="card-body pt-3">
+                            <p class="text-muted">Student submissions and course activities will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- STUDENT ADDITIONAL CONTENT -->
+            <?php elseif ($user['role'] === 'student'): ?>
+                <div class="col-12 mb-4">
+                    <div class="card border-0 shadow-sm rounded-3">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="mb-0 fw-bold text-dark">📖 My Enrolled Courses</h5>
+                            <small class="text-muted">Continue your learning journey</small>
+                        </div>
+                        <div class="card-body pt-3">
+                            <p class="text-muted">Your enrolled courses will appear here once you join some courses.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="mb-0 fw-bold text-dark">⏰ Upcoming Deadlines</h5>
+                            <small class="text-muted">Don't miss these important dates</small>
+                        </div>
+                        <div class="card-body pt-3">
+                            <p class="text-muted">Assignment deadlines and important dates will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="mb-0 fw-bold text-dark">🏆 Recent Grades & Feedback</h5>
+                            <small class="text-muted">Your latest academic performance</small>
+                        </div>
+                        <div class="card-body pt-3">
+                            <p class="text-muted">Your grades and teacher feedback will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+        </div>
+    </div>
+</div>

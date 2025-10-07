@@ -139,115 +139,114 @@
                         <small class="opacity-75">Overall performance</small>
                     </div>
                 </div>
-            <?php endif; ?>
-
-        </div>
-
-        <!-- Quick Actions Section - Different actions based on user role -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-header bg-white border-0 pb-0">
-                        <h5 class="mb-0 fw-bold text-dark">⚡ Quick Actions</h5>
-                        
-                        <!-- Role-specific subtitle -->
-                        <?php if ($user['role'] === 'admin'): ?>
-                            <small class="text-muted">Manage your LMS components</small>
-                        <?php elseif ($user['role'] === 'teacher'): ?>
-                            <small class="text-muted">Manage your teaching activities</small>
-                        <?php elseif ($user['role'] === 'student'): ?>
-                            <small class="text-muted">Shortcuts to important features</small>
-                        <?php endif; ?>
-                    </div>
-                    <div class="card-body pt-3">                          <!-- ADMIN QUICK ACTIONS -->
-                        <?php if ($user['role'] === 'admin'): ?>
-                            <div class="d-grid gap-3">
-                                <a href="<?= base_url('dashboard?action=manageUsers') ?>" class="btn btn-outline-primary rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                    <span class="me-2">👥</span> Manage Users
-                                </a>
-                                <a href="<?= base_url('admin/courses') ?>" class="btn btn-outline-success rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                    <span class="me-2">📚</span> Manage Courses
-                                </a>
-                                <a href="<?= base_url('admin/reports') ?>" class="btn btn-outline-info rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                    <span class="me-2">📊</span> View Reports
-                                </a>
-                                <a href="<?= base_url('admin/settings') ?>" class="btn btn-outline-warning rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                    <span class="me-2">⚙️</span> System Settings
-                                </a>
-                            </div>
-
-                        <!-- TEACHER QUICK ACTIONS -->
-                        <?php elseif ($user['role'] === 'teacher'): ?>
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <a href="<?= base_url('teacher/courses/create') ?>" class="btn btn-outline-success rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                        <span class="me-2">➕</span> Create Course
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="<?= base_url('teacher/lessons/create') ?>" class="btn btn-outline-primary rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                        <span class="me-2">📝</span> Create Lesson
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="<?= base_url('teacher/assignments/create') ?>" class="btn btn-outline-info rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                        <span class="me-2">📋</span> Create Assignment
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="<?= base_url('teacher/gradebook') ?>" class="btn btn-outline-warning rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                        <span class="me-2">📊</span> Gradebook
-                                    </a>
-                                </div>
-                            </div>
-
-                        <!-- STUDENT QUICK ACTIONS -->
-                        <?php elseif ($user['role'] === 'student'): ?>
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <a href="#" class="btn btn-outline-primary rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                        <span class="me-2">🔍</span> Browse Courses
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="#" class="btn btn-outline-success rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                        <span class="me-2">📝</span> Submit Assignment
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="#" class="btn btn-outline-info rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                        <span class="me-2">📅</span> View Schedule
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="#" class="btn btn-outline-secondary rounded-pill w-100 fw-semibold py-3 d-flex align-items-center justify-content-center">
-                                        <span class="me-2">💬</span> Contact Teacher
-                                    </a>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                    </div>
-                </div>
-            </div>
-        </div>
+            <?php endif; ?>        </div>
 
         <!-- Additional Content Section - Role-specific content -->
         <div class="row">
-            
-            <!-- ADMIN ADDITIONAL CONTENT -->
+              <!-- ADMIN ADDITIONAL CONTENT -->
             <?php if ($user['role'] === 'admin'): ?>
                 <div class="col-md-6 mb-4">
                     <div class="card border-0 shadow-sm rounded-3 h-100">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="mb-0 fw-bold text-dark">⏰ Recent Activity</h5>
                             <small class="text-muted">Latest system activities</small>
-                        </div>
+                        </div>                        
                         <div class="card-body pt-3">
-                            <p class="text-muted">Recent user registrations and system updates will appear here.</p>
+                            <?php if (!empty($recentActivities)): ?>   
+                                
+                                <div class="activity-feed" style="max-height: 400px; overflow-y: auto;">
+                                    <?php foreach ($recentActivities as $activity): ?>
+                                        <div class="activity-item d-flex align-items-start mb-3 pb-3 border-bottom">
+                                            <div class="activity-icon me-3 mt-1">
+                                                <span class="badge rounded-circle p-2" style="font-size: 1.2em;">
+                                                    <?= $activity['icon'] ?>
+                                                </span>
+                                            </div>
+                                            <div class="activity-content flex-grow-1">
+                                                <div class="activity-title fw-semibold text-dark mb-1">
+                                                    <?= $activity['title'] ?>
+                                                </div>
+                                                <div class="activity-description text-muted small mb-1">
+                                                    <?= $activity['description'] ?>
+                                                </div>                                                <div class="activity-time text-muted" style="font-size: 0.75rem;">
+                                                    <?php
+                                                    $timeAgo = time() - strtotime($activity['time']);
+                                                    if ($timeAgo < 60) {
+                                                        echo 'Just now';
+                                                    } elseif ($timeAgo < 3600) {
+                                                        echo floor($timeAgo / 60) . ' minutes ago';
+                                                    } elseif ($timeAgo < 86400) {
+                                                        echo floor($timeAgo / 3600) . ' hours ago';
+                                                    } elseif ($timeAgo < 2592000) {
+                                                        echo floor($timeAgo / 86400) . ' days ago';
+                                                    } else {
+                                                        echo date('M j, Y', strtotime($activity['time']));
+                                                    }
+                                                    ?>
+                                                </div>
+                                            </div>                                            <div class="activity-badge">
+                                                <?php
+                                                // Activity type colors for different activity types
+                                                $activityTypeColors = [
+                                                    'user_registration' => 'success',   // Green for new registrations
+                                                    'user_creation' => 'info',          // Blue for admin-created users
+                                                    'user_update' => 'warning',         // Yellow for updates
+                                                    'user_deletion' => 'danger'         // Red for deletions
+                                                ];
+                                                
+                                                // Role colors for role badges
+                                                $roleColors = [
+                                                    'admin' => 'danger',
+                                                    'teacher' => 'primary', 
+                                                    'student' => 'success'
+                                                ];
+                                                
+                                                // Get colors
+                                                $activityColor = $activityTypeColors[$activity['type']] ?? 'secondary';
+                                                $roleColor = $roleColors[$activity['user_role']] ?? 'secondary';
+                                                ?>
+                                                <div class="d-flex flex-column gap-1">
+                                                    <!-- Activity Type Badge -->
+                                                    <span class="badge bg-<?= $activityColor ?> rounded-pill small">
+                                                        <?php
+                                                        $activityLabels = [
+                                                            'user_registration' => 'Registration',
+                                                            'user_creation' => 'Created',
+                                                            'user_update' => 'Updated',
+                                                            'user_deletion' => 'Deleted'
+                                                        ];
+                                                        echo $activityLabels[$activity['type']] ?? 'Activity';
+                                                        ?>
+                                                    </span>
+                                                    <!-- Role Badge -->
+                                                    <span class="badge bg-<?= $roleColor ?> rounded-pill small">
+                                                        <?= ucfirst($activity['user_role']) ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                
+                                <?php if (count($recentActivities) >= 8): ?>
+                                    <div class="text-center mt-3">
+                                        <small class="text-muted">Showing latest 8 activities</small>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <div class="text-center py-4 text-muted">
+                                    <div class="mb-3">
+                                        <span style="font-size: 3rem; opacity: 0.3;">⏰</span>
+                                    </div>
+                                    <p class="mb-0">No recent activities to display</p>
+                                    <small>User activities will appear here as they occur</small>
+                                </div>                            
+                                <?php endif; ?>
                         </div>
                     </div>
                 </div>
+                
+
 
             <!-- TEACHER ADDITIONAL CONTENT -->
             <?php elseif ($user['role'] === 'teacher'): ?>

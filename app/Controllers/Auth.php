@@ -230,15 +230,21 @@ class Auth extends BaseController
             // Show error message and send to login page
             $this->session->setFlashdata(data: 'error', value: 'Please login to access the dashboard.');
             return redirect()->to(uri: base_url(relativePath: 'login'));
-        }
-
-        // Step 2: Get user role from session to determine what data to fetch
+        }        // Step 2: Get user role from session to determine what data to fetch
         // Each role needs different data and different dashboard view
         $userRole = $this->session->get(key: 'role');
-          // Step 3: Check if admin is accessing manage users functionality
+
+        // Step 3: Security Check - Prevent non-admin users from accessing admin actions via direct URL
+        $action = $this->request->getGet('action');
+        if ($action && $userRole !== 'admin') {
+            // Non-admin users trying to access admin actions should be redirected with error
+            $this->session->setFlashdata('error', 'Access denied. You do not have permission to access this page.');
+            return redirect()->to(base_url('dashboard'));
+        }
+
+        // Step 4: Check if admin is accessing manage users functionality
         // This allows admin to manage users directly from dashboard
         if ($userRole === 'admin') {
-            $action = $this->request->getGet('action');
             $userID = $this->request->getGet('id');
             
             // Handle user management actions for admin
@@ -307,10 +313,32 @@ class Auth extends BaseController
                                     'role'       => $this->request->getPost('role'),
                                     'created_at' => date('Y-m-d H:i:s'),
                                     'updated_at' => date('Y-m-d H:i:s')
-                                ];
-
-                                $builder = $this->db->table('users');
+                                ];                                $builder = $this->db->table('users');
                                 if ($builder->insert($userData)) {
+                                    // Record user creation activity
+                                    $creationActivity = [
+                                        'type' => 'user_creation',
+                                        'icon' => '➕',
+                                        'title' => 'New User Created',
+                                        'description' => esc($userData['name']) . ' (' . ucfirst($userData['role']) . ') account was created by admin',
+                                        'time' => date('Y-m-d H:i:s'),
+                                        'user_name' => esc($userData['name']),
+                                        'user_role' => $userData['role'],
+                                        'created_by' => $this->session->get('name')
+                                    ];
+
+                                    // Get existing creation activities from session (if any)
+                                    $creationActivities = $this->session->get('creation_activities') ?? [];
+                                    
+                                    // Add new creation activity to the beginning of the array
+                                    array_unshift($creationActivities, $creationActivity);
+                                    
+                                    // Keep only the last 10 creation activities to prevent session bloat
+                                    $creationActivities = array_slice($creationActivities, 0, 10);
+                                    
+                                    // Store updated creation activities in session
+                                    $this->session->set('creation_activities', $creationActivities);
+
                                     $this->session->setFlashdata('success', 'User created successfully!');
                                     return redirect()->to(base_url('dashboard?action=manageUsers'));
                                 } else {
@@ -409,9 +437,31 @@ class Auth extends BaseController
                                 // Update password only if provided
                                 if ($this->request->getPost('password')) {
                                     $updateData['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
-                                }
+                                }                                if ($builder->where('id', $userID)->update($updateData)) {
+                                    // Record user update activity
+                                    $updateActivity = [
+                                        'type' => 'user_update',
+                                        'icon' => '✏️',
+                                        'title' => 'User Account Updated',
+                                        'description' => esc($updateData['name']) . ' (' . ucfirst($updateData['role']) . ') account was updated by admin',
+                                        'time' => date('Y-m-d H:i:s'),
+                                        'user_name' => esc($updateData['name']),
+                                        'user_role' => $updateData['role'],
+                                        'updated_by' => $this->session->get('name')
+                                    ];
 
-                                if ($builder->where('id', $userID)->update($updateData)) {
+                                    // Get existing update activities from session (if any)
+                                    $updateActivities = $this->session->get('update_activities') ?? [];
+                                    
+                                    // Add new update activity to the beginning of the array
+                                    array_unshift($updateActivities, $updateActivity);
+                                    
+                                    // Keep only the last 10 update activities to prevent session bloat
+                                    $updateActivities = array_slice($updateActivities, 0, 10);
+                                    
+                                    // Store updated update activities in session
+                                    $this->session->set('update_activities', $updateActivities);
+
                                     $this->session->setFlashdata('success', 'User updated successfully!');
                                     return redirect()->to(base_url('dashboard?action=manageUsers'));
                                 } else {
@@ -461,7 +511,29 @@ class Auth extends BaseController
                         if ($userToDelete['role'] === 'admin' || $userToDelete['id'] == $currentAdminID) {
                             $this->session->setFlashdata('error', 'You cannot delete admin accounts or your own account.');
                             return redirect()->to(base_url('dashboard?action=manageUsers'));
-                        }
+                        }                        // Store deletion activity before deleting user
+                        $deletionActivity = [
+                            'type' => 'user_deletion',
+                            'icon' => '🗑️',
+                            'title' => 'User Account Deleted',
+                            'description' => esc($userToDelete['name']) . ' (' . ucfirst($userToDelete['role']) . ') account was removed from the system',
+                            'time' => date('Y-m-d H:i:s'),
+                            'user_name' => esc($userToDelete['name']),
+                            'user_role' => $userToDelete['role'],
+                            'deleted_by' => $this->session->get('name')
+                        ];
+
+                        // Get existing deletion activities from session (if any)
+                        $deletionActivities = $this->session->get('deletion_activities') ?? [];
+                        
+                        // Add new deletion activity to the beginning of the array
+                        array_unshift($deletionActivities, $deletionActivity);
+                        
+                        // Keep only the last 10 deletion activities to prevent session bloat
+                        $deletionActivities = array_slice($deletionActivities, 0, 10);
+                        
+                        // Store updated deletion activities in session
+                        $this->session->set('deletion_activities', $deletionActivities);
 
                         // Delete user
                         if ($builder->where('id', $userID)->delete()) {
@@ -472,10 +544,9 @@ class Auth extends BaseController
 
                         return redirect()->to(base_url('dashboard?action=manageUsers'));
                 }
-            }
-        }
+            }        }
         
-        // Step 4: Prepare basic user data that all roles need
+        // Step 5: Prepare basic user data that all roles need
         $baseData = [
             'user' => [
                 'userID' => $this->session->get(key: 'userID'), // User's ID number
@@ -485,15 +556,57 @@ class Auth extends BaseController
             ]
         ];
 
-        // Step 5: Get role-specific data and determine view based on user type
-        switch ($userRole) {
-            case 'admin':
+        // Step 6: Get role-specific data and determine view based on user type
+        switch ($userRole) {            case 'admin':
                 // Admin gets system statistics and user management data
                 $totalUsers = $this->db->table('users')->countAll();
                 $totalAdmins = $this->db->table('users')->where('role', 'admin')->countAllResults();
                 $totalTeachers = $this->db->table('users')->where('role', 'teacher')->countAllResults();
                 $totalStudents = $this->db->table('users')->where('role', 'student')->countAllResults();
-                $recentUsers = $this->db->table('users')->orderBy('created_at', 'DESC')->limit(5)->get()->getResultArray();
+                
+                // Get recent users with more detailed information for activity feed
+                $recentUsers = $this->db->table('users')
+                    ->select('id, name, email, role, created_at, updated_at')
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(10)
+                    ->get()
+                    ->getResultArray();
+
+                // Prepare recent activities for display
+                $recentActivities = [];
+                foreach ($recentUsers as $user) {
+                    // Add user registration activity
+                    $recentActivities[] = [
+                        'type' => 'user_registration',
+                        'icon' => '👤',
+                        'title' => 'New User Registration',
+                        'description' => esc($user['name']) . ' (' . ucfirst($user['role']) . ') joined the system',
+                        'time' => $user['created_at'],
+                        'user_name' => esc($user['name']),
+                        'user_role' => $user['role']                    ];
+                    
+                    // Note: User updates are now tracked separately via session-based admin activities
+                    // This prevents duplicate and confusing update activities from database timestamps
+                }
+                
+                // Add admin-managed activities from session to recent activities
+                $creationActivities = $this->session->get('creation_activities') ?? [];
+                $updateActivities = $this->session->get('update_activities') ?? [];
+                $deletionActivities = $this->session->get('deletion_activities') ?? [];
+                
+                // Merge all admin activities
+                $adminActivities = array_merge($creationActivities, $updateActivities, $deletionActivities);
+                
+                // Add admin activities to recent activities
+                foreach ($adminActivities as $adminActivity) {
+                    $recentActivities[] = $adminActivity;
+                }
+                
+                // Sort activities by time (most recent first) and limit to 8
+                usort($recentActivities, function($a, $b) {
+                    return strtotime($b['time']) - strtotime($a['time']);
+                });
+                $recentActivities = array_slice($recentActivities, 0, 8);
 
                 $dashboardData = array_merge($baseData, [
                     'title' => 'Admin Dashboard - MGOD LMS',
@@ -501,7 +614,8 @@ class Auth extends BaseController
                     'totalAdmins' => $totalAdmins,
                     'totalTeachers' => $totalTeachers,
                     'totalStudents' => $totalStudents,
-                    'recentUsers' => $recentUsers
+                    'recentUsers' => $recentUsers,
+                    'recentActivities' => $recentActivities
                 ]);
                 return view('auth/dashboard', $dashboardData);
                 

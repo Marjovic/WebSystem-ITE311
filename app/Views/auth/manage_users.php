@@ -1,7 +1,6 @@
 <?= $this->include('templates/header') ?>
 
 <!-- Manage Users View - Admin only functionality for user management -->
-<!-- Professional and clean design with improved color scheme and layout -->
 <div class="bg-light min-vh-100">
     <div class="container py-4">
           <!-- Header Section -->

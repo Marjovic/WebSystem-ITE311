@@ -628,14 +628,50 @@ class Auth extends BaseController
                 ]);
                 
                 return view('auth/dashboard', $dashboardData);
+                  case 'student':
+                // Student gets enrollment and course data 
+                $userID = $this->session->get('userID');
                 
-            case 'student':
-                // Student gets enrollment and assignment data 
+                // Initialize enrollment model to fetch student data
+                $enrollmentModel = new \App\Models\EnrollmentModel();
+                
+                // Get enrolled courses for this student
+                $enrolledCourses = $enrollmentModel->getUserEnrollments($userID);
+                $enrolledCoursesCount = count($enrolledCourses);
+                
+                // Get available courses that student can enroll in
+                $coursesBuilder = $this->db->table('courses');
+                $availableCourses = $coursesBuilder
+                    ->select('courses.*, users.name as instructor_name')
+                    ->join('users', 'courses.instructor_id = users.id', 'left')
+                    ->where('courses.status', 'active')
+                    ->orderBy('courses.created_at', 'DESC')
+                    ->get()
+                    ->getResultArray();
+                
+                // Filter out courses the student is already enrolled in
+                $enrolledCourseIds = array_column($enrolledCourses, 'course_id');
+                $availableCoursesFiltered = array_filter($availableCourses, function($course) use ($enrolledCourseIds) {
+                    return !in_array($course['id'], $enrolledCourseIds);
+                });
+                
+                // Format course data for display
+                foreach ($enrolledCourses as &$course) {
+                    $course['progress'] = rand(20, 95); // Placeholder for course progress
+                }
+                
+                foreach ($availableCoursesFiltered as &$course) {
+                    $course['start_date_formatted'] = $course['start_date'] ? date('M j, Y', strtotime($course['start_date'])) : 'TBA';
+                    $course['end_date_formatted'] = $course['end_date'] ? date('M j, Y', strtotime($course['end_date'])) : 'TBA';
+                }
+                
                 $dashboardData = array_merge($baseData, [
                     'title' => 'Student Dashboard - MGOD LMS',
-                    'enrolledCourses' => 0,      // Replace with actual enrolled courses count
-                    'completedAssignments' => 0, // Replace with actual completed assignments count
-                    'pendingAssignments' => 0    // Replace with actual pending assignments count
+                    'enrolledCourses' => $enrolledCoursesCount,
+                    'enrolledCoursesData' => $enrolledCourses,
+                    'availableCoursesData' => array_values($availableCoursesFiltered),
+                    'completedAssignments' => 0, // Placeholder - implement when assignments table exists
+                    'pendingAssignments' => 0    // Placeholder - implement when assignments table exists
                 ]);
                 return view('auth/dashboard', $dashboardData);
                 

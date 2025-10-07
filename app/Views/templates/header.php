@@ -3,23 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?? 'MGOD LMS' ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" 
-          rel="stylesheet" 
+    <title><?= $title ?? 'MGOD LMS' ?></title>    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" 
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
           crossorigin="anonymous">
+    <style>
+        .navbar-nav .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff !important;
+        }
+        .navbar-nav .nav-link.active:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+    </style>
 </head>
-<body class="bg-light">
-
-    <?php 
+<body class="bg-light">    <?php 
     $session = \Config\Services::session();
     $userRole = $session->get('role');
     $isLoggedIn = $session->get('isLoggedIn');
+    
+    $request = \Config\Services::request();
+    $currentAction = $request->getGet('action');
+    $currentUri = uri_string();
     ?>
     
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold fs-4" href="<?= $isLoggedIn ? base_url($userRole . '/dashboard') : base_url() ?>">
+            <a class="navbar-brand fw-bold fs-4" href="<?= $isLoggedIn ? base_url( '/dashboard') : base_url() ?>">
                 📚 MGOD LMS
                 <?php if ($isLoggedIn): ?>
                     <span class="badge bg-light text-primary ms-2 rounded-pill">
@@ -32,11 +43,10 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             
-            <div class="collapse navbar-collapse" id="navbarNav">                
-                <ul class="navbar-nav me-auto">
+            <div class="collapse navbar-collapse" id="navbarNav">                  <ul class="navbar-nav me-auto">
                     <?php if ($isLoggedIn): ?>
                         <li class="nav-item">
-                            <a class="nav-link px-3 fw-bold" href="<?= base_url($userRole . '/dashboard') ?>">
+                            <a class="nav-link px-3 fw-bold <?= ($currentUri === 'dashboard' && !$currentAction) ? 'active' : '' ?>" href="<?= base_url('/dashboard') ?>">
                                 🏠 Dashboard
                             </a>
                         </li>
@@ -44,7 +54,7 @@
                         <?php if ($userRole === 'admin'): ?>
                             <!-- Admin Navigation -->
                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                                <a class="nav-link px-3 fw-bold <?= ($currentAction === 'manageUsers') ? 'active' : '' ?>" href="<?= base_url('dashboard?action=manageUsers') ?>">
                                     👥 Manage Users
                                 </a>
                             </li>
@@ -199,10 +209,10 @@
                     </ul>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-            </div>        <?php endif; ?>
+            </div>        
+            <?php endif; ?>
     </div>
-
-    <!-- Bootstrap JavaScript with SHA Integrity -->
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" 
             crossorigin="anonymous"></script>

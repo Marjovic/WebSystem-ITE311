@@ -42,24 +42,21 @@ class Auth extends BaseController
 
         // Step 2: Check if the registration form was submitted
         // This happens when user fills the form and clicks "Register" button
-        if ($this->request->getMethod() === 'POST') {
-            
-            // Step 2a: Set validation rules - these are the requirements for each form field
+        if ($this->request->getMethod() === 'POST') {            // Step 2a: Set validation rules - these are the requirements for each form field
             // Each rule tells the system what to check for in the user's input
             $rules = [
-                'name'             => 'required|min_length[3]|max_length[100]',  // Name must exist and be 3-100 characters
+                'name'             => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',  // Name must exist, be 3-100 characters, and only contain letters (including ñ/Ñ) and spaces
                 'email'            => 'required|valid_email|is_unique[users.email]', // Email must be valid format and not already used
                 'password'         => 'required|min_length[6]',                 // Password must exist and be at least 6 characters
                 'password_confirm' => 'required|matches[password]'              // Password confirmation must match the password
-            ];
-
-            // Step 2b: Set error messages - these are shown to user if validation fails
+            ];// Step 2b: Set error messages - these are shown to user if validation fails
             // Each message explains what went wrong in simple language
-            $messages = [
+            $messages = [                
                 'name' => [
-                    'required'   => 'Name is required.',                        // Show if user didn't enter name
-                    'min_length' => 'Name must be at least 3 characters long.', // Show if name is too short
-                    'max_length' => 'Name cannot exceed 100 characters.'        // Show if name is too long
+                    'required'     => 'Name is required.',                        // Show if user didn't enter name
+                    'min_length'   => 'Name must be at least 3 characters long.', // Show if name is too short
+                    'max_length'   => 'Name cannot exceed 100 characters.',       // Show if name is too long
+                    'regex_match'  => 'Name can only contain letters (including ñ/Ñ) and spaces.' // Show if name contains numbers or symbols
                 ],
                 'email' => [
                     'required'    => 'Email is required.',                      // Show if user didn't enter email
@@ -221,11 +218,10 @@ class Auth extends BaseController
         
         // Step 3: Send user back to login page so they can log in again if needed
         return redirect()->to(uri: base_url(relativePath: 'login'));
-    }
-
-    // Dashboard Method - This shows unified dashboard based on user role
+    }    // Dashboard Method - This shows unified dashboard based on user role
     // This is the main dashboard that handles all user types in one place
     // Only accessible to users who are logged in
+    // Now includes Manage Users functionality for Admin users
     public function dashboard()
     {
         // Step 1: Check if user is logged in first
@@ -239,8 +235,247 @@ class Auth extends BaseController
         // Step 2: Get user role from session to determine what data to fetch
         // Each role needs different data and different dashboard view
         $userRole = $this->session->get(key: 'role');
+          // Step 3: Check if admin is accessing manage users functionality
+        // This allows admin to manage users directly from dashboard
+        if ($userRole === 'admin') {
+            $action = $this->request->getGet('action');
+            $userID = $this->request->getGet('id');
+            
+            // Handle user management actions for admin
+            if ($action) {
+                switch ($action) {
+                    case 'manageUsers':
+                        // Show user management interface
+                        $builder = $this->db->table('users');
+                        $users = $builder->orderBy('created_at', 'DESC')->get()->getResultArray();
+                        $currentAdminID = $this->session->get('userID');
+
+                        $data = [
+                            'user' => [
+                                'userID' => $this->session->get('userID'),
+                                'name'   => $this->session->get('name'),
+                                'email'  => $this->session->get('email'),
+                                'role'   => $this->session->get('role')
+                            ],
+                            'title' => 'Manage Users - Admin Dashboard',
+                            'users' => $users,
+                            'currentAdminID' => $currentAdminID,
+                            'editUser' => null,
+                            'showCreateForm' => $this->request->getGet('create') === 'true',
+                            'showEditForm' => false
+                        ];
+                        return view('auth/manage_users', $data);
+
+                    case 'createUser':
+                        // Handle user creation
+                        if ($this->request->getMethod() === 'POST') {                            // Validation rules for creating new user
+                            $rules = [
+                                'name'     => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+                                'email'    => 'required|valid_email|is_unique[users.email]',
+                                'password' => 'required|min_length[6]',
+                                'role'     => 'required|in_list[admin,teacher,student]'
+                            ];
+
+                            $messages = [
+                                'name' => [
+                                    'required'    => 'Name is required.',
+                                    'min_length'  => 'Name must be at least 3 characters long.',
+                                    'max_length'  => 'Name cannot exceed 100 characters.',
+                                    'regex_match' => 'Name can only contain letters (including ñ/Ñ) and spaces.'
+                                ],
+                                'email' => [
+                                    'required'    => 'Email is required.',
+                                    'valid_email' => 'Please enter a valid email address.',
+                                    'is_unique'   => 'This email is already registered.'
+                                ],
+                                'password' => [
+                                    'required'   => 'Password is required.',
+                                    'min_length' => 'Password must be at least 6 characters long.'
+                                ],
+                                'role' => [
+                                    'required' => 'Role is required.',
+                                    'in_list'  => 'Invalid role selected.'
+                                ]
+                            ];
+
+                            if ($this->validate($rules, $messages)) {
+                                // Create new user
+                                $userData = [
+                                    'name'       => $this->request->getPost('name'),
+                                    'email'      => $this->request->getPost('email'),
+                                    'password'   => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
+                                    'role'       => $this->request->getPost('role'),
+                                    'created_at' => date('Y-m-d H:i:s'),
+                                    'updated_at' => date('Y-m-d H:i:s')
+                                ];
+
+                                $builder = $this->db->table('users');
+                                if ($builder->insert($userData)) {
+                                    $this->session->setFlashdata('success', 'User created successfully!');
+                                    return redirect()->to(base_url('dashboard?action=manageUsers'));
+                                } else {
+                                    $this->session->setFlashdata('error', 'Failed to create user. Please try again.');
+                                }
+                            } else {
+                                $this->session->setFlashdata('errors', $this->validation->getErrors());
+                            }
+                        }
+
+                        // Show manage users view with create form
+                        $builder = $this->db->table('users');
+                        $users = $builder->orderBy('created_at', 'DESC')->get()->getResultArray();
+                        $currentAdminID = $this->session->get('userID');
+
+                        $data = [
+                            'user' => [
+                                'userID' => $this->session->get('userID'),
+                                'name'   => $this->session->get('name'),
+                                'email'  => $this->session->get('email'),
+                                'role'   => $this->session->get('role')
+                            ],
+                            'title' => 'Manage Users - Admin Dashboard',
+                            'users' => $users,
+                            'currentAdminID' => $currentAdminID,
+                            'editUser' => null,
+                            'showCreateForm' => true,
+                            'showEditForm' => false
+                        ];
+                        return view('auth/manage_users', $data);
+
+                    case 'editUser':
+                        // Handle user editing
+                        if (!$userID) {
+                            $this->session->setFlashdata('error', 'User ID is required.');
+                            return redirect()->to(base_url('dashboard?action=manageUsers'));
+                        }
+
+                        // Get user to edit
+                        $builder = $this->db->table('users');
+                        $userToEdit = $builder->where('id', $userID)->get()->getRowArray();
+
+                        if (!$userToEdit) {
+                            $this->session->setFlashdata('error', 'User not found.');
+                            return redirect()->to(base_url('dashboard?action=manageUsers'));
+                        }
+
+                        // Check restrictions: Admin cannot edit self or other admins
+                        $currentAdminID = $this->session->get('userID');
+                        if ($userToEdit['role'] === 'admin' || $userToEdit['id'] == $currentAdminID) {
+                            $this->session->setFlashdata('error', 'You cannot edit admin accounts or your own account.');
+                            return redirect()->to(base_url('dashboard?action=manageUsers'));
+                        }
+
+                        if ($this->request->getMethod() === 'POST') {                            // Validation rules for editing user
+                            $rules = [
+                                'name' => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+                                'email' => "required|valid_email|is_unique[users.email,id,{$userID}]",
+                                'role' => 'required|in_list[teacher,student]'
+                            ];
+
+                            // Only validate password if provided
+                            if ($this->request->getPost('password')) {
+                                $rules['password'] = 'min_length[6]';
+                            }
+
+                            $messages = [                                'name' => [
+                                    'required'    => 'Name is required.',
+                                    'min_length'  => 'Name must be at least 3 characters long.',
+                                    'max_length'  => 'Name cannot exceed 100 characters.',
+                                    'regex_match' => 'Name can only contain letters (including ñ/Ñ) and spaces.'
+                                ],
+                                'email' => [
+                                    'required'    => 'Email is required.',
+                                    'valid_email' => 'Please enter a valid email address.',
+                                    'is_unique'   => 'This email is already registered.'
+                                ],
+                                'role' => [
+                                    'required' => 'Role is required.',
+                                    'in_list'  => 'Invalid role selected.'
+                                ],
+                                'password' => [
+                                    'min_length' => 'Password must be at least 6 characters long.'
+                                ]
+                            ];
+
+                            if ($this->validate($rules, $messages)) {
+                                // Prepare update data
+                                $updateData = [
+                                    'name'       => $this->request->getPost('name'),
+                                    'email'      => $this->request->getPost('email'),
+                                    'role'       => $this->request->getPost('role'),
+                                    'updated_at' => date('Y-m-d H:i:s')
+                                ];
+
+                                // Update password only if provided
+                                if ($this->request->getPost('password')) {
+                                    $updateData['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
+                                }
+
+                                if ($builder->where('id', $userID)->update($updateData)) {
+                                    $this->session->setFlashdata('success', 'User updated successfully!');
+                                    return redirect()->to(base_url('dashboard?action=manageUsers'));
+                                } else {
+                                    $this->session->setFlashdata('error', 'Failed to update user. Please try again.');
+                                }
+                            } else {
+                                $this->session->setFlashdata('errors', $this->validation->getErrors());
+                            }
+                        }
+
+                        // Show edit form
+                        $users = $builder->orderBy('created_at', 'DESC')->get()->getResultArray();
+                        $data = [
+                            'user' => [
+                                'userID' => $this->session->get('userID'),
+                                'name'   => $this->session->get('name'),
+                                'email'  => $this->session->get('email'),
+                                'role'   => $this->session->get('role')
+                            ],
+                            'title' => 'Edit User - Admin Dashboard',
+                            'users' => $users,
+                            'currentAdminID' => $currentAdminID,
+                            'editUser' => $userToEdit,
+                            'showCreateForm' => false,
+                            'showEditForm' => true
+                        ];
+                        return view('auth/manage_users', $data);
+
+                    case 'deleteUser':
+                        // Handle user deletion
+                        if (!$userID) {
+                            $this->session->setFlashdata('error', 'User ID is required.');
+                            return redirect()->to(base_url('dashboard?action=manageUsers'));
+                        }
+
+                        // Get user to delete
+                        $builder = $this->db->table('users');
+                        $userToDelete = $builder->where('id', $userID)->get()->getRowArray();
+
+                        if (!$userToDelete) {
+                            $this->session->setFlashdata('error', 'User not found.');
+                            return redirect()->to(base_url('dashboard?action=manageUsers'));
+                        }
+
+                        // Check restrictions: Admin cannot delete self or other admins
+                        $currentAdminID = $this->session->get('userID');
+                        if ($userToDelete['role'] === 'admin' || $userToDelete['id'] == $currentAdminID) {
+                            $this->session->setFlashdata('error', 'You cannot delete admin accounts or your own account.');
+                            return redirect()->to(base_url('dashboard?action=manageUsers'));
+                        }
+
+                        // Delete user
+                        if ($builder->where('id', $userID)->delete()) {
+                            $this->session->setFlashdata('success', 'User deleted successfully!');
+                        } else {
+                            $this->session->setFlashdata('error', 'Failed to delete user. Please try again.');
+                        }
+
+                        return redirect()->to(base_url('dashboard?action=manageUsers'));
+                }
+            }
+        }
         
-        // Step 3: Prepare basic user data that all roles need
+        // Step 4: Prepare basic user data that all roles need
         $baseData = [
             'user' => [
                 'userID' => $this->session->get(key: 'userID'), // User's ID number
@@ -250,7 +485,7 @@ class Auth extends BaseController
             ]
         ];
 
-        // Step 4: Get role-specific data and determine view based on user type
+        // Step 5: Get role-specific data and determine view based on user type
         switch ($userRole) {
             case 'admin':
                 // Admin gets system statistics and user management data
@@ -268,7 +503,7 @@ class Auth extends BaseController
                     'totalStudents' => $totalStudents,
                     'recentUsers' => $recentUsers
                 ]);
-                  return view('auth/dashboard', $dashboardData);
+                return view('auth/dashboard', $dashboardData);
                 
             case 'teacher':
                 // Teacher gets course and student data 
@@ -288,8 +523,9 @@ class Auth extends BaseController
                     'completedAssignments' => 0, // Replace with actual completed assignments count
                     'pendingAssignments' => 0    // Replace with actual pending assignments count
                 ]);
+                return view('auth/dashboard', $dashboardData);
                 
-                return view('auth/dashboard', $dashboardData);                  default:
+            default:                
                 // If role is unknown, show generic dashboard
                 return view('auth/dashboard', $baseData);
         }

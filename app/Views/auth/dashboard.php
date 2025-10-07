@@ -159,12 +159,10 @@
                             <small class="text-muted">Shortcuts to important features</small>
                         <?php endif; ?>
                     </div>
-                    <div class="card-body pt-3">
-                        
-                        <!-- ADMIN QUICK ACTIONS -->
+                    <div class="card-body pt-3">                          <!-- ADMIN QUICK ACTIONS -->
                         <?php if ($user['role'] === 'admin'): ?>
                             <div class="d-grid gap-3">
-                                <a href="<?= base_url('admin/users') ?>" class="btn btn-outline-primary rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
+                                <a href="<?= base_url('dashboard?action=manageUsers') ?>" class="btn btn-outline-primary rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">
                                     <span class="me-2">👥</span> Manage Users
                                 </a>
                                 <a href="<?= base_url('admin/courses') ?>" class="btn btn-outline-success rounded-pill fw-semibold py-3 d-flex align-items-center justify-content-center">

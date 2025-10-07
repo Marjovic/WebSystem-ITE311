@@ -45,13 +45,12 @@
 
                         <!-- Registration Form -->
                         <form method="POST" action="<?= base_url('register') ?>">
-                            <?= csrf_field() ?>
-                            
-                            <div class="mb-3">
+                            <?= csrf_field() ?>                            <div class="mb-3">
                                 <label for="name" class="form-label">Full Name *</label>
                                 <input type="text" class="form-control" id="name" name="name" 
-                                       value="<?= old('name') ?>" required>
-                                <div class="form-text">Enter your full name (3-100 characters)</div>
+                                       value="<?= old('name') ?>" required pattern="[A-Za-zñÑ\s]+" 
+                                       title="Name can only contain letters and spaces">
+                                <div class="form-text">Enter your full name (letters including ñ/Ñ and spaces only, 3-100 characters)</div>
                             </div>
 
                             <div class="mb-3">
@@ -93,8 +92,96 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    </div>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    <!-- Enhanced Form Validation -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Name field validation
+        const nameField = document.getElementById('name');
+        const emailField = document.getElementById('email');
+        const passwordField = document.getElementById('password');
+        const confirmPasswordField = document.getElementById('password_confirm');
+          // Name validation - only letters (including ñ/Ñ) and spaces
+        nameField.addEventListener('input', function(e) {
+            const value = e.target.value;
+            const validPattern = /^[A-Za-zñÑ\s]*$/;
+            
+            // Remove invalid characters as user types
+            if (!validPattern.test(value)) {
+                e.target.value = value.replace(/[^A-Za-zñÑ\s]/g, '');
+            }
+            
+            // Visual feedback
+            if (e.target.value.length >= 3 && validPattern.test(e.target.value)) {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            } else if (e.target.value.length > 0) {
+                e.target.classList.remove('is-valid');
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-valid', 'is-invalid');
+            }
+        });
+        
+        // Email validation
+        emailField.addEventListener('input', function(e) {
+            const value = e.target.value;
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            // Visual feedback for email
+            if (emailPattern.test(value)) {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            } else if (value.length > 0) {
+                e.target.classList.remove('is-valid');
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-valid', 'is-invalid');
+            }
+        });
+        
+        // Password validation
+        passwordField.addEventListener('input', function(e) {
+            const value = e.target.value;
+            
+            // Visual feedback for password
+            if (value.length >= 6) {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            } else if (value.length > 0) {
+                e.target.classList.remove('is-valid');
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-valid', 'is-invalid');
+            }
+            
+            // Also validate confirm password if it has a value
+            if (confirmPasswordField.value.length > 0) {
+                validatePasswordConfirm();
+            }
+        });
+        
+        // Password confirmation validation
+        confirmPasswordField.addEventListener('input', validatePasswordConfirm);
+        
+        function validatePasswordConfirm() {
+            const password = passwordField.value;
+            const confirmPassword = confirmPasswordField.value;
+            
+            if (confirmPassword.length > 0) {
+                if (password === confirmPassword) {
+                    confirmPasswordField.classList.remove('is-invalid');
+                    confirmPasswordField.classList.add('is-valid');
+                } else {
+                    confirmPasswordField.classList.remove('is-valid');
+                    confirmPasswordField.classList.add('is-invalid');
+                }
+            } else {
+                confirmPasswordField.classList.remove('is-valid', 'is-invalid');
+            }
+        }
+    });
+    </script>
 </body>
 </html>

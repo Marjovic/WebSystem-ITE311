@@ -45,7 +45,8 @@
 
                         <!-- Registration Form -->
                         <form method="POST" action="<?= base_url('register') ?>">
-                            <?= csrf_field() ?>                            <div class="mb-3">
+                            <?= csrf_field() ?>                            
+                            <div class="mb-3">
                                 <label for="name" class="form-label">Full Name *</label>
                                 <input type="text" class="form-control" id="name" name="name" 
                                        value="<?= old('name') ?>" required pattern="[A-Za-zñÑ\s]+" 
@@ -56,7 +57,7 @@
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email Address *</label>
                                 <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?= old('email') ?>" required>
+                                       value="<?= old('email') ?>" required pattern="[<a-zA-Z0-9._%+-]+@[<a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
                                 <div class="form-text">Enter a valid email address</div>
                             </div>
 

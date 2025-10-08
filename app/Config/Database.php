@@ -28,7 +28,7 @@ class Database extends Config
         'DSN'          => '',
         'hostname'     => 'localhost',
         'username'     => 'root',
-        'password'     => 'Sheamar@442211',
+        'password'     => '',
         'database'     => 'lms_alejado',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',

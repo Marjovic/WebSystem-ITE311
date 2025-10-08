@@ -22,7 +22,8 @@
                     </div>
                 </div>
             </div>
-        </div><!-- User Statistics Cards - Moved to top with new order -->
+        </div>
+        <!-- User Statistics Cards - Moved to top with new order -->
         <div class="row mb-4">
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">
@@ -81,23 +82,24 @@
                     </div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('dashboard?action=createUser') ?>">
-                            <div class="row">                                <div class="col-md-6">
+                            <div class="row">                                
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="name" class="form-label fw-semibold">Full Name</label>
                                         <input type="text" class="form-control" id="name" name="name" 
-                                               value="<?= old('name') ?>" required 
-                                               pattern="[A-Za-zñÑ\s]+" 
-                                               title="Name can only contain letters (including ñ/Ñ) and spaces"
+                                               value="<?= old('name') ?>" required pattern="[A-Za-zñÑ\s]+" 
+                                               title="Name can only contain letters and spaces"
                                                minlength="3" maxlength="100">
-                                        <div class="form-text">Enter full name (letters including ñ/Ñ and spaces only, 3-100 characters)</div>
+                                        <div class="form-text">Enter full name (letters including and spaces only, 3-100 characters)</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="email" class="form-label fw-semibold">Email Address</label>
-                                        <input type="email" class="form-control" id="email" name="email" value="<?= old('email') ?>" required>
+                                        <input type="email" class="form-control" id="email" name="email" value="<?= old('email') ?>" required pattern="[<a-zA-Z0-9._%+-]+@[<a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
                                     </div>
-                                </div>                                <div class="col-md-6">
+                                </div>                                
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="password" class="form-label fw-semibold">Password</label>
                                         <input type="password" class="form-control" id="password" name="password" 
@@ -142,23 +144,25 @@
                     </div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('dashboard?action=editUser&id=' . $editUser['id']) ?>">
-                            <div class="row">                                <div class="col-md-6">
+                            <div class="row">                                
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="edit_name" class="form-label fw-semibold">Full Name</label>
                                         <input type="text" class="form-control" id="edit_name" name="name" 
                                                value="<?= old('name', $editUser['name']) ?>" required 
                                                pattern="[A-Za-zñÑ\s]+" 
-                                               title="Name can only contain letters (including ñ/Ñ) and spaces"
+                                               title="Name can only contain letters and spaces"
                                                minlength="3" maxlength="100">
-                                        <div class="form-text">Enter full name (letters including ñ/Ñ and spaces only, 3-100 characters)</div>
+                                        <div class="form-text">Enter full name (letters including and spaces only, 3-100 characters)</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="edit_email" class="form-label fw-semibold">Email Address</label>
-                                        <input type="email" class="form-control" id="edit_email" name="email" value="<?= old('email', $editUser['email']) ?>" required>
+                                        <input type="email" class="form-control" id="edit_email" name="email" value="<?= old('email', $editUser['email']) ?>" required pattern="[<a-zA-Z0-9._%+-]+@[<a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
                                     </div>
-                                </div>                                <div class="col-md-6">
+                                </div>                                
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="edit_password" class="form-label fw-semibold">Password <small class="text-muted">(leave blank to keep current)</small></label>
                                         <input type="password" class="form-control" id="edit_password" name="password" 
@@ -170,10 +174,10 @@
                                     <div class="mb-3">
                                         <label for="edit_role" class="form-label fw-semibold">Role</label>
                                         <select class="form-select" id="edit_role" name="role" required>
+                                            <option value="admin" <?= old('role', $editUser['role']) === 'admin' ? 'selected' : '' ?>>Admin</option>
                                             <option value="teacher" <?= old('role', $editUser['role']) === 'teacher' ? 'selected' : '' ?>>Teacher</option>
                                             <option value="student" <?= old('role', $editUser['role']) === 'student' ? 'selected' : '' ?>>Student</option>
                                         </select>
-                                        <small class="text-muted">Admin accounts cannot be edited</small>
                                     </div>
                                 </div>
                             </div>
@@ -195,7 +199,8 @@
         <!-- Users List -->
         <div class="row">
             <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-3">                    <div class="card-header bg-white border-0 pb-3">
+                <div class="card border-0 shadow-sm rounded-3">                    
+                    <div class="card-header bg-white border-0 pb-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h5 class="mb-0 fw-bold text-dark">👤 All Users</h5>
@@ -226,7 +231,8 @@
                                         usort($users, function($a, $b) {
                                             return $a['id'] <=> $b['id'];
                                         });
-                                        ?>                                        <?php foreach ($users as $user): ?>
+                                        ?>                                        
+                                        <?php foreach ($users as $user): ?>
                                         <tr class="border-bottom">
                                             <td class="text-center">
                                                 <span class="badge bg-secondary rounded-pill px-2 py-1"><?= $user['id'] ?></span>
@@ -264,9 +270,10 @@
                                                 </small>
                                             </td>
                                             <td class="text-center">
-                                                <div class="btn-group btn-group-sm" role="group">                                                    <?php 
+                                                <div class="btn-group btn-group-sm" role="group">                                                    
+                                                    <?php 
                                                     // Check if current admin can edit this user
-                                                    $canEdit = ($user['role'] !== 'admin' && $user['id'] != $currentAdminID);
+                                                    $canEdit = ($user['id'] != $currentAdminID);
                                                     $canDelete = ($user['role'] !== 'admin' && $user['id'] != $currentAdminID);
                                                     ?>
                                                     
@@ -299,7 +306,8 @@
                                                                 title="Cannot delete admin accounts">
                                                             🛡️
                                                         </button>
-                                                    <?php endif; ?>                                                </div>
+                                                    <?php endif; ?>                                                
+                                                </div>
                                             </td>
                                         </tr>
                                         <?php endforeach; ?>
@@ -357,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
     emailFields.forEach(function(field) {
         field.addEventListener('input', function(e) {
             const value = e.target.value;
-            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/|;
             
             // Visual feedback for email
             if (emailPattern.test(value)) {

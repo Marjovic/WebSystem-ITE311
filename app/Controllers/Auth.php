@@ -46,7 +46,7 @@ class Auth extends BaseController
             // Each rule tells the system what to check for in the user's input
             $rules = [
                 'name'             => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',  // Name must exist, be 3-100 characters, and only contain letters (including ñ/Ñ) and spaces
-                'email'            => 'required|valid_email|is_unique[users.email]', // Email must be valid format and not already used
+                'email'            => 'required|valid_email|is_unique[users.email]|regex_match[/^[<a-zA-Z0-9._%+-]+@[<a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]', // Email must be valid format and not already used
                 'password'         => 'required|min_length[6]',                 // Password must exist and be at least 6 characters
                 'password_confirm' => 'required|matches[password]'              // Password confirmation must match the password
             ];// Step 2b: Set error messages - these are shown to user if validation fails
@@ -61,7 +61,8 @@ class Auth extends BaseController
                 'email' => [
                     'required'    => 'Email is required.',                      // Show if user didn't enter email
                     'valid_email' => 'Please enter a valid email address.',     // Show if email format is wrong (no @ sign, etc.)
-                    'is_unique'   => 'This email is already registered.'        // Show if someone already uses this email
+                    'is_unique'   => 'This email is already registered.',        // Show if someone already uses this email
+                    'regex_match' => 'Email format should be in standard format! Format should be like this "marjovic.alejado@lms.com"'
                 ],
                 'password' => [
                     'required'   => 'Password is required.',                    // Show if user didn't enter password
@@ -110,7 +111,8 @@ class Auth extends BaseController
                 }
             } else {
                 // Validation failed: User input didn't meet the requirements
-                // Show all validation error messages to help user fix their input                $this->session->setFlashdata(data: 'errors', value: $this->validation->getErrors());
+                // Show all validation error messages to help user fix their input                
+                $this->session->setFlashdata(data: 'errors', value: $this->validation->getErrors());
             }
         }
 
@@ -277,7 +279,7 @@ class Auth extends BaseController
                         if ($this->request->getMethod() === 'POST') {                            // Validation rules for creating new user
                             $rules = [
                                 'name'     => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
-                                'email'    => 'required|valid_email|is_unique[users.email]',
+                                'email'    => 'required|valid_email|is_unique[users.email]|regex_match[/^[<a-zA-Z0-9._%+-]+@[<a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]',
                                 'password' => 'required|min_length[6]',
                                 'role'     => 'required|in_list[admin,teacher,student]'
                             ];
@@ -292,7 +294,8 @@ class Auth extends BaseController
                                 'email' => [
                                     'required'    => 'Email is required.',
                                     'valid_email' => 'Please enter a valid email address.',
-                                    'is_unique'   => 'This email is already registered.'
+                                    'is_unique'   => 'This email is already registered.',
+                                    'regex_match' => 'Email format should be in standard format! Format should be like this "marjovic.alejado@lms.com"'
                                 ],
                                 'password' => [
                                     'required'   => 'Password is required.',
@@ -388,16 +391,17 @@ class Auth extends BaseController
 
                         // Check restrictions: Admin cannot edit self or other admins
                         $currentAdminID = $this->session->get('userID');
-                        if ($userToEdit['role'] === 'admin' || $userToEdit['id'] == $currentAdminID) {
+                        if ($userToEdit['id'] == $currentAdminID) {
                             $this->session->setFlashdata('error', 'You cannot edit admin accounts or your own account.');
                             return redirect()->to(base_url('dashboard?action=manageUsers'));
                         }
 
-                        if ($this->request->getMethod() === 'POST') {                            // Validation rules for editing user
+                        if ($this->request->getMethod() === 'POST') {                            
+                            // Validation rules for editing user
                             $rules = [
                                 'name' => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
-                                'email' => "required|valid_email|is_unique[users.email,id,{$userID}]",
-                                'role' => 'required|in_list[teacher,student]'
+                                'email' => "required|valid_email|is_unique[users.email,id,{$userID}]|regex_match[/^[<a-zA-Z0-9._%+-]+@[<a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]",
+                                'role' => 'required|in_list[admin,teacher,student]'
                             ];
 
                             // Only validate password if provided
@@ -405,7 +409,8 @@ class Auth extends BaseController
                                 $rules['password'] = 'min_length[6]';
                             }
 
-                            $messages = [                                'name' => [
+                            $messages = [                                
+                                'name' => [
                                     'required'    => 'Name is required.',
                                     'min_length'  => 'Name must be at least 3 characters long.',
                                     'max_length'  => 'Name cannot exceed 100 characters.',
@@ -414,7 +419,8 @@ class Auth extends BaseController
                                 'email' => [
                                     'required'    => 'Email is required.',
                                     'valid_email' => 'Please enter a valid email address.',
-                                    'is_unique'   => 'This email is already registered.'
+                                    'is_unique'   => 'This email is already registered.',
+                                    'regex_match' => 'Email format should be in standard format! Format should be like this "marjovic.alejado@lms.com"'
                                 ],
                                 'role' => [
                                     'required' => 'Role is required.',
@@ -508,7 +514,7 @@ class Auth extends BaseController
 
                         // Check restrictions: Admin cannot delete self or other admins
                         $currentAdminID = $this->session->get('userID');
-                        if ($userToDelete['role'] === 'admin' || $userToDelete['id'] == $currentAdminID) {
+                        if ($userToDelete['role'] == 'admin' || $userToDelete['id'] == $currentAdminID) {
                             $this->session->setFlashdata('error', 'You cannot delete admin accounts or your own account.');
                             return redirect()->to(base_url('dashboard?action=manageUsers'));
                         }                        // Store deletion activity before deleting user
@@ -557,7 +563,8 @@ class Auth extends BaseController
         ];
 
         // Step 6: Get role-specific data and determine view based on user type
-        switch ($userRole) {            case 'admin':
+        switch ($userRole) {            
+            case 'admin':
                 // Admin gets system statistics and user management data
                 $totalUsers = $this->db->table('users')->countAll();
                 $totalAdmins = $this->db->table('users')->where('role', 'admin')->countAllResults();

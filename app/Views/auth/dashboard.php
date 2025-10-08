@@ -1,7 +1,6 @@
 <?= $this->include('templates/header') ?>
 
 <!-- Unified Dashboard View - This single file handles all user roles (Admin, Teacher, Student) -->
-<!-- Uses conditional PHP statements to show different content based on user's role -->
 <div class="bg-light min-vh-100">
     <div class="container py-4">
         

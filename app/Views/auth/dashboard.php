@@ -44,13 +44,13 @@
                         <div class="fw-semibold">Total Users</div>
                         <small class="opacity-75">Active in system</small>
                     </div>
-                </div>
+                </div>                
                 <div class="col-md-3 mb-3">
                     <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
                         <div class="display-4 mb-2">📚</div>
                         <div class="display-5 fw-bold"><?= $totalCourses ?? '0' ?></div>
                         <div class="fw-semibold">Total Courses</div>
-                        <small class="opacity-75">Available to students</small>
+                        <small class="opacity-75"><?= ($activeCourses ?? '0') ?> active, <?= ($draftCourses ?? '0') ?> draft</small>
                     </div>
                 </div>
                 <div class="col-md-3 mb-3">
@@ -68,24 +68,23 @@
                         <div class="fw-semibold">Students</div>
                         <small class="opacity-75">Learning actively</small>
                     </div>
-                </div>
-
-            <!-- TEACHER STATISTICS CARDS -->
+                </div>            
+                <!-- TEACHER STATISTICS CARDS -->
             <?php elseif ($user['role'] === 'teacher'): ?>
                 <div class="col-md-3 mb-3">
                     <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">
                         <div class="display-4 mb-2">📚</div>
                         <div class="display-5 fw-bold"><?= $totalCourses ?? '0' ?></div>
                         <div class="fw-semibold">My Courses</div>
-                        <small class="opacity-75">Active courses</small>
+                        <small class="opacity-75"><?= ($activeCourses ?? '0') ?> active courses</small>
                     </div>
                 </div>
                 <div class="col-md-3 mb-3">
                     <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
                         <div class="display-4 mb-2">👥</div>
-                        <div class="display-5 fw-bold"><?= $totalStudents ?? '3' ?></div>
-                        <div class="fw-semibold">Students</div>
-                        <small class="opacity-75">Enrolled students</small>
+                        <div class="display-5 fw-bold"><?= $totalStudents ?? '0' ?></div>
+                        <div class="fw-semibold">My Students</div>
+                        <small class="opacity-75">Enrolled in my courses</small>
                     </div>
                 </div>
                 <div class="col-md-3 mb-3">
@@ -139,18 +138,77 @@
                         <small class="opacity-75">Overall performance</small>
                     </div>
                 </div>
-            <?php endif; ?>        </div>
-
+            <?php endif; ?>        
+        </div>        
         <!-- Additional Content Section - Role-specific content -->
         <div class="row">
               <!-- ADMIN ADDITIONAL CONTENT -->
             <?php if ($user['role'] === 'admin'): ?>
+                <!-- Course Statistics Breakdown -->
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="mb-0 fw-bold text-dark">📚 Course Overview</h5>
+                            <small class="text-muted">Course distribution by status</small>
+                        </div>
+                        <div class="card-body pt-3">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center p-3 bg-success bg-opacity-10 rounded-3">
+                                        <div class="me-3">
+                                            <span class="badge bg-success rounded-circle p-2">✅</span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-success"><?= $activeCourses ?? '0' ?></div>
+                                            <small class="text-muted">Active Courses</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center p-3 bg-warning bg-opacity-10 rounded-3">
+                                        <div class="me-3">
+                                            <span class="badge bg-warning rounded-circle p-2">📝</span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-warning"><?= $draftCourses ?? '0' ?></div>
+                                            <small class="text-muted">Draft Courses</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center p-3 bg-info bg-opacity-10 rounded-3">
+                                        <div class="me-3">
+                                            <span class="badge bg-info rounded-circle p-2">🎯</span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-info"><?= $completedCourses ?? '0' ?></div>
+                                            <small class="text-muted">Completed</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center p-3 bg-primary bg-opacity-10 rounded-3">
+                                        <div class="me-3">
+                                            <span class="badge bg-primary rounded-circle p-2">📚</span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-primary"><?= $totalCourses ?? '0' ?></div>
+                                            <small class="text-muted">Total Courses</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity Section -->
                 <div class="col-md-6 mb-4">
                     <div class="card border-0 shadow-sm rounded-3 h-100">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="mb-0 fw-bold text-dark">⏰ Recent Activity</h5>
                             <small class="text-muted">Latest system activities</small>
-                        </div>                        
+                        </div>
                         <div class="card-body pt-3">
                             <?php if (!empty($recentActivities)): ?>   
                                 
@@ -185,13 +243,17 @@
                                                     ?>
                                                 </div>
                                             </div>                                            <div class="activity-badge">
-                                                <?php
-                                                // Activity type colors for different activity types
+                                                <?php                                                // Activity type colors for different activity types
                                                 $activityTypeColors = [
                                                     'user_registration' => 'success',   // Green for new registrations
                                                     'user_creation' => 'info',          // Blue for admin-created users
                                                     'user_update' => 'warning',         // Yellow for updates
-                                                    'user_deletion' => 'danger'         // Red for deletions
+                                                    'user_deletion' => 'danger',        // Red for deletions
+                                                    'course_creation' => 'primary',     // Blue for course creation
+                                                    'course_update' => 'warning',       // Yellow for course updates  
+                                                    'course_deletion' => 'danger',      // Red for course deletions
+                                                    'course_assignment' => 'success',   // Green for teacher course assignments
+                                                    'course_unassignment' => 'info'     // Blue for teacher course unassignments
                                                 ];
                                                 
                                                 // Role colors for role badges
@@ -200,28 +262,41 @@
                                                     'teacher' => 'primary', 
                                                     'student' => 'success'
                                                 ];
-                                                
-                                                // Get colors
+                                                  // Get colors
                                                 $activityColor = $activityTypeColors[$activity['type']] ?? 'secondary';
-                                                $roleColor = $roleColors[$activity['user_role']] ?? 'secondary';
+                                                $roleColor = isset($activity['user_role']) ? ($roleColors[$activity['user_role']] ?? 'secondary') : 'info';
                                                 ?>
                                                 <div class="d-flex flex-column gap-1">
                                                     <!-- Activity Type Badge -->
                                                     <span class="badge bg-<?= $activityColor ?> rounded-pill small">
-                                                        <?php
-                                                        $activityLabels = [
+                                                        <?php                                                        $activityLabels = [
                                                             'user_registration' => 'Registration',
-                                                            'user_creation' => 'Created',
-                                                            'user_update' => 'Updated',
-                                                            'user_deletion' => 'Deleted'
+                                                            'user_creation' => 'User Created',
+                                                            'user_update' => 'User Updated',
+                                                            'user_deletion' => 'User Deleted',
+                                                            'course_creation' => 'Course Created',
+                                                            'course_update' => 'Course Updated',
+                                                            'course_deletion' => 'Course Deleted',
+                                                            'course_assignment' => 'Course Assigned',
+                                                            'course_unassignment' => 'Course Unassigned'
                                                         ];
                                                         echo $activityLabels[$activity['type']] ?? 'Activity';
                                                         ?>
                                                     </span>
-                                                    <!-- Role Badge -->
-                                                    <span class="badge bg-<?= $roleColor ?> rounded-pill small">
-                                                        <?= ucfirst($activity['user_role']) ?>
-                                                    </span>
+                                                    <!-- Role/Type Badge -->
+                                                    <?php if (isset($activity['user_role'])): ?>
+                                                        <span class="badge bg-<?= $roleColor ?> rounded-pill small">
+                                                            <?= ucfirst($activity['user_role']) ?>
+                                                        </span>
+                                                    <?php elseif (isset($activity['course_code'])): ?>
+                                                        <span class="badge bg-<?= $roleColor ?> rounded-pill small">
+                                                            <?= esc($activity['course_code']) ?>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-<?= $roleColor ?> rounded-pill small">
+                                                            System
+                                                        </span>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>
@@ -245,56 +320,125 @@
                         </div>
                     </div>
                 </div>
-                
-
-
-            <!-- TEACHER ADDITIONAL CONTENT -->
+                      <!-- TEACHER ADDITIONAL CONTENT -->
             <?php elseif ($user['role'] === 'teacher'): ?>
+                <!-- Course Management Section -->
                 <div class="col-md-8 mb-4">
                     <div class="card border-0 shadow-sm rounded-3 h-100">
                         <div class="card-header bg-white border-0 pb-0">
-                            <h5 class="mb-0 fw-bold text-dark">📚 My Courses</h5>
-                            <small class="text-muted">Manage your active courses</small>
+                            <div class="d-flex justify-content-between align-items-center">                                <div>
+                                    <h5 class="mb-0 fw-bold text-dark">📚 Course Management</h5>
+                                    <small class="text-muted">View and manage your assigned courses</small>
+                                </div>
+                                <a href="<?= base_url('teacher/courses') ?>" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View All Courses
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body pt-3">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="fw-semibold border-0">Course</th>
-                                            <th class="fw-semibold border-0">Students</th>
-                                            <th class="fw-semibold border-0">Status</th>
-                                            <th class="fw-semibold border-0">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td colspan="4" class="text-muted text-center py-4">No courses available. Create your first course to get started!</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="row g-3">
+                                <!-- Quick Course Stats -->
+                                <div class="col-sm-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                                        <div class="me-3">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="fas fa-chalkboard-teacher"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= $totalCourses ?? 0 ?></div>
+                                            <small class="text-muted">My Courses</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                                        <div class="me-3">
+                                            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="fas fa-users"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= $totalStudents ?? 0 ?></div>
+                                            <small class="text-muted">My Students</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                              <!-- Quick Actions -->
+                            <div class="mt-4">
+                                <h6 class="fw-semibold mb-3">🚀 Quick Actions</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="<?= base_url('teacher/courses') ?>" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-book me-1"></i>View My Courses
+                                    </a>
+                                    <button class="btn btn-outline-info btn-sm" disabled>
+                                        <i class="fas fa-chart-bar me-1"></i>Course Analytics
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm" disabled>
+                                        <i class="fas fa-upload me-1"></i>Upload Materials
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Recent Activity Section -->
                 <div class="col-md-4 mb-4">
                     <div class="card border-0 shadow-sm rounded-3 h-100">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="mb-0 fw-bold text-dark">🔔 Recent Activity</h5>
-                            <small class="text-muted">Latest student activities</small>
+                            <small class="text-muted">Latest course activities</small>
                         </div>
                         <div class="card-body pt-3">
-                            <p class="text-muted">Student submissions and course activities will appear here.</p>
+                            <div class="activity-list">
+                                <?php if (!empty($assignment_activities)): ?>
+                                    <?php foreach (array_slice($assignment_activities, 0, 3) as $activity): ?>
+                                        <div class="d-flex align-items-start mb-3">
+                                            <div class="me-3">
+                                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                                     style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                    <?= $activity['icon'] ?? '📚' ?>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold small"><?= esc($activity['title'] ?? 'Course Activity') ?></div>
+                                                <div class="text-muted small"><?= esc($activity['description'] ?? 'Course-related activity') ?></div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">
+                                                    <?= date('M j, g:i A', strtotime($activity['time'] ?? 'now')) ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="text-center py-4">
+                                        <div class="text-muted mb-2">
+                                            <i class="fas fa-clock" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <p class="text-muted small mb-0">No recent activities yet.<br>Start managing courses to see activities here.</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
-                </div>            <!-- STUDENT ADDITIONAL CONTENT -->
+                </div><!-- STUDENT ADDITIONAL CONTENT -->
             <?php elseif ($user['role'] === 'student'): ?>
                 <!-- Enrolled Courses Section -->
-                <div class="col-12 mb-4">
+                <div class="col-12 mb-4">                    
                     <div class="card border-0 shadow-sm rounded-3">
                         <div class="card-header bg-white border-0 pb-0">
-                            <h5 class="mb-0 fw-bold text-dark">📖 My Enrolled Courses</h5>
-                            <small class="text-muted">Continue your learning journey</small>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-0 fw-bold text-dark">📖 My Enrolled Courses</h5>
+                                    <small class="text-muted">Continue your learning journey</small>
+                                </div>
+                                <a href="<?= base_url('student/courses') ?>" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View All Courses
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body pt-3">
                             <?php if (!empty($enrolledCoursesData)): ?>
@@ -325,7 +469,7 @@
                                                         <small class="text-muted">
                                                             <i class="fas fa-calendar"></i> Enrolled: <?= $course['enrollment_date_formatted'] ?>
                                                         </small>
-                                                        <a href="#" class="btn btn-sm btn-outline-primary">Continue</a>
+                                                        <a href="<?= base_url('student/courses') ?>" class="btn btn-sm btn-outline-primary">Continue</a>
                                                     </div>
                                                 </div>
                                             </div>
@@ -339,8 +483,8 @@
                                     </div>
                                     <p class="mb-0">No enrolled courses yet</p>
                                     <small class="text-muted">Browse available courses below to start learning!</small>
-                                </div>
-                            <?php endif; ?>
+                                </div>                            
+                            <?php endif; ?> 
                         </div>
                     </div>
                 </div>

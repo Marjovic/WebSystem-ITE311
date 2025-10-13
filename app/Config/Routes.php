@@ -17,6 +17,29 @@ $routes->get(from: '/logout', to: 'Auth::logout');
 $routes->get(from: '/dashboard', to: 'Auth::dashboard');
 $routes->post(from: '/dashboard', to: 'Auth::dashboard');
 
+// Role-based unified dashboard routes
+$routes->get(from: '/admin/dashboard', to: 'Auth::dashboard');
+$routes->get(from: '/teacher/dashboard', to: 'Auth::dashboard');
+$routes->get(from: '/student/dashboard', to: 'Auth::dashboard');
+
+// Admin management routes
+$routes->get(from: '/admin/manage_users', to: 'Auth::manageUsers');
+$routes->post(from: '/admin/manage_users', to: 'Auth::manageUsers');
+$routes->get(from: '/admin/manage_courses', to: 'Auth::manageCourses');
+$routes->post(from: '/admin/manage_courses', to: 'Auth::manageCourses');
+
 // Course enrollment routes
 $routes->post(from: '/course/enroll', to: 'Course::enroll');
-$routes->get(from: '/course/enrollment-test', to: 'Course::enrollmentTest');
+
+// Teacher course management routes
+$routes->get(from: '/teacher/courses', to: 'Auth::teacherCourses');
+$routes->post(from: '/teacher/courses', to: 'Auth::teacherCourses');
+
+// Student course management routes
+$routes->get(from: '/student/courses', to: 'Auth::studentCourses');
+
+// Material management routes
+$routes->get(from: '/material/upload/(:num)', to: 'Material::upload/$1');
+$routes->post(from: '/material/upload/(:num)', to: 'Material::upload/$1');
+$routes->get(from: '/material/delete/(:num)', to: 'Material::delete/$1');
+$routes->get(from: '/material/download/(:num)', to: 'Material::download/$1');

@@ -34,8 +34,8 @@
     ?>
     
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold fs-4" href="<?= $isLoggedIn ? base_url( '/dashboard') : base_url() ?>">
+        <div class="container">            
+            <a class="navbar-brand fw-bold fs-4" href="<?= $isLoggedIn ? base_url($userRole . '/dashboard') : base_url() ?>">
                 📚 MGOD LMS
                 <?php if ($isLoggedIn): ?>
                     <span class="badge bg-light text-primary ms-2 rounded-pill">
@@ -48,23 +48,29 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             
-            <div class="collapse navbar-collapse" id="navbarNav">                  <ul class="navbar-nav me-auto">
-                    <?php if ($isLoggedIn): ?>
-                        <li class="nav-item">
-                            <a class="nav-link px-3 fw-bold <?= ($currentUri === 'dashboard' && !$currentAction) ? 'active' : '' ?>" href="<?= base_url('/dashboard') ?>">
+            <div class="collapse navbar-collapse" id="navbarNav">                  
+                <ul class="navbar-nav me-auto">
+                    <?php if ($isLoggedIn): ?>                       
+                         <li class="nav-item">
+                            <?php
+                            // Create role-based dashboard URL
+                            $dashboardUrl = base_url($userRole . '/dashboard');
+                            $isDashboardActive = (strpos($currentUri, $userRole . '/dashboard') !== false) || ($currentUri === 'dashboard');
+                            ?>
+                            <a class="nav-link px-3 fw-bold <?= $isDashboardActive ? 'active' : '' ?>" href="<?= $dashboardUrl ?>">
                                 🏠 Dashboard
                             </a>
                         </li>
                         
                         <?php if ($userRole === 'admin'): ?>
-                            <!-- Admin Navigation -->
-                            <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold <?= ($currentAction === 'manageUsers') ? 'active' : '' ?>" href="<?= base_url('dashboard?action=manageUsers') ?>">
+                            <!-- Admin Navigation -->                              
+                             <li class="nav-item">
+                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_users') !== false) ? 'active' : '' ?>" href="<?= base_url('admin/manage_users') ?>">
                                     👥 Manage Users
                                 </a>
-                            </li>
+                            </li>                            
                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_courses') !== false) ? 'active' : '' ?>" href="<?= base_url('admin/manage_courses') ?>">
                                     📚 Manage Courses
                                 </a>
                             </li>
@@ -77,11 +83,10 @@
                                 <a class="nav-link px-3 fw-bold" href="#">
                                     ⚙️ Settings
                                 </a>
-                            </li>
-                        <?php elseif ($userRole === 'teacher'): ?>
+                            </li>                        <?php elseif ($userRole === 'teacher'): ?>
                             <!-- Teacher Navigation -->
                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'teacher/courses') !== false) ? 'active' : '' ?>" href="<?= base_url('teacher/courses') ?>">
                                     📚 My Courses
                                 </a>
                             </li>
@@ -99,11 +104,10 @@
                                 <a class="nav-link px-3 fw-bold" href="#">
                                     👥 Students
                                 </a>
-                            </li>
-                        <?php elseif ($userRole === 'student'): ?>
+                            </li>                        <?php elseif ($userRole === 'student'): ?>
                             <!-- Student Navigation -->
                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'student/courses') !== false) ? 'active' : '' ?>" href="<?= base_url('student/courses') ?>">
                                     📚 My Courses
                                 </a>
                             </li>

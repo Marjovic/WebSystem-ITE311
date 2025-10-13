@@ -14,7 +14,7 @@ class CourseSeeder extends Seeder
                 'title' => 'Introduction to Programming',
                 'description' => 'Learn the fundamentals of programming with hands-on examples and projects.',
                 'course_code' => 'CS101',
-                'instructor_id' => 2, // Assuming admin user is instructor
+                'instructor_id' => 2,
                 'category' => 'Computer Science',
                 'credits' => 3,
                 'duration_weeks' => 16,

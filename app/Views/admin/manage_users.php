@@ -79,7 +79,8 @@
                     </div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('admin/manage_users?action=create') ?>">
-                            <div class="row">                                <div class="col-md-6">
+                            <div class="row">                                
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="name" class="form-label fw-semibold">Full Name</label>
                                         <input type="text" class="form-control" id="name" name="name" 
@@ -93,9 +94,11 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="email" class="form-label fw-semibold">Email Address</label>
-                                        <input type="email" class="form-control" id="email" name="email" value="<?= old('email') ?>" required>
+                                        <input type="email" class="form-control" id="email" name="email" value="<?= old('email') ?>" 
+                                        required pattern="/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/">
                                     </div>
-                                </div>                                <div class="col-md-6">
+                                </div>                                
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="password" class="form-label fw-semibold">Password</label>
                                         <input type="password" class="form-control" id="password" name="password" 
@@ -115,7 +118,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="d-flex gap-2">                                <button type="submit" class="btn btn-success">
+                            <div class="d-flex gap-2">                                
+                                <button type="submit" class="btn btn-success">
                                     💾 Create User
                                 </button>
                                 <a href="<?= base_url('admin/manage_users') ?>" class="btn btn-outline-secondary">
@@ -153,9 +157,11 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="edit_email" class="form-label fw-semibold">Email Address</label>
-                                        <input type="email" class="form-control" id="edit_email" name="email" value="<?= old('email', $editUser['email']) ?>" required>
+                                        <input type="email" class="form-control" id="edit_email" name="email" value="<?= old('email', $editUser['email']) ?>" 
+                                        required pattern="[/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]">
                                     </div>
-                                </div>                                <div class="col-md-6">
+                                </div>                                
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="edit_password" class="form-label fw-semibold">Password <small class="text-muted">(leave blank to keep current)</small></label>
                                         <input type="password" class="form-control" id="edit_password" name="password" 
@@ -167,14 +173,15 @@
                                     <div class="mb-3">
                                         <label for="edit_role" class="form-label fw-semibold">Role</label>
                                         <select class="form-select" id="edit_role" name="role" required>
+                                            <option value="admin" <?= old('role', $editUser['role']) === 'admin' ? 'selected' : '' ?>>Admin</option>
                                             <option value="teacher" <?= old('role', $editUser['role']) === 'teacher' ? 'selected' : '' ?>>Teacher</option>
                                             <option value="student" <?= old('role', $editUser['role']) === 'student' ? 'selected' : '' ?>>Student</option>
                                         </select>
-                                        <small class="text-muted">Admin accounts cannot be edited</small>
                                     </div>
                                 </div>
                             </div>
-                            <div class="d-flex gap-2">                                <button type="submit" class="btn btn-warning">
+                            <div class="d-flex gap-2">                                
+                                <button type="submit" class="btn btn-warning">
                                     💾 Update User
                                 </button>
                                 <a href="<?= base_url('admin/manage_users') ?>" class="btn btn-outline-secondary">
@@ -191,7 +198,8 @@
         <!-- Users List -->
         <div class="row">
             <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-3">                    <div class="card-header bg-white border-0 pb-3">
+                <div class="card border-0 shadow-sm rounded-3">                    
+                    <div class="card-header bg-white border-0 pb-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h5 class="mb-0 fw-bold text-dark">👤 All Users</h5>
@@ -222,7 +230,8 @@
                                         usort($users, function($a, $b) {
                                             return $a['id'] <=> $b['id'];
                                         });
-                                        ?>                                        <?php foreach ($users as $user): ?>
+                                        ?>                                        
+                                        <?php foreach ($users as $user): ?>
                                         <tr class="border-bottom">
                                             <td class="text-center">
                                                 <span class="badge bg-secondary rounded-pill px-2 py-1"><?= $user['id'] ?></span>
@@ -260,13 +269,15 @@
                                                 </small>
                                             </td>
                                             <td class="text-center">
-                                                <div class="btn-group btn-group-sm" role="group">                                                    <?php 
+                                                <div class="btn-group btn-group-sm" role="group">                                                    
+                                                    <?php 
                                                     // Check if current admin can edit this user
-                                                    $canEdit = ($user['role'] !== 'admin' && $user['id'] != $currentAdminID);
+                                                    $canEdit = ($user['id'] != $currentAdminID);
                                                     $canDelete = ($user['role'] !== 'admin' && $user['id'] != $currentAdminID);
                                                     ?>
                                                     
-                                                    <!-- Edit Button -->                                                    <?php if ($canEdit): ?>
+                                                    <!-- Edit Button -->                                                    
+                                                     <?php if ($canEdit): ?>
                                                         <a href="<?= base_url('admin/manage_users?action=edit&id=' . $user['id']) ?>" 
                                                            class="btn btn-outline-warning btn-sm me-1" 
                                                            title="Edit User">
@@ -281,7 +292,8 @@
                                                     <?php endif; ?>
                                                     
                                                     <!-- Delete Button -->
-                                                    <?php if ($canDelete): ?>                                                        <a href="<?= base_url('admin/manage_users?action=delete&id=' . $user['id']) ?>" 
+                                                    <?php if ($canDelete): ?>                                                       
+                                                         <a href="<?= base_url('admin/manage_users?action=delete&id=' . $user['id']) ?>" 
                                                            class="btn btn-outline-danger btn-sm" 
                                                            onclick="return confirm('Are you sure you want to delete this user?\n\nUser: <?= esc($user['name']) ?>\nEmail: <?= esc($user['email']) ?>\n\nThis action cannot be undone!')"
                                                            title="Delete User">
@@ -293,7 +305,8 @@
                                                                 title="Cannot delete admin accounts">
                                                             🛡️
                                                         </button>
-                                                    <?php endif; ?>                                                </div>
+                                                    <?php endif; ?>                                                
+                                                </div>
                                             </td>
                                         </tr>
                                         <?php endforeach; ?>

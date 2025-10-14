@@ -22,7 +22,7 @@
                     </div>
                 </div>
             </div>
-        </div>        <!-- Course Statistics Cards -->
+        </div>        
         <div class="row mb-4">
             <div class="col-md-6 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">
@@ -182,7 +182,8 @@
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
-                            </div>                        <?php else: ?>
+                            </div>                        
+                            <?php else: ?>
                             <div class="text-center py-5 text-muted">
                                 <div class="mb-3">
                                     <i class="fas fa-chalkboard-teacher text-muted" style="font-size: 3rem;"></i>

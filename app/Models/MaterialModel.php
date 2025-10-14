@@ -109,4 +109,26 @@ class MaterialModel extends Model
             return [];
         }
     }
+
+    /**
+     * Get materials for courses that a student is enrolled in
+     * 
+     * @param int $user_id Student user ID
+     * @return array Array of materials with course information
+     */
+    public function getMaterialsForEnrolledCourses($user_id)
+    {
+        try {
+            return $this->select('materials.*, courses.title as course_title, courses.course_code')
+                        ->join('courses', 'courses.id = materials.course_id')
+                        ->join('enrollments', 'enrollments.course_id = materials.course_id')
+                        ->where('enrollments.user_id', $user_id)
+                        ->orderBy('courses.title', 'ASC')
+                        ->orderBy('materials.created_at', 'DESC')
+                        ->findAll();
+        } catch (\Exception $e) {
+            log_message('error', 'MaterialModel::getMaterialsForEnrolledCourses() - ' . $e->getMessage());
+            return [];
+        }
+    }
 }

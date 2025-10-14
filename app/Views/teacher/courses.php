@@ -149,24 +149,35 @@
                                                 <h6 class="fw-semibold text-secondary mb-2">📄 Description</h6>
                                                 <p class="small text-muted mb-0"><?= esc($course['description']) ?></p>
                                             </div>
-                                            <?php endif; ?>                                        </div>
-                                        <div class="card-footer bg-light border-0 d-flex justify-content-between align-items-center">
-                                            <small class="text-muted">
-                                                <i class="fas fa-calendar-alt me-1"></i>
-                                                Assigned: <?= date('M j, Y', strtotime($course['created_at'])) ?>
-                                            </small>
+                                            <?php endif; ?>                                        </div>                                        <div class="card-footer bg-light border-0">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-calendar-alt me-1"></i>
+                                                    Assigned: <?= date('M j, Y', strtotime($course['created_at'])) ?>
+                                                </small>
+                                            </div>
                                             
-                                            <!-- Unassign Button -->
-                                            <form method="post" action="<?= base_url('teacher/courses') ?>" class="d-inline">
-                                                <?= csrf_field() ?>
-                                                <input type="hidden" name="action" value="unassign_course">
-                                                <input type="hidden" name="course_id" value="<?= $course['id'] ?>">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm" 
-                                                        onclick="return confirm('Are you sure you want to unassign yourself from <?= esc($course['title']) ?> (<?= esc($course['course_code']) ?>)?\n\nThis will remove you as the instructor and make the course available for other teachers to request.')"
-                                                        title="Unassign from course">
-                                                    <i class="fas fa-times me-1"></i>Unassign
-                                                </button>
-                                            </form>
+                                            <!-- Action Buttons -->
+                                            <div class="d-flex gap-2">                                                
+                                                <!-- Upload Materials Button -->
+                                                <a href="<?= base_url('teacher/course/' . $course['id'] . '/upload') ?>" 
+                                                   class="btn btn-outline-success btn-sm flex-fill" 
+                                                   title="Upload Course Materials">
+                                                    <i class="fas fa-upload me-1"></i>Upload Materials
+                                                </a>
+                                                
+                                                <!-- Unassign Button -->
+                                                <form method="post" action="<?= base_url('teacher/courses') ?>" class="flex-fill">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="action" value="unassign_course">
+                                                    <input type="hidden" name="course_id" value="<?= $course['id'] ?>">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100" 
+                                                            onclick="return confirm('Are you sure you want to unassign yourself from <?= esc($course['title']) ?> (<?= esc($course['course_code']) ?>)?\n\nThis will remove you as the instructor and make the course available for other teachers to request.')"
+                                                            title="Unassign from course">
+                                                        <i class="fas fa-times me-1"></i>Unassign
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

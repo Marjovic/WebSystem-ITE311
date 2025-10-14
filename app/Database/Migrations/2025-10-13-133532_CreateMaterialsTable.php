@@ -6,9 +6,9 @@ use CodeIgniter\Database\Migration;
 
 class CreateMaterialsTable extends Migration
 {
-    public function up()
+    public function up(): void
     {
-        $this->forge->addField([
+        $this->forge->addField(fields: [
             'id' => [
                 'type'           => 'INT',
                 'constraint'     => 11,
@@ -36,21 +36,14 @@ class CreateMaterialsTable extends Migration
             ],
         ]);
 
-        // Set primary key
-        $this->forge->addKey('id', true);
-        
-        // Add index for course_id for better query performance
-        $this->forge->addKey('course_id');
-        
-        // Add foreign key constraint
-        $this->forge->addForeignKey('course_id', 'courses', 'id', 'CASCADE', 'CASCADE');
-        
-        // Create the table
-        $this->forge->createTable('materials');
+        $this->forge->addKey(key: 'id', primary: true);
+        $this->forge->addKey(key: 'course_id');
+        $this->forge->addForeignKey(fieldName: 'course_id', tableName: 'courses', tableField: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE');
+        $this->forge->createTable(table: 'materials');
     }
 
-    public function down()
+    public function down(): void
     {
-        $this->forge->dropTable('materials');
+        $this->forge->dropTable(tableName: 'materials');
     }
 }

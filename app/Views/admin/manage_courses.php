@@ -414,9 +414,16 @@
                                                 <small class="text-muted">
                                                     <?= date('M j, Y', strtotime($course['created_at'])) ?>
                                                 </small>
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="btn-group btn-group-sm" role="group">                                                    <!-- Edit Button -->
+                                            </td>                                            <td class="text-center">
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <!-- Upload Materials Button -->
+                                                    <a href="<?= base_url('admin/course/' . $course['id'] . '/upload') ?>" 
+                                                       class="btn btn-outline-success btn-sm me-1" 
+                                                       title="Upload Course Materials">
+                                                        📁
+                                                    </a>
+                                                    
+                                                    <!-- Edit Button -->
                                                     <a href="<?= base_url('admin/manage_courses?action=edit&id=' . $course['id']) ?>" 
                                                        class="btn btn-outline-warning btn-sm me-1" 
                                                        title="Edit Course">

@@ -147,9 +147,7 @@
                                                     </small>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <!-- Enrollment Information -->
+                                        </div>                                        <!-- Enrollment Information -->
                                         <div class="alert alert-success py-2 mb-3">
                                             <small class="mb-0">
                                                 <i class="fas fa-check-circle me-1"></i>
@@ -157,18 +155,149 @@
                                             </small>
                                         </div>
 
-                                        <!-- Course Actions -->
+                                        <!-- Course Materials Section -->
+                                        <?php if (!empty($course['materials'])): ?>
+                                        <div class="mb-3">
+                                            <h6 class="fw-semibold text-primary mb-2">
+                                                <i class="fas fa-download me-1"></i>Course Materials (<?= count($course['materials']) ?>)
+                                            </h6>
+                                            <div class="bg-light p-3 rounded-3">
+                                                <?php foreach ($course['materials'] as $material): ?>
+                                                <div class="d-flex justify-content-between align-items-center py-2 <?= !end($course['materials']) ? 'border-bottom' : '' ?>">
+                                                    <div class="flex-grow-1">
+                                                        <div class="fw-medium text-truncate" style="max-width: 200px;" title="<?= esc($material['file_name']) ?>">
+                                                            <i class="fas fa-file me-1 text-muted"></i>
+                                                            <?= esc($material['file_name']) ?>
+                                                        </div>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-calendar me-1"></i>
+                                                            <?= date('M j, Y', strtotime($material['created_at'])) ?>
+                                                        </small>
+                                                    </div>
+                                                    <a href="<?= base_url('material/download/' . $material['id']) ?>" 
+                                                       class="btn btn-outline-primary btn-sm" 
+                                                       title="Download <?= esc($material['file_name']) ?>">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                        <?php else: ?>
+                                        <div class="mb-3">
+                                            <h6 class="fw-semibold text-muted mb-2">
+                                                <i class="fas fa-download me-1"></i>Course Materials
+                                            </h6>
+                                            <div class="bg-light p-3 rounded-3 text-center">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    No materials available yet
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <?php endif; ?>                                        <!-- Course Actions -->
                                         <div class="d-grid gap-2">
                                             <button class="btn btn-primary btn-sm">
                                                 <i class="fas fa-play me-1"></i>Continue Learning
                                             </button>
                                             <div class="btn-group" role="group">
-                                                <button class="btn btn-outline-info btn-sm">
-                                                    <i class="fas fa-book me-1"></i>Materials
+                                                <button class="btn btn-outline-info btn-sm materials-toggle" 
+                                                        data-bs-toggle="collapse" 
+                                                        data-bs-target="#materials-<?= $course['course_id'] ?>" 
+                                                        aria-expanded="false">
+                                                    <i class="fas fa-book me-1"></i>Materials 
+                                                    <span class="badge bg-info ms-1"><?= count($course['materials']) ?></span>
                                                 </button>
                                                 <button class="btn btn-outline-secondary btn-sm">
                                                     <i class="fas fa-tasks me-1"></i>Assignments
                                                 </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Expanded Materials Section -->
+                                        <div class="collapse mt-3" id="materials-<?= $course['course_id'] ?>">
+                                            <div class="card border-info">
+                                                <div class="card-header bg-info text-white">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-folder-open me-2"></i>Course Materials
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    <?php if (!empty($course['materials'])): ?>
+                                                        <div class="list-group list-group-flush">
+                                                            <?php foreach ($course['materials'] as $index => $material): ?>
+                                                            <div class="list-group-item">
+                                                                <div class="d-flex justify-content-between align-items-center">
+                                                                    <div class="flex-grow-1">
+                                                                        <div class="d-flex align-items-center">
+                                                                            <div class="me-3">
+                                                                                <?php
+                                                                                $extension = strtolower(pathinfo($material['file_name'], PATHINFO_EXTENSION));
+                                                                                $fileIcons = [
+                                                                                    'pdf' => ['icon' => '📄', 'color' => 'danger'],
+                                                                                    'doc' => ['icon' => '📝', 'color' => 'primary'],
+                                                                                    'docx' => ['icon' => '📝', 'color' => 'primary'],
+                                                                                    'xls' => ['icon' => '📊', 'color' => 'success'],
+                                                                                    'xlsx' => ['icon' => '📊', 'color' => 'success'],
+                                                                                    'ppt' => ['icon' => '📋', 'color' => 'warning'],
+                                                                                    'pptx' => ['icon' => '📋', 'color' => 'warning'],
+                                                                                    'txt' => ['icon' => '📄', 'color' => 'secondary'],
+                                                                                    'jpg' => ['icon' => '🖼️', 'color' => 'info'],
+                                                                                    'jpeg' => ['icon' => '🖼️', 'color' => 'info'],
+                                                                                    'png' => ['icon' => '🖼️', 'color' => 'info'],
+                                                                                    'mp4' => ['icon' => '🎥', 'color' => 'dark'],
+                                                                                    'mp3' => ['icon' => '🎵', 'color' => 'purple']
+                                                                                ];
+                                                                                $icon = $fileIcons[$extension] ?? ['icon' => '📎', 'color' => 'secondary'];
+                                                                                ?>
+                                                                                <span class="badge bg-<?= $icon['color'] ?> rounded-circle p-2">
+                                                                                    <?= $icon['icon'] ?>
+                                                                                </span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div class="fw-medium"><?= esc($material['file_name']) ?></div>
+                                                                                <small class="text-muted">
+                                                                                    <i class="fas fa-calendar me-1"></i>
+                                                                                    Uploaded: <?= date('M j, Y g:i A', strtotime($material['created_at'])) ?>
+                                                                                </small>
+                                                                                <div>
+                                                                                    <span class="badge bg-light text-dark">
+                                                                                        <?= strtoupper($extension) ?>
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="btn-group btn-group-sm">
+                                                                        <a href="<?= base_url('material/download/' . $material['id']) ?>" 
+                                                                           class="btn btn-success btn-sm" 
+                                                                           title="Download <?= esc($material['file_name']) ?>">
+                                                                            <i class="fas fa-download"></i> Download
+                                                                        </a>
+                                                                        <button class="btn btn-outline-info btn-sm" 
+                                                                                onclick="previewFile('<?= esc($material['file_name']) ?>', '<?= $extension ?>')"
+                                                                                title="Preview file details">
+                                                                            <i class="fas fa-eye"></i> Preview
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                        <div class="card-footer bg-light text-center">
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-info-circle me-1"></i>
+                                                                Total: <?= count($course['materials']) ?> files available for download
+                                                            </small>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <div class="p-4 text-center">
+                                                            <i class="fas fa-folder-open text-muted mb-3" style="font-size: 2rem;"></i>
+                                                            <p class="text-muted mb-0">No materials have been uploaded for this course yet.</p>
+                                                            <small class="text-muted">Check back later or contact your instructor.</small>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -468,6 +597,61 @@
     padding: 0.375rem 0.75rem;
     border-radius: 6px;
 }
+
+/* Materials Toggle Button */
+.materials-toggle {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.materials-toggle:hover {
+    transform: translateY(-1px);
+}
+
+.materials-toggle .badge {
+    font-size: 0.7em;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Materials Collapse Animation */
+.collapse {
+    transition: all 0.35s ease;
+}
+
+/* File List Styling */
+.list-group-item {
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+    border-left-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* File Icons */
+.badge.rounded-circle {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+/* Purple color for audio files */
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+/* Download Button Animation */
+.btn-group .btn {
+    transition: all 0.2s ease;
+}
+
+.btn-group .btn:hover {
+    transform: scale(1.05);
+}
 </style>
 
 <!-- Student Courses AJAX Enrollment Script -->
@@ -478,6 +662,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const enrollmentModal = new bootstrap.Modal(document.getElementById('enrollmentModal'));
     const modalBody = document.getElementById('enrollmentModalBody');
     const modalTitle = document.getElementById('enrollmentModalLabel');
+
+    // Materials toggle functionality
+    const materialsButtons = document.querySelectorAll('.materials-toggle');
+    materialsButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            
+            // Toggle icon
+            if (isExpanded) {
+                icon.className = 'fas fa-book me-1';
+            } else {
+                icon.className = 'fas fa-book-open me-1';
+            }
+        });
+    });
 
     enrollButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -582,5 +782,97 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// File preview function
+function previewFile(fileName, extension) {
+    const modal = new bootstrap.Modal(document.createElement('div'));
+    const modalElement = document.createElement('div');
+    modalElement.className = 'modal fade';
+    modalElement.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-file me-2"></i>File Preview: ${fileName}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <div class="mb-3">
+                            ${getFileIcon(extension, '4rem')}
+                        </div>
+                        <h6>${fileName}</h6>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <strong>File Type</strong><br>
+                                        <span class="badge bg-primary">${extension.toUpperCase()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <strong>Category</strong><br>
+                                        <span class="text-muted">${getFileCategory(extension)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Click download to access this file on your device
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modalElement);
+    const bsModal = new bootstrap.Modal(modalElement);
+    bsModal.show();
+    
+    // Clean up modal after hiding
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modalElement);
+    });
+}
+
+function getFileIcon(extension, size = '1rem') {
+    const icons = {
+        'pdf': '📄',
+        'doc': '📝', 'docx': '📝',
+        'xls': '📊', 'xlsx': '📊',
+        'ppt': '📋', 'pptx': '📋',
+        'txt': '📄',
+        'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️',
+        'mp4': '🎥', 'avi': '🎥', 'mov': '🎥',
+        'mp3': '🎵', 'wav': '🎵'
+    };
+    
+    return `<span style="font-size: ${size}">${icons[extension] || '📎'}</span>`;
+}
+
+function getFileCategory(extension) {
+    const categories = {
+        'pdf': 'Document',
+        'doc': 'Document', 'docx': 'Document', 'txt': 'Document', 'rtf': 'Document',
+        'xls': 'Spreadsheet', 'xlsx': 'Spreadsheet',
+        'ppt': 'Presentation', 'pptx': 'Presentation',
+        'jpg': 'Image', 'jpeg': 'Image', 'png': 'Image', 'gif': 'Image',
+        'mp4': 'Video', 'avi': 'Video', 'mov': 'Video',
+        'mp3': 'Audio', 'wav': 'Audio'
+    };
+    
+    return categories[extension] || 'File';
+}
 </script>
 

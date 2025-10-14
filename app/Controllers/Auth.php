@@ -1247,12 +1247,19 @@ class Auth extends BaseController
         }
 
         $studentID = $this->session->get('userID');
-        
-        // Initialize enrollment model to fetch student enrollment data
+          // Initialize enrollment model to fetch student enrollment data
         $enrollmentModel = new \App\Models\EnrollmentModel();
+        
+        // Initialize material model to fetch course materials
+        $materialModel = new \App\Models\MaterialModel();
         
         // Get enrolled courses for this student with detailed information
         $enrolledCourses = $enrollmentModel->getUserEnrollments($studentID);
+        
+        // Get materials for each enrolled course
+        foreach ($enrolledCourses as &$course) {
+            $course['materials'] = $materialModel->getMaterialsByCourse($course['course_id']);
+        }
         
         // Get available courses that student can still enroll in
         $coursesBuilder = $this->db->table('courses');

@@ -190,12 +190,28 @@
                                     <div class="d-flex align-items-center p-3 bg-primary bg-opacity-10 rounded-3">
                                         <div class="me-3">
                                             <span class="badge bg-primary rounded-circle p-2">📚</span>
-                                        </div>
-                                        <div>
+                                        </div>                                        <div>
                                             <div class="fw-bold text-primary"><?= $totalCourses ?? '0' ?></div>
                                             <small class="text-muted">Total Courses</small>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Actions for Admin -->
+                            <div class="mt-4">
+                                <h6 class="fw-semibold mb-3">🚀 Quick Actions</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="<?= base_url('admin/manage_courses') ?>" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-book me-1"></i>Manage Courses
+                                    </a>
+                                    <a href="<?= base_url('admin/manage_users') ?>" class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-users me-1"></i>Manage Users
+                                    </a>
+                                    <a href="<?= base_url('admin/manage_courses') ?>" class="btn btn-outline-success btn-sm" 
+                                       title="Go to Manage Courses to upload materials for any course">
+                                        <i class="fas fa-upload me-1"></i>Upload Materials
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -370,16 +386,15 @@
                               <!-- Quick Actions -->
                             <div class="mt-4">
                                 <h6 class="fw-semibold mb-3">🚀 Quick Actions</h6>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <a href="<?= base_url('teacher/courses') ?>" class="btn btn-outline-primary btn-sm">
+                                <div class="d-flex flex-wrap gap-2">                                    <a href="<?= base_url('teacher/courses') ?>" class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-book me-1"></i>View My Courses
                                     </a>
                                     <button class="btn btn-outline-info btn-sm" disabled>
                                         <i class="fas fa-chart-bar me-1"></i>Course Analytics
                                     </button>
-                                    <button class="btn btn-outline-secondary btn-sm" disabled>
+                                    <a href="<?= base_url('teacher/courses') ?>" class="btn btn-outline-success btn-sm">
                                         <i class="fas fa-upload me-1"></i>Upload Materials
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>

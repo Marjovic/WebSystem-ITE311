@@ -22,55 +22,76 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Course Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-6 mb-3">
-                <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
-                    <div class="display-4 mb-2">📖</div>
+        </div>        <!-- Course Statistics Cards -->
+        <div class="row mb-4 g-4">
+            <!-- Enrolled Courses -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">
+                    <div class="display-4 mb-3">📚</div>
                     <div class="display-5 fw-bold"><?= $totalEnrolled ?></div>
                     <div class="fw-semibold">Enrolled Courses</div>
-                    <small class="opacity-75">Currently learning</small>
+                    <small class="opacity-75">Courses to Learn</small>
                 </div>
             </div>
-            <div class="col-md-6 mb-3">
+            
+            <!-- Materials Count -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
+                    <div class="display-4 mb-3">📁</div>
+                    <div class="display-5 fw-bold">
+                        <?php 
+                        $totalMaterials = 0;
+                        if (!empty($enrolledCourses)) {
+                            foreach ($enrolledCourses as $course) {
+                                if (!empty($course['materials'])) {
+                                    $totalMaterials += count($course['materials']);
+                                }
+                            }
+                        }
+                        echo $totalMaterials;
+                        ?>
+                    </div>
+                    <div class="fw-semibold">Materials</div>
+                    <small class="opacity-75">Available resources</small>
+                </div>
+            </div>
+            
+            <!-- Pending Assignments -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-0 shadow-sm text-white bg-warning text-center p-4 rounded-3 h-100">
+                    <div class="display-4 mb-3">⏰</div>
+                    <div class="display-5 fw-bold">0</div>
+                    <div class="fw-semibold">Pending</div>
+                    <small class="opacity-75">Awaiting completion</small>
+                </div>
+            </div>
+            
+            <!-- Average Grade -->
+            <div class="col-lg-3 col-md-6">
                 <div class="card border-0 shadow-sm text-white bg-info text-center p-4 rounded-3 h-100">
-                    <div class="display-4 mb-2">🎯</div>
-                    <div class="display-5 fw-bold"><?= $totalAvailable ?></div>
-                    <div class="fw-semibold">Available Courses</div>
-                    <small class="opacity-75">Ready to enroll</small>
+                    <div class="display-4 mb-3">📊</div>
+                    <div class="display-5 fw-bold">0%</div>
+                    <div class="fw-semibold">Average Grade</div>
+                    <small class="opacity-75">Overall performance</small>
                 </div>
             </div>
-        </div>
-
-        <!-- Navigation Tabs -->
+        </div><!-- Tab Header -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-body p-0">
-                        <nav>
-                            <div class="nav nav-tabs nav-fill" id="nav-tab" role="tablist">
-                                <button class="nav-link active px-4 py-3 fw-bold" id="enrolled-tab" data-bs-toggle="tab" data-bs-target="#enrolled-courses" type="button" role="tab">
-                                    <i class="fas fa-book-reader me-2"></i>My Enrolled Courses (<?= $totalEnrolled ?>)
-                                </button>
-                                <button class="nav-link px-4 py-3 fw-bold" id="available-tab" data-bs-toggle="tab" data-bs-target="#available-courses" type="button" role="tab">
-                                    <i class="fas fa-plus-circle me-2"></i>Available Courses (<?= $totalAvailable ?>)
-                                </button>
-                            </div>
-                        </nav>
+                    <div class="card-body p-4">
+                        <h3 class="mb-0 fw-bold">
+                            <i class="fas fa-book-reader me-2 text-primary"></i>My Enrolled Courses
+                        </h3>
+                        <p class="text-muted mb-0">View and manage your current course enrollments</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Tab Content -->
-        <div class="tab-content" id="nav-tabContent">
-            <!-- Enrolled Courses Tab -->
-            <div class="tab-pane fade show active" id="enrolled-courses" role="tabpanel">
-                <?php if (!empty($enrolledCourses)): ?>
-                    <div class="row">
-                        <?php foreach ($enrolledCourses as $course): ?>
+        </div>        <!-- Course Content -->
+        <div class="row">
+            <!-- Enrolled Courses Section -->
+            <?php if (!empty($enrolledCourses)): ?>
+                <?php foreach ($enrolledCourses as $course): ?>
                             <div class="col-lg-6 col-xl-4 mb-4">
                                 <div class="card h-100 border-0 shadow-sm rounded-3 course-card enrolled-course">
                                     <div class="card-body p-4">
@@ -302,148 +323,33 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>                        <?php endforeach; ?>
+            <?php else: ?>
+                <!-- No Enrolled Courses -->
+                <div class="text-center py-5">
+                    <div class="card border-0 shadow-sm rounded-3">
+                        <div class="card-body p-5">
+                            <div class="mb-4">
+                                <i class="fas fa-book-open text-muted" style="font-size: 4rem;"></i>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <!-- No Enrolled Courses -->
-                    <div class="text-center py-5">
-                        <div class="card border-0 shadow-sm rounded-3">
-                            <div class="card-body p-5">
-                                <div class="mb-4">
-                                    <i class="fas fa-book-open text-muted" style="font-size: 4rem;"></i>
-                                </div>
-                                <h4 class="text-muted mb-3">No Enrolled Courses Yet</h4>
-                                <p class="text-muted mb-4">
-                                    You haven't enrolled in any courses yet. Browse our available courses and start your learning journey today!
-                                </p>
-                                <button class="btn btn-primary" onclick="document.getElementById('available-tab').click()">
-                                    <i class="fas fa-search me-1"></i>Browse Available Courses
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- Available Courses Tab -->
-            <div class="tab-pane fade" id="available-courses" role="tabpanel">
-                <?php if (!empty($availableCourses)): ?>
-                    <div class="row">
-                        <?php foreach ($availableCourses as $course): ?>
-                            <div class="col-lg-6 col-xl-4 mb-4">
-                                <div class="card h-100 border-0 shadow-sm rounded-3 course-card available-course">
-                                    <div class="card-body p-4">
-                                        <!-- Course Header -->
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <div class="flex-grow-1">
-                                                <h5 class="card-title fw-bold mb-2 text-truncate"><?= esc($course['title']) ?></h5>
-                                                <p class="text-muted small mb-2">
-                                                    <i class="fas fa-code me-1"></i><?= esc($course['course_code']) ?>
-                                                </p>
-                                            </div>
-                                            <span class="badge bg-primary">Available</span>
-                                        </div>
-
-                                        <!-- Course Description -->
-                                        <p class="card-text text-muted mb-3" style="font-size: 0.9rem; line-height: 1.4;">
-                                            <?= strlen($course['description']) > 100 ? esc(substr($course['description'], 0, 100)) . '...' : esc($course['description']) ?>
-                                        </p>                        <!-- Course Details -->
-                        <div class="row g-2 mb-3">
-                            <div class="col-4">
-                                <div class="bg-light p-2 rounded-2 text-center">
-                                    <div class="fw-bold text-primary"><?= esc($course['credits']) ?></div>
-                                    <small class="text-muted">Credits</small>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="bg-light p-2 rounded-2 text-center">
-                                    <div class="fw-bold text-info"><?= esc($course['duration_weeks']) ?>w</div>
-                                    <small class="text-muted">Duration</small>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="bg-light p-2 rounded-2 text-center">
-                                    <div class="fw-bold text-success"><?= esc($course['category']) ?></div>
-                                    <small class="text-muted">Category</small>
-                                </div>
-                            </div>
-                        </div>                        <!-- Instructor Information -->
-                        <div class="mb-3">
-                            <small class="text-muted d-block">Instructor</small>
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                    <?= strtoupper(substr(esc($course['instructor_name']), 0, 2)) ?>
-                                </div>
-                                <div>
-                                    <div class="fw-medium"><?= esc($course['instructor_name']) ?></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Course Dates -->
-                        <div class="mb-3">
-                            <div class="row g-2">
-                                <div class="col-12">
-                                    <small class="text-muted">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        <strong>Starts:</strong> <?= $course['start_date_formatted'] ?>
-                                    </small>
-                                </div>
-                                <div class="col-12">
-                                    <small class="text-muted">
-                                        <i class="fas fa-calendar-check me-1"></i>
-                                        <strong>Ends:</strong> <?= $course['end_date_formatted'] ?>
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Enrollment Action -->
-                        <div class="d-grid">
-                            <button class="btn btn-success enroll-btn" 
-                                    data-course-id="<?= $course['id'] ?>" 
-                                    data-course-title="<?= esc($course['title']) ?>">
-                                <i class="fas fa-plus me-1"></i>Enroll Now
-                            </button>
+                            <h4 class="text-muted mb-3">No Enrolled Courses Yet</h4>
+                            <p class="text-muted mb-4">
+                                You haven't enrolled in any courses yet. Contact your administrator to get enrolled in available courses.
+                            </p>
                         </div>
                     </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
-                    </div>
+            <?php endif; ?>        </div>
 
-                <?php else: ?>
-                    <!-- No Available Courses -->
-                    <div class="text-center py-5">
-                        <div class="card border-0 shadow-sm rounded-3">
-                            <div class="card-body p-5">
-                                <div class="mb-4">
-                                    <i class="fas fa-graduation-cap text-muted" style="font-size: 4rem;"></i>
-                                </div>
-                                <h4 class="text-muted mb-3">No Available Courses</h4>
-                                <p class="text-muted mb-4">
-                                    Great job! You're enrolled in all available courses. Check back later for new courses or contact your administrator.
-                                </p>
-                                <button class="btn btn-outline-primary" onclick="document.getElementById('enrolled-tab').click()">
-                                    <i class="fas fa-eye me-1"></i>View My Enrolled Courses
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Enrollment Success/Error Modal -->
-        <div class="modal fade" id="enrollmentModal" tabindex="-1" aria-labelledby="enrollmentModalLabel" aria-hidden="true">
+        <!-- Success/Error Modal (for future functionality) -->
+        <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="enrollmentModalLabel">Course Enrollment</h5>
+                        <h5 class="modal-title" id="messageModalLabel">Message</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body" id="enrollmentModalBody">
+                    <div class="modal-body" id="messageModalBody">
                         <!-- Content will be filled by JavaScript -->
                     </div>
                     <div class="modal-footer">
@@ -473,14 +379,6 @@
     border-left: 4px solid #198754;
 }
 
-.available-course {
-    border-left: 4px solid #0d6efd;
-}
-
-.available-course:hover {
-    border-left-color: #0b5ed7;
-}
-
 /* Progress Bar Styling */
 .progress {
     border-radius: 10px;
@@ -489,34 +387,6 @@
 
 .progress-bar {
     border-radius: 10px;
-}
-
-/* Navigation Tabs */
-.nav-tabs {
-    border-bottom: none;
-}
-
-.nav-tabs .nav-link {
-    border: none;
-    border-bottom: 3px solid transparent;
-    background: none;
-    color: #6c757d;
-    border-radius: 0;
-    padding: 1rem 1.5rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.nav-tabs .nav-link.active {
-    background: none;
-    border-bottom-color: #0d6efd;
-    color: #0d6efd;
-}
-
-.nav-tabs .nav-link:hover {
-    border-bottom-color: #0d6efd;
-    color: #0d6efd;
-    background: rgba(13, 110, 253, 0.05);
 }
 
 /* Button Groups */
@@ -542,11 +412,6 @@
 }
 
 /* Button Hover Effects */
-.enroll-btn:hover {
-    transform: scale(1.02);
-    transition: transform 0.2s ease;
-}
-
 .btn:hover {
     transition: all 0.2s ease;
 }
@@ -560,11 +425,6 @@
 @media (max-width: 768px) {
     .course-card {
         margin-bottom: 1rem;
-    }
-    
-    .nav-tabs .nav-link {
-        padding: 0.75rem 1rem;
-        font-size: 0.9rem;
     }
     
     .display-4 {
@@ -654,15 +514,9 @@
 }
 </style>
 
-<!-- Student Courses AJAX Enrollment Script -->
+<!-- Student Courses Script -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Get all enrollment buttons
-    const enrollButtons = document.querySelectorAll('.enroll-btn');
-    const enrollmentModal = new bootstrap.Modal(document.getElementById('enrollmentModal'));
-    const modalBody = document.getElementById('enrollmentModalBody');
-    const modalTitle = document.getElementById('enrollmentModalLabel');
-
     // Materials toggle functionality
     const materialsButtons = document.querySelectorAll('.materials-toggle');
     materialsButtons.forEach(button => {
@@ -676,109 +530,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 icon.className = 'fas fa-book-open me-1';
             }
-        });
-    });
-
-    enrollButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const courseId = this.dataset.courseId;
-            const courseTitle = this.dataset.courseTitle;
-            const originalButton = this;
-
-            // Disable button and show loading state
-            originalButton.disabled = true;
-            originalButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Enrolling...';
-
-            // Get CSRF tokens from meta tags
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const csrfHash = document.querySelector('meta[name="csrf-hash"]').getAttribute('content');
-
-            // Make AJAX request to enroll
-            fetch('<?= base_url("course/enroll") ?>', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({
-                    course_id: courseId,
-                    csrf_test_name: csrfHash
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Success: Show success modal
-                    modalTitle.textContent = 'Enrollment Successful!';
-                    modalBody.innerHTML = `
-                        <div class="text-center">
-                            <div class="mb-3">
-                                <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
-                            </div>
-                            <h5 class="text-success">Welcome to ${courseTitle}!</h5>
-                            <p class="text-muted">You have been successfully enrolled in this course. The page will refresh to show your updated course list.</p>
-                            <div class="alert alert-info">
-                                <strong>Enrollment Date:</strong> ${data.data.enrollment_date_formatted}
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Show success modal
-                    enrollmentModal.show();
-                    
-                    // Refresh page after modal is hidden to show updated course lists
-                    document.getElementById('enrollmentModal').addEventListener('hidden.bs.modal', function() {
-                        window.location.reload();
-                    });
-                    
-                } else {
-                    // Error: Show error modal
-                    modalTitle.textContent = 'Enrollment Failed';
-                    let errorMessage = data.message || 'An unexpected error occurred.';
-                    
-                    modalBody.innerHTML = `
-                        <div class="text-center">
-                            <div class="mb-3">
-                                <i class="fas fa-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
-                            </div>
-                            <h5 class="text-danger">Enrollment Failed</h5>
-                            <p class="text-muted">${errorMessage}</p>
-                        </div>
-                    `;
-                    
-                    // Reset button state
-                    originalButton.disabled = false;
-                    originalButton.innerHTML = '<i class="fas fa-plus me-1"></i>Enroll Now';
-                    
-                    enrollmentModal.show();
-                }
-                
-                // Update CSRF hash for future requests
-                if (data.csrf_hash) {
-                    document.querySelector('meta[name="csrf-hash"]').setAttribute('content', data.csrf_hash);
-                }
-            })
-            .catch(error => {
-                console.error('Enrollment error:', error);
-                
-                // Error: Show generic error modal
-                modalTitle.textContent = 'Enrollment Failed';
-                modalBody.innerHTML = `
-                    <div class="text-center">
-                        <div class="mb-3">
-                            <i class="fas fa-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
-                        </div>
-                        <h5 class="text-danger">Connection Error</h5>
-                        <p class="text-muted">Unable to process enrollment. Please check your connection and try again.</p>
-                    </div>
-                `;
-                
-                // Reset button state
-                originalButton.disabled = false;
-                originalButton.innerHTML = '<i class="fas fa-plus me-1"></i>Enroll Now';
-                
-                enrollmentModal.show();
-            });
         });
     });
 });

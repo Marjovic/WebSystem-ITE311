@@ -50,7 +50,7 @@
                                 <input type="text" class="form-control" id="name" name="name" 
                                        value="<?= old('name') ?>" required pattern="[A-Za-zñÑ\s]+" 
                                        title="Name can only contain letters and spaces">
-                                <div class="form-text">Enter your full name (letters including ñ/Ñ and spaces only, 3-100 characters)</div>
+                                <div class="form-text">Enter your full name</div>
                             </div>
 
                             <div class="mb-3">

@@ -44,9 +44,17 @@ $routes->post('/admin/course/(:num)/upload', 'Material::upload/$1');
 $routes->get('/teacher/course/(:num)/upload', 'Material::upload/$1');
 $routes->post('/teacher/course/(:num)/upload', 'Material::upload/$1');
 
-// Legacy material upload route (for backward compatibility)
+// Teacher student management routes  
+$routes->post('/teacher/course/remove_student', 'Course::removeStudent');
+$routes->post('/teacher/course/add_student', 'Course::addStudent');
+$routes->get('/teacher/course/get_available_students', 'Course::getAvailableStudents');
+
+// Legacy material upload route 
 $routes->get('/material/upload/(:num)', 'Material::upload/$1');
 $routes->post('/material/upload/(:num)', 'Material::upload/$1');
-
 $routes->get(from: '/material/delete/(:num)', to: 'Material::delete/$1');
 $routes->get(from: '/material/download/(:num)', to: 'Material::download/$1');
+
+// Material download routes (with enrollment check)
+$routes->get('/material/download/(:num)', 'Material::download/$1');
+$routes->get('/material/view/(:num)', 'Material::view/$1');

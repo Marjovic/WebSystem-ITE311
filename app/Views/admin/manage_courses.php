@@ -105,19 +105,22 @@
                                                title="Course code must start with letters followed by numbers (e.g., CS101, CS-101)">
                                         <div class="form-text">Letters followed by numbers, with optional hyphen (e.g., CS101, CS-101, MATH201)</div>
                                     </div>
-                                </div>                                
-                                <div class="col-md-6">
+                                </div>                                <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="instructor_id" class="form-label fw-semibold">Instructor <span class="text-muted">(Optional)</span></label>
-                                        <select class="form-select" id="instructor_id" name="instructor_id">
-                                            <option value="">No instructor assigned</option>
+                                        <label for="instructor_ids" class="form-label fw-semibold">Instructors <span class="text-muted">(Optional)</span></label>
+                                        <select class="form-select" id="instructor_ids" name="instructor_ids[]" multiple>
+                                            <?php 
+                                            $selectedInstructors = old('instructor_ids') ? (array)old('instructor_ids') : [];
+                                            ?>
                                             <?php foreach ($teachers as $teacher): ?>
-                                                <option value="<?= $teacher['id'] ?>" <?= old('instructor_id') == $teacher['id'] ? 'selected' : '' ?>>
+                                                <option value="<?= $teacher['id'] ?>" <?= in_array($teacher['id'], $selectedInstructors) ? 'selected' : '' ?>>
                                                     <?= esc($teacher['name']) ?> (<?= esc($teacher['email']) ?>)
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <div class="form-text">Choose the course instructor (optional - can be assigned later)</div>
+                                        <div class="form-text">
+                                            Hold Ctrl/Cmd to select multiple instructors. Course can have multiple instructors assigned.
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -239,17 +242,23 @@
                                         <div class="form-text">Letters followed by numbers, with optional hyphen (e.g., CS101, CS-101)</div>
                                     </div>
                                 </div>                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="edit_instructor_id" class="form-label fw-semibold">Instructor <span class="text-muted">(Optional)</span></label>
-                                        <select class="form-select" id="edit_instructor_id" name="instructor_id">
-                                            <option value="">No instructor assigned</option>
+                                    <div class="mb-3">                                        <label for="edit_instructor_ids" class="form-label fw-semibold">Instructors <span class="text-muted">(Optional)</span></label>
+                                        <select class="form-select" id="edit_instructor_ids" name="instructor_ids[]" multiple>
+                                            <?php 
+                                            // Get the current instructor IDs from the JSON array
+                                            $currentInstructorIds = json_decode($editCourse['instructor_ids'] ?? '[]', true);
+                                            if (!is_array($currentInstructorIds)) {
+                                                $currentInstructorIds = [];
+                                            }
+                                            $selectedInstructors = old('instructor_ids') ? (array)old('instructor_ids') : $currentInstructorIds;
+                                            ?>
                                             <?php foreach ($teachers as $teacher): ?>
-                                                <option value="<?= $teacher['id'] ?>" <?= old('instructor_id', $editCourse['instructor_id']) == $teacher['id'] ? 'selected' : '' ?>>
+                                                <option value="<?= $teacher['id'] ?>" <?= in_array($teacher['id'], $selectedInstructors) ? 'selected' : '' ?>>
                                                     <?= esc($teacher['name']) ?> (<?= esc($teacher['email']) ?>)
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <div class="form-text">Choose the course instructor (optional - can be assigned later)</div>
+                                        <div class="form-text">Hold Ctrl/Cmd to select multiple instructors. Course can have multiple instructors assigned.</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -383,9 +392,29 @@
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td class="text-muted">
-                                                <?= esc($course['instructor_name'] ?: 'Not Assigned') ?>
+                                            </td>                                            <td class="text-muted">
+                                                <?php if (!empty($course['instructor_name']) && $course['instructor_name'] !== 'No instructor assigned'): ?>
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        <?php 
+                                                        $instructors = explode(', ', $course['instructor_name']);
+                                                        foreach ($instructors as $instructor): 
+                                                        ?>
+                                                            <span class="badge bg-primary rounded-pill">
+                                                                👨‍🏫 <?= esc(trim($instructor)) ?>
+                                                            </span>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="d-flex align-items-center text-muted">
+                                                        <i class="fas fa-user-slash me-1"></i>
+                                                        <span>Not Assigned</span>
+                                                        <a href="<?= base_url('admin/manage_courses?action=edit&id=' . $course['id']) ?>" 
+                                                           class="btn btn-outline-primary btn-sm ms-2" 
+                                                           title="Assign Instructors">
+                                                            <i class="fas fa-plus me-1"></i>Assign
+                                                        </a>
+                                                    </div>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="text-center">
                                                 <?php
@@ -680,6 +709,134 @@ document.addEventListener('DOMContentLoaded', function() {
             existingError.remove();
         }
     }
+
+    // Enhance multiple select dropdowns for instructor assignment
+    const multiSelects = document.querySelectorAll('select[multiple]');
+    multiSelects.forEach(function(select) {
+        // Add styling and helper text
+        select.style.minHeight = '120px';
+        
+        // Add change event to show selected count
+        select.addEventListener('change', function() {
+            const selectedCount = this.selectedOptions.length;
+            const helpText = this.parentNode.querySelector('.form-text');
+            if (helpText) {
+                if (selectedCount > 0) {
+                    helpText.innerHTML = `<i class="fas fa-check-circle text-success me-1"></i>${selectedCount} instructor(s) selected. Hold Ctrl/Cmd to select multiple instructors.`;
+                    helpText.className = 'form-text text-success';
+                } else {
+                    helpText.innerHTML = 'Hold Ctrl/Cmd to select multiple instructors. Course can have multiple instructors assigned.';
+                    helpText.className = 'form-text';
+                }
+            }
+        });
+        
+        // Trigger initial change event
+        select.dispatchEvent(new Event('change'));
+    });
 });
 </script>
+
+<!-- Custom CSS for Multi-Select Enhancement -->
+<style>
+/* Enhanced Multi-Select Styling */
+select[multiple] {
+    background-image: none !important;
+    padding: 8px 12px !important;
+    border-radius: 0.375rem;
+    min-height: 120px;
+}
+
+select[multiple] option {
+    padding: 6px 10px;
+    margin: 1px 0;
+    border-radius: 4px;
+    line-height: 1.4;
+}
+
+select[multiple] option:checked {
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    color: white !important;
+    font-weight: 500;
+}
+
+select[multiple] option:hover {
+    background: #f8f9fa !important;
+    color: #212529 !important;
+}
+
+/* Instructor Badge Styling */
+.badge.bg-primary {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+/* Enhanced Button Styling */
+.btn-outline-primary.btn-sm {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+    border-width: 1.5px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,123,255,0.25);
+}
+
+/* Form Enhancement */
+.validation-warning {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+}
+
+/* Table Enhancement */
+.table td {
+    vertical-align: middle;
+    padding: 0.75rem 0.5rem;
+}
+
+/* Badge Container */
+.d-flex.flex-wrap.gap-1 {
+    gap: 0.35rem !important;
+    align-items: center;
+}
+
+/* Multi-select focus state */
+select[multiple]:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Success state for form text */
+.form-text.text-success {
+    font-weight: 500;
+}
+
+/* Enhanced course card icon */
+.bg-primary.rounded-circle {
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.25);
+}
+
+/* Responsive enhancements */
+@media (max-width: 768px) {
+    .badge.bg-primary {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .d-flex.flex-wrap.gap-1 {
+        gap: 0.25rem !important;
+    }
+    
+    select[multiple] {
+        min-height: 100px;
+    }
+}
+</style>
 

@@ -26,12 +26,10 @@ class CreateCoursesTable extends Migration
             'course_code' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 20,
-            ],
-            'instructor_id' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'unsigned'   => true,
-                'null'       => true,
+            ],            
+            'instructor_ids' => [
+                'type' => 'JSON',
+                'null' => true,
             ],
             'category' => [
                 'type'       => 'VARCHAR',
@@ -74,12 +72,9 @@ class CreateCoursesTable extends Migration
                 'type'    => 'DATETIME',
                 'null'    => true,
             ],
-        ]);
-
+        ]);        
         $this->forge->addKey('id', true);
-        $this->forge->addKey('instructor_id');
         $this->forge->addKey('course_code');
-        $this->forge->addForeignKey('instructor_id', 'users', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('courses');
     }
 

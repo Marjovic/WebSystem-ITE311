@@ -324,38 +324,54 @@ class Auth extends BaseController
                     'recentUsers' => $recentUsers,
                     'recentActivities' => $recentActivities
                 ]);
-                return view('auth/dashboard', $dashboardData);
-                  case 'teacher':                // Teacher gets course and student data 
+                return view('auth/dashboard', $dashboardData);            case 'teacher':
+                // Teacher gets course and student data 
                 $teacherID = $this->session->get('userID');
                 
-                // Get courses assigned to this teacher
-                $teacherCourses = $this->db->table('courses')->where('instructor_id', $teacherID)->countAllResults();
-                $activeCourses = $this->db->table('courses')->where('instructor_id', $teacherID)->where('status', 'active')->countAllResults();
-                
-                // Get available courses (active courses without an instructor)
-                $availableCoursesCount = $this->db->table('courses')
-                    ->where('status', 'active')
-                    ->where('(instructor_id IS NULL OR instructor_id = 0)')
-                    ->countAllResults();
-                
-                // Get total students enrolled in teacher's courses
-                $totalStudentsQuery = $this->db->query("
-                    SELECT COUNT(DISTINCT e.user_id) as total_students
-                    FROM enrollments e 
-                    INNER JOIN courses c ON e.course_id = c.id 
-                    WHERE c.instructor_id = ?
-                ", [$teacherID]);
-                $totalStudents = $totalStudentsQuery->getRow()->total_students ?? 0;
-                
-                $dashboardData = array_merge($baseData, [
-                    'title' => 'Teacher Dashboard - MGOD LMS',
-                    'totalCourses' => $teacherCourses,
-                    'activeCourses' => $activeCourses,
-                    'availableCoursesCount' => $availableCoursesCount,
-                    'totalStudents' => $totalStudents
-                ]);
-                
-                return view('auth/dashboard', $dashboardData);
+                try {
+                    // Get courses assigned to this teacher using JSON_CONTAINS
+                    $teacherCourses = $this->db->table('courses')->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)->countAllResults();
+                    $activeCourses = $this->db->table('courses')->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)->where('status', 'active')->countAllResults();
+                    
+                    // Get available courses (active courses without instructors or teacher not assigned)
+                    $availableCoursesCount = $this->db->table('courses')
+                        ->where('status', 'active')
+                        ->where("(instructor_ids IS NULL OR instructor_ids = '[]' OR NOT JSON_CONTAINS(instructor_ids, '\"$teacherID\"'))", null, false)
+                        ->countAllResults();
+                    
+                    // Get total students enrolled in teacher's courses
+                    $totalStudentsQuery = $this->db->query("
+                        SELECT COUNT(DISTINCT e.user_id) as total_students
+                        FROM enrollments e 
+                        INNER JOIN courses c ON e.course_id = c.id 
+                        WHERE JSON_CONTAINS(c.instructor_ids, ?)
+                    ", ['\"' . $teacherID . '\"']);
+                    $totalStudents = $totalStudentsQuery->getRow()->total_students ?? 0;
+                    
+                    $dashboardData = array_merge($baseData, [
+                        'title' => 'Teacher Dashboard - MGOD LMS',
+                        'totalCourses' => $teacherCourses,
+                        'activeCourses' => $activeCourses,
+                        'availableCoursesCount' => $availableCoursesCount,
+                        'totalStudents' => $totalStudents
+                    ]);
+                    
+                    return view('auth/dashboard', $dashboardData);
+                    
+                } catch (\Exception $e) {
+                    // If there's a database error, show a simplified teacher dashboard
+                    log_message('error', 'Teacher dashboard error: ' . $e->getMessage());
+                    
+                    $dashboardData = array_merge($baseData, [
+                        'title' => 'Teacher Dashboard - MGOD LMS',
+                        'totalCourses' => 0,
+                        'activeCourses' => 0,
+                        'availableCoursesCount' => 0,
+                        'totalStudents' => 0
+                    ]);
+                    
+                    return view('auth/dashboard', $dashboardData);
+                }
                 
             case 'student':
                 // Student gets enrollment and course data 
@@ -367,16 +383,30 @@ class Auth extends BaseController
                 // Get enrolled courses for this student
                 $enrolledCourses = $enrollmentModel->getUserEnrollments($userID);
                 $enrolledCoursesCount = count($enrolledCourses);
-                
-                // Get available courses that student can enroll in
+                  // Get available courses that student can enroll in
                 $coursesBuilder = $this->db->table('courses');
                 $availableCourses = $coursesBuilder
-                    ->select('courses.*, users.name as instructor_name')
-                    ->join('users', 'courses.instructor_id = users.id', 'left')
+                    ->select('courses.*')
                     ->where('courses.status', 'active')
                     ->orderBy('courses.created_at', 'DESC')
                     ->get()
                     ->getResultArray();
+                
+                // Get instructor names for each course
+                foreach ($availableCourses as &$course) {
+                    $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+                    if (!empty($instructorIds)) {
+                        $instructorNames = $this->db->table('users')
+                            ->select('name')
+                            ->whereIn('id', $instructorIds)
+                            ->where('role', 'teacher')
+                            ->get()
+                            ->getResultArray();
+                        $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
+                    } else {
+                        $course['instructor_name'] = 'No instructor assigned';
+                    }
+                }
                 
                 // Filter out courses the student is already enrolled in
                 $enrolledCourseIds = array_column($enrolledCourses, 'course_id');
@@ -492,15 +522,29 @@ class Auth extends BaseController
                     return $this->handleDeleteCourse($courseID);
             }
         }
-        
-        // Show course management interface
+          // Show course management interface
         $coursesBuilder = $this->db->table('courses');
         $courses = $coursesBuilder
-            ->select('courses.*, users.name as instructor_name')
-            ->join('users', 'courses.instructor_id = users.id', 'left')
+            ->select('courses.*')
             ->orderBy('courses.created_at', 'DESC')
             ->get()
             ->getResultArray();
+
+        // Get instructor names for each course
+        foreach ($courses as &$course) {
+            $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+            if (!empty($instructorIds)) {
+                $instructorNames = $this->db->table('users')
+                    ->select('name')
+                    ->whereIn('id', $instructorIds)
+                    ->where('role', 'teacher')
+                    ->get()
+                    ->getResultArray();
+                $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
+            } else {
+                $course['instructor_name'] = 'No instructor assigned';
+            }
+        }
 
         // Get all teachers for dropdown
         $teachersBuilder = $this->db->table('users');
@@ -810,11 +854,12 @@ class Auth extends BaseController
     
     private function handleCreateCourse()
     {
-        if ($this->request->getMethod() === 'POST') {            // Validation rules for creating new course
+        if ($this->request->getMethod() === 'POST') {            
+            // Validation rules for creating new course            
             $rules = [
                 'title' => 'required|min_length[3]|max_length[200]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                 'course_code' => 'required|min_length[3]|max_length[20]|regex_match[/^[A-Z]+\-?[0-9]+$/]|is_unique[courses.course_code]',
-                'instructor_id' => 'permit_empty|integer|greater_than[0]',
+                'instructor_ids' => 'permit_empty', // JSON array field validation will be done separately
                 'category' => 'permit_empty|max_length[100]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                 'credits' => 'permit_empty|integer|greater_than[0]|less_than[10]',
                 'duration_weeks' => 'permit_empty|integer|greater_than[0]|less_than[100]',
@@ -874,13 +919,25 @@ class Auth extends BaseController
                 'description' => [
                     'regex_match' => 'Description can only contain letters, numbers, spaces, hyphens, and basic punctuation (periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points •).'
                 ]
-            ];
+            ];            if ($this->validate($rules, $messages)) {
+                // Handle instructor assignment - convert instructor array to JSON array
+                $instructorIds = $this->request->getPost('instructor_ids');
+                $finalInstructorIds = [];
+                
+                if ($instructorIds && is_array($instructorIds)) {
+                    // Filter and validate instructor IDs
+                    foreach ($instructorIds as $instructorId) {
+                        if (is_numeric($instructorId) && $instructorId > 0) {
+                            $finalInstructorIds[] = (int)$instructorId;
+                        }
+                    }
+                }
 
-            if ($this->validate($rules, $messages)) {                // Create new course
+                // Create new course
                 $courseData = [
                     'title' => $this->request->getPost('title'),
                     'course_code' => $this->request->getPost('course_code'),
-                    'instructor_id' => $this->request->getPost('instructor_id') ?: null,
+                    'instructor_ids' => json_encode($finalInstructorIds),
                     'category' => $this->request->getPost('category') ?: null,
                     'credits' => $this->request->getPost('credits') ?: 3,
                     'duration_weeks' => $this->request->getPost('duration_weeks') ?: 16,
@@ -927,16 +984,29 @@ class Auth extends BaseController
             } else {
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
             }
-        }
-
-        // Show manage courses view with create form
+        }        // Show manage courses view with create form
         $coursesBuilder = $this->db->table('courses');
         $courses = $coursesBuilder
-            ->select('courses.*, users.name as instructor_name')
-            ->join('users', 'courses.instructor_id = users.id', 'left')
+            ->select('courses.*')
             ->orderBy('courses.created_at', 'DESC')
             ->get()
             ->getResultArray();
+
+        // Get instructor names for each course
+        foreach ($courses as &$course) {
+            $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+            if (!empty($instructorIds)) {
+                $instructorNames = $this->db->table('users')
+                    ->select('name')
+                    ->whereIn('id', $instructorIds)
+                    ->where('role', 'teacher')
+                    ->get()
+                    ->getResultArray();
+                $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
+            } else {
+                $course['instructor_name'] = 'No instructor assigned';
+            }
+        }
 
         // Get all teachers for dropdown
         $teachersBuilder = $this->db->table('users');
@@ -972,12 +1042,11 @@ class Auth extends BaseController
         if (!$courseToEdit) {
             $this->session->setFlashdata('error', 'Course not found.');
             return redirect()->to(base_url('admin/manage_courses'));
-        }        if ($this->request->getMethod() === 'POST') {
-            // Validation rules for editing course
+        }        if ($this->request->getMethod() === 'POST') {            // Validation rules for editing course
             $rules = [
                 'title' => 'required|min_length[3]|max_length[200]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                 'course_code' => "required|min_length[3]|max_length[20]|regex_match[/^[A-Z]+\-?[0-9]+$/]|is_unique[courses.course_code,id,{$courseID}]",
-                'instructor_id' => 'permit_empty|integer|greater_than[0]',
+                'instructor_ids' => 'permit_empty', // JSON array field validation will be done separately
                 'category' => 'permit_empty|max_length[100]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                 'credits' => 'permit_empty|integer|greater_than[0]|less_than[10]',
                 'duration_weeks' => 'permit_empty|integer|greater_than[0]|less_than[100]',
@@ -1016,13 +1085,25 @@ class Auth extends BaseController
                 'description' => [
                     'regex_match' => 'Description can only contain letters, numbers, spaces, hyphens, and basic punctuation (periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points •).'
                 ]
-            ];
+            ];            if ($this->validate($rules, $messages)) {
+                // Handle instructor assignment - convert instructor array to JSON array
+                $instructorIds = $this->request->getPost('instructor_ids');
+                $finalInstructorIds = [];
+                
+                if ($instructorIds && is_array($instructorIds)) {
+                    // Filter and validate instructor IDs
+                    foreach ($instructorIds as $instructorId) {
+                        if (is_numeric($instructorId) && $instructorId > 0) {
+                            $finalInstructorIds[] = (int)$instructorId;
+                        }
+                    }
+                }
 
-            if ($this->validate($rules, $messages)) {                // Update course data
+                // Update course data
                 $updateData = [
                     'title' => $this->request->getPost('title'),
                     'course_code' => $this->request->getPost('course_code'),
-                    'instructor_id' => $this->request->getPost('instructor_id') ?: null,
+                    'instructor_ids' => json_encode($finalInstructorIds),
                     'category' => $this->request->getPost('category') ?: null,
                     'credits' => $this->request->getPost('credits') ?: 3,
                     'duration_weeks' => $this->request->getPost('duration_weeks') ?: 16,
@@ -1066,15 +1147,28 @@ class Auth extends BaseController
             } else {
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
             }
-        }
-
-        // Show edit form
+        }        // Show edit form
         $courses = $coursesBuilder
-            ->select('courses.*, users.name as instructor_name')
-            ->join('users', 'courses.instructor_id = users.id', 'left')
+            ->select('courses.*')
             ->orderBy('courses.created_at', 'DESC')
             ->get()
             ->getResultArray();
+
+        // Get instructor names for each course
+        foreach ($courses as &$course) {
+            $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+            if (!empty($instructorIds)) {
+                $instructorNames = $this->db->table('users')
+                    ->select('name')
+                    ->whereIn('id', $instructorIds)
+                    ->where('role', 'teacher')
+                    ->get()
+                    ->getResultArray();
+                $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
+            } else {
+                $course['instructor_name'] = 'No instructor assigned';
+            }
+        }
 
         // Get all teachers for dropdown
         $teachersBuilder = $this->db->table('users');
@@ -1164,9 +1258,11 @@ class Auth extends BaseController
         if ($this->session->get('role') !== 'teacher') {
             $this->session->setFlashdata('error', 'Access denied. Only teachers can access this page.');
             $userRole = $this->session->get('role');
-            return redirect()->to(base_url($userRole . '/dashboard'));
-        }        $teacherID = $this->session->get('userID');
-          // Handle course assignment request
+            return redirect()->to(base_url($userRole . '/dashboard'));        }
+
+        $teacherID = $this->session->get('userID');
+        
+        // Handle course assignment request
         if ($this->request->getMethod() === 'POST' && $this->request->getPost('action') === 'assign_course') {
             return $this->handleCourseAssignmentRequest($teacherID);
         }
@@ -1175,34 +1271,64 @@ class Auth extends BaseController
         if ($this->request->getMethod() === 'POST' && $this->request->getPost('action') === 'unassign_course') {
             return $this->handleCourseUnassignmentRequest($teacherID);
         }
-        
-        // Get courses assigned to this teacher
+
+        // Get courses assigned to this teacher using JSON_CONTAINS
         $assignedCoursesBuilder = $this->db->table('courses');
         $assignedCourses = $assignedCoursesBuilder
             ->select('courses.*, 
-                      COUNT(enrollments.id) as enrolled_students,
-                      GROUP_CONCAT(CONCAT(users.name, " (", users.email, ")") SEPARATOR ", ") as student_list')
+                      COUNT(enrollments.id) as enrolled_students')
             ->join('enrollments', 'courses.id = enrollments.course_id', 'left')
-            ->join('users', 'enrollments.user_id = users.id AND users.role = "student"', 'left')
-            ->where('courses.instructor_id', $teacherID)
+            ->where("JSON_CONTAINS(courses.instructor_ids, '\"$teacherID\"')", null, false)
             ->groupBy('courses.id')
-            ->orderBy('courses.created_at', 'DESC')
-            ->get()
+            ->orderBy('courses.created_at', 'DESC')            ->get()
             ->getResultArray();
 
-        // Get available courses (active courses without an instructor)
+        // Get detailed student information for each course
+        foreach ($assignedCourses as &$course) {
+            $studentsBuilder = $this->db->table('enrollments');
+            $course['students'] = $studentsBuilder
+                ->select('users.id as user_id, users.name, users.email, enrollments.enrollment_date')
+                ->join('users', 'enrollments.user_id = users.id')
+                ->where('enrollments.course_id', $course['id'])
+                ->where('users.role', 'student')
+                ->orderBy('users.name', 'ASC')
+                ->get()
+                ->getResultArray();
+                
+            // Get co-instructor information (other instructors assigned to this course)
+            $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+            if (is_array($instructorIds) && count($instructorIds) > 1) {
+                // Get other instructor names (exclude current teacher)
+                $otherInstructorIds = array_filter($instructorIds, function($id) use ($teacherID) {
+                    return $id != $teacherID;
+                });
+                
+                if (!empty($otherInstructorIds)) {
+                    $coInstructorsBuilder = $this->db->table('users');
+                    $course['co_instructors'] = $coInstructorsBuilder
+                        ->select('id, name, email')
+                        ->whereIn('id', $otherInstructorIds)
+                        ->where('role', 'teacher')
+                        ->orderBy('name', 'ASC')
+                        ->get()
+                        ->getResultArray();
+                } else {
+                    $course['co_instructors'] = [];
+                }
+            } else {
+                $course['co_instructors'] = [];
+            }
+        }        // Get available courses (active courses without instructors or with room for more instructors)
         $availableCoursesBuilder = $this->db->table('courses');
         $availableCourses = $availableCoursesBuilder
             ->select('courses.*, COUNT(enrollments.id) as enrolled_students')
             ->join('enrollments', 'courses.id = enrollments.course_id', 'left')
             ->where('courses.status', 'active')
-            ->where('(courses.instructor_id IS NULL OR courses.instructor_id = 0)')
+            ->where("(courses.instructor_ids IS NULL OR courses.instructor_ids = '[]' OR NOT JSON_CONTAINS(courses.instructor_ids, '\"$teacherID\"'))", null, false)
             ->groupBy('courses.id')
             ->orderBy('courses.created_at', 'DESC')
             ->get()
-            ->getResultArray();
-
-        // Format dates for available courses
+            ->getResultArray();// Format dates for available courses
         foreach ($availableCourses as &$course) {
             if (isset($course['start_date']) && $course['start_date']) {
                 $course['start_date_formatted'] = date('M j, Y', strtotime($course['start_date']));
@@ -1214,6 +1340,21 @@ class Auth extends BaseController
                 $course['end_date_formatted'] = date('M j, Y', strtotime($course['end_date']));
             } else {
                 $course['end_date_formatted'] = 'TBA';
+            }
+            
+            // Get existing instructor information for available courses
+            $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+            if (is_array($instructorIds) && !empty($instructorIds)) {
+                $existingInstructorsBuilder = $this->db->table('users');
+                $course['existing_instructors'] = $existingInstructorsBuilder
+                    ->select('id, name, email')
+                    ->whereIn('id', $instructorIds)
+                    ->where('role', 'teacher')
+                    ->orderBy('name', 'ASC')
+                    ->get()
+                    ->getResultArray();
+            } else {
+                $course['existing_instructors'] = [];
             }
         }
 
@@ -1260,16 +1401,30 @@ class Auth extends BaseController
         foreach ($enrolledCourses as &$course) {
             $course['materials'] = $materialModel->getMaterialsByCourse($course['course_id']);
         }
-        
-        // Get available courses that student can still enroll in
+          // Get available courses that student can still enroll in
         $coursesBuilder = $this->db->table('courses');
         $availableCourses = $coursesBuilder
-            ->select('courses.*, users.name as instructor_name')
-            ->join('users', 'courses.instructor_id = users.id', 'left')
+            ->select('courses.*')
             ->where('courses.status', 'active')
             ->orderBy('courses.created_at', 'DESC')
             ->get()
             ->getResultArray();
+        
+        // Get instructor names for each course
+        foreach ($availableCourses as &$course) {
+            $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+            if (!empty($instructorIds)) {
+                $instructorNames = $this->db->table('users')
+                    ->select('name')
+                    ->whereIn('id', $instructorIds)
+                    ->where('role', 'teacher')
+                    ->get()
+                    ->getResultArray();
+                $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
+            } else {
+                $course['instructor_name'] = 'No instructor assigned';
+            }
+        }
         
         // Filter out courses the student is already enrolled in
         $enrolledCourseIds = array_column($enrolledCourses, 'course_id');
@@ -1356,25 +1511,30 @@ class Auth extends BaseController
         if (!$courseID || !is_numeric($courseID)) {
             $this->session->setFlashdata('error', 'Invalid course ID.');
             return redirect()->to(base_url('teacher/courses'));
-        }
-        
-        // Validate that the course exists and is available for assignment
+        }        // Validate that the course exists and teacher is not already assigned
         $courseBuilder = $this->db->table('courses');
         $course = $courseBuilder
             ->where('id', $courseID)
             ->where('status', 'active')
-            ->where('(instructor_id IS NULL OR instructor_id = 0)')
+            ->where("(instructor_ids IS NULL OR instructor_ids = '[]' OR NOT JSON_CONTAINS(instructor_ids, '\"$teacherID\"'))", null, false)
             ->get()
             ->getRowArray();
             
         if (!$course) {
-            $this->session->setFlashdata('error', 'Course not found or not available for assignment.');
+            $this->session->setFlashdata('error', 'Course not found, not available, or you are already assigned to it.');
             return redirect()->to(base_url('teacher/courses'));
         }
         
+        // Get current instructor IDs and add this teacher
+        $currentInstructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+        if (!is_array($currentInstructorIds)) {
+            $currentInstructorIds = [];
+        }
+        $currentInstructorIds[] = $teacherID;
+        
         // Assign the teacher to the course
         $updateData = [
-            'instructor_id' => $teacherID,
+            'instructor_ids' => json_encode(array_unique($currentInstructorIds)),
             'updated_at' => date('Y-m-d H:i:s')
         ];
         
@@ -1421,18 +1581,16 @@ class Auth extends BaseController
         if (!$courseID || !is_numeric($courseID)) {
             $this->session->setFlashdata('error', 'Invalid course ID.');
             return redirect()->to(base_url('teacher/courses'));
-        }
-        
-        // Validate that the course exists and is assigned to this teacher
+        }        // Validate that the course exists and teacher is assigned to it
         $courseBuilder = $this->db->table('courses');
         $course = $courseBuilder
             ->where('id', $courseID)
-            ->where('instructor_id', $teacherID)
+            ->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
             ->get()
             ->getRowArray();
             
         if (!$course) {
-            $this->session->setFlashdata('error', 'Course not found or not assigned to you.');
+            $this->session->setFlashdata('error', 'Course not found or you are not assigned to it.');
             return redirect()->to(base_url('teacher/courses'));
         }
         
@@ -1441,9 +1599,18 @@ class Auth extends BaseController
             ->where('course_id', $courseID)
             ->countAllResults();
         
-        // Unassign the teacher from the course (set instructor_id to null)
+        // Remove teacher from instructor IDs
+        $currentInstructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+        if (!is_array($currentInstructorIds)) {
+            $currentInstructorIds = [];
+        }
+        $currentInstructorIds = array_values(array_filter($currentInstructorIds, function($id) use ($teacherID) {
+            return $id != $teacherID;
+        }));
+        
+        // Unassign the teacher from the course
         $updateData = [
-            'instructor_id' => null,
+            'instructor_ids' => json_encode($currentInstructorIds),
             'updated_at' => date('Y-m-d H:i:s')
         ];
         

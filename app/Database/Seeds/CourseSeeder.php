@@ -7,14 +7,13 @@ use CodeIgniter\Database\Seeder;
 class CourseSeeder extends Seeder
 {
     public function run()
-    {
-        // Sample course data
+    {        // Sample course data
         $courses = [
             [
                 'title' => 'Introduction to Programming',
                 'description' => 'Learn the fundamentals of programming with hands-on examples and projects.',
                 'course_code' => 'CS101',
-                'instructor_id' => 2,
+                'instructor_ids' => json_encode([2]), // JSON array with single instructor
                 'category' => 'Computer Science',
                 'credits' => 3,
                 'duration_weeks' => 16,
@@ -29,7 +28,7 @@ class CourseSeeder extends Seeder
                 'title' => 'Web Development Basics',
                 'description' => 'Master HTML, CSS, and JavaScript to build modern web applications.',
                 'course_code' => 'WEB101',
-                'instructor_id' => 2,
+                'instructor_ids' => json_encode([2, 3]), // JSON array with multiple instructors
                 'category' => 'Web Development',
                 'credits' => 4,
                 'duration_weeks' => 12,
@@ -44,7 +43,7 @@ class CourseSeeder extends Seeder
                 'title' => 'Database Design',
                 'description' => 'Learn relational database concepts, SQL, and database optimization.',
                 'course_code' => 'DB201',
-                'instructor_id' => 2,
+                'instructor_ids' => json_encode([2]), // JSON array with single instructor
                 'category' => 'Database',
                 'credits' => 3,
                 'duration_weeks' => 14,

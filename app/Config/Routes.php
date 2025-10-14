@@ -39,7 +39,14 @@ $routes->post(from: '/teacher/courses', to: 'Auth::teacherCourses');
 $routes->get(from: '/student/courses', to: 'Auth::studentCourses');
 
 // Material management routes
-$routes->get(from: '/material/upload/(:num)', to: 'Material::upload/$1');
-$routes->post(from: '/material/upload/(:num)', to: 'Material::upload/$1');
+$routes->get('/admin/course/(:num)/upload', 'Material::upload/$1');
+$routes->post('/admin/course/(:num)/upload', 'Material::upload/$1');
+$routes->get('/teacher/course/(:num)/upload', 'Material::upload/$1');
+$routes->post('/teacher/course/(:num)/upload', 'Material::upload/$1');
+
+// Legacy material upload route (for backward compatibility)
+$routes->get('/material/upload/(:num)', 'Material::upload/$1');
+$routes->post('/material/upload/(:num)', 'Material::upload/$1');
+
 $routes->get(from: '/material/delete/(:num)', to: 'Material::delete/$1');
 $routes->get(from: '/material/download/(:num)', to: 'Material::download/$1');

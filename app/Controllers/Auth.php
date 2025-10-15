@@ -438,67 +438,15 @@ class Auth extends BaseController
                 return view('auth/dashboard', $baseData);
         }
     }
-      // Manage Users Method - Standalone method for /admin/manage_users route
-    // This handles all user management operations for admin users
+      // Manage Users Method - Consolidated method for all user management operations
+    // This handles create, edit, delete, and display operations in one place to avoid spaghetti code
     public function manageUsers()
     {
         // Security check - only admins can access this page
         if ($this->session->get('isLoggedIn') !== true) {
             $this->session->setFlashdata('error', 'Please login to access this page.');
             return redirect()->to(base_url('login'));
-        }        if ($this->session->get('role') !== 'admin') {
-            $this->session->setFlashdata('error', 'Access denied. You do not have permission to access this page.');
-            $userRole = $this->session->get('role');
-            return redirect()->to(base_url($userRole . '/dashboard'));
-        }
-
-        $action = $this->request->getGet('action');
-        $userID = $this->request->getGet('id');
-        
-        // Handle user management actions
-        if ($action) {
-            switch ($action) {
-                case 'create':
-                    return $this->handleCreateUser();
-                    
-                case 'edit':
-                    return $this->handleEditUser($userID);
-                    
-                case 'delete':
-                    return $this->handleDeleteUser($userID);
-            }
-        }
-        
-        // Show user management interface
-        $builder = $this->db->table('users');
-        $users = $builder->orderBy('created_at', 'DESC')->get()->getResultArray();
-        $currentAdminID = $this->session->get('userID');
-
-        $data = [
-            'user' => [
-                'userID' => $this->session->get('userID'),
-                'name'   => $this->session->get('name'),
-                'email'  => $this->session->get('email'),
-                'role'   => $this->session->get('role')
-            ],
-            'title' => 'Manage Users - Admin Dashboard',
-            'users' => $users,
-            'currentAdminID' => $currentAdminID,
-            'editUser' => null,
-            'showCreateForm' => $this->request->getGet('create') === 'true',
-            'showEditForm' => false
-        ];
-          return view('admin/manage_users', $data);
-    }
-
-    // Manage Courses Method - Standalone method for /admin/manage_courses route  
-    // This handles all course management operations for admin users
-    public function manageCourses()
-    {
-        // Security check - only admins can access this page
-        if ($this->session->get('isLoggedIn') !== true) {
-            $this->session->setFlashdata('error', 'Please login to access this page.');
-            return redirect()->to(base_url('login'));        }
+        }        
         
         if ($this->session->get('role') !== 'admin') {
             $this->session->setFlashdata('error', 'Access denied. You do not have permission to access this page.');
@@ -507,70 +455,11 @@ class Auth extends BaseController
         }
 
         $action = $this->request->getGet('action');
-        $courseID = $this->request->getGet('id');
+        $userID = $this->request->getGet('id');
+        $currentAdminID = $this->session->get('userID');
         
-        // Handle course management actions
-        if ($action) {
-            switch ($action) {
-                case 'create':
-                    return $this->handleCreateCourse();
-                    
-                case 'edit':
-                    return $this->handleEditCourse($courseID);
-                    
-                case 'delete':
-                    return $this->handleDeleteCourse($courseID);
-            }
-        }
-          // Show course management interface
-        $coursesBuilder = $this->db->table('courses');
-        $courses = $coursesBuilder
-            ->select('courses.*')
-            ->orderBy('courses.created_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
-        // Get instructor names for each course
-        foreach ($courses as &$course) {
-            $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
-            if (!empty($instructorIds)) {
-                $instructorNames = $this->db->table('users')
-                    ->select('name')
-                    ->whereIn('id', $instructorIds)
-                    ->where('role', 'teacher')
-                    ->get()
-                    ->getResultArray();
-                $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
-            } else {
-                $course['instructor_name'] = 'No instructor assigned';
-            }
-        }
-
-        // Get all teachers for dropdown
-        $teachersBuilder = $this->db->table('users');
-        $teachers = $teachersBuilder->where('role', 'teacher')->orderBy('name', 'ASC')->get()->getResultArray();
-
-        $data = [
-            'user' => [
-                'userID' => $this->session->get('userID'),
-                'name'   => $this->session->get('name'),
-                'email'  => $this->session->get('email'),
-                'role'   => $this->session->get('role')
-            ],
-            'title' => 'Manage Courses - Admin Dashboard',
-            'courses' => $courses,
-            'teachers' => $teachers,
-            'editCourse' => null,
-            'showCreateForm' => $this->request->getGet('create') === 'true',
-            'showEditForm' => false        ];
-        
-        return view('admin/manage_courses', $data);
-    }
-
-    private function handleCreateUser()
-    {
-        if ($this->request->getMethod() === 'POST') {
-            // Validation rules for creating new user
+        // ===== CREATE USER =====
+        if ($action === 'create' && $this->request->getMethod() === 'POST') {
             $rules = [
                 'name'     => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
                 'email'    => 'required|valid_email|is_unique[users.email]|regex_match[/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]',
@@ -590,7 +479,6 @@ class Auth extends BaseController
                     'valid_email' => 'Please enter a valid email address.',
                     'is_unique'   => 'This email is already registered.',
                     'regex_match'  => 'Invalid email! Email should be like "marjovic_alejado@lms.com"'
-
                 ],
                 'password' => [
                     'required'   => 'Password is required.',
@@ -603,7 +491,6 @@ class Auth extends BaseController
             ];
 
             if ($this->validate($rules, $messages)) {
-                // Create new user
                 $userData = [
                     'name'       => $this->request->getPost('name'),
                     'email'      => $this->request->getPost('email'),
@@ -615,7 +502,6 @@ class Auth extends BaseController
 
                 $builder = $this->db->table('users');
                 if ($builder->insert($userData)) {
-                    // Record user creation activity
                     $creationActivity = [
                         'type' => 'user_creation',
                         'icon' => '➕',
@@ -627,16 +513,9 @@ class Auth extends BaseController
                         'created_by' => $this->session->get('name')
                     ];
 
-                    // Get existing creation activities from session (if any)
                     $creationActivities = $this->session->get('creation_activities') ?? [];
-                    
-                    // Add new creation activity to the beginning of the array
                     array_unshift($creationActivities, $creationActivity);
-                    
-                    // Keep only the last 10 creation activities to prevent session bloat
                     $creationActivities = array_slice($creationActivities, 0, 10);
-                    
-                    // Store updated creation activities in session
                     $this->session->set('creation_activities', $creationActivities);
 
                     $this->session->setFlashdata('success', 'User created successfully!');
@@ -648,11 +527,156 @@ class Auth extends BaseController
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
             }
         }
+        
+        // ===== EDIT USER =====
+        if ($action === 'edit' && $userID) {
+            $builder = $this->db->table('users');
+            $userToEdit = $builder->where('id', $userID)->get()->getRowArray();
 
-        // Show manage users view with create form
+            if (!$userToEdit) {
+                $this->session->setFlashdata('error', 'User not found.');
+                return redirect()->to(base_url('admin/manage_users'));
+            }
+
+            if ($userToEdit['id'] == $currentAdminID) {
+                $this->session->setFlashdata('error', 'You cannot edit your own account.');
+                return redirect()->to(base_url('admin/manage_users'));
+            }
+
+            if ($this->request->getMethod() === 'POST') {
+                $rules = [
+                    'name' => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+                    'email' => "required|valid_email|is_unique[users.email,id,{$userID}]|regex_match[/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]",
+                    'role' => 'required|in_list[admin,teacher,student]'
+                ];
+
+                if ($this->request->getPost('password')) {
+                    $rules['password'] = 'min_length[6]';
+                }
+
+                $messages = [
+                    'name' => [
+                        'required'    => 'Name is required.',
+                        'min_length'  => 'Name must be at least 3 characters long.',
+                        'max_length'  => 'Name cannot exceed 100 characters.',
+                        'regex_match' => 'Name can only contain letters (including ñ/Ñ) and spaces.'
+                    ],
+                    'email' => [
+                        'required'    => 'Email is required.',
+                        'valid_email' => 'Please enter a valid email address.',
+                        'is_unique'   => 'This email is already registered.',
+                        'regex_match'  => 'Invalid email! Email should be like "marjovic_alejado@lms.com"'
+                    ],
+                    'role' => [
+                        'required' => 'Role is required.',
+                        'in_list'  => 'Invalid role selected.'
+                    ],
+                    'password' => [
+                        'min_length' => 'Password must be at least 6 characters long.'
+                    ]
+                ];
+
+                if ($this->validate($rules, $messages)) {
+                    $updateData = [
+                        'name'       => $this->request->getPost('name'),
+                        'email'      => $this->request->getPost('email'),
+                        'role'       => $this->request->getPost('role'),
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ];
+
+                    if ($this->request->getPost('password')) {
+                        $updateData['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
+                    }
+
+                    if ($builder->where('id', $userID)->update($updateData)) {
+                        $updateActivity = [
+                            'type' => 'user_update',
+                            'icon' => '✏️',
+                            'title' => 'User Account Updated',
+                            'description' => esc($updateData['name']) . ' (' . ucfirst($updateData['role']) . ') account was updated by admin',
+                            'time' => date('Y-m-d H:i:s'),
+                            'user_name' => esc($updateData['name']),
+                            'user_role' => $updateData['role'],
+                            'updated_by' => $this->session->get('name')
+                        ];
+
+                        $updateActivities = $this->session->get('update_activities') ?? [];
+                        array_unshift($updateActivities, $updateActivity);
+                        $updateActivities = array_slice($updateActivities, 0, 10);
+                        $this->session->set('update_activities', $updateActivities);
+
+                        $this->session->setFlashdata('success', 'User updated successfully!');
+                        return redirect()->to(base_url('admin/manage_users'));
+                    } else {
+                        $this->session->setFlashdata('error', 'Failed to update user. Please try again.');
+                    }
+                } else {
+                    $this->session->setFlashdata('errors', $this->validation->getErrors());
+                }
+            }
+
+            $users = $builder->orderBy('created_at', 'DESC')->get()->getResultArray();
+            $data = [
+                'user' => [
+                    'userID' => $this->session->get('userID'),
+                    'name'   => $this->session->get('name'),
+                    'email'  => $this->session->get('email'),
+                    'role'   => $this->session->get('role')
+                ],
+                'title' => 'Edit User - Admin Dashboard',
+                'users' => $users,
+                'currentAdminID' => $currentAdminID,
+                'editUser' => $userToEdit,
+                'showCreateForm' => false,
+                'showEditForm' => true
+            ];
+            return view('admin/manage_users', $data);
+        }
+        
+        // ===== DELETE USER =====
+        if ($action === 'delete' && $userID) {
+            $builder = $this->db->table('users');
+            $userToDelete = $builder->where('id', $userID)->get()->getRowArray();
+
+            if (!$userToDelete) {
+                $this->session->setFlashdata('error', 'User not found.');
+                return redirect()->to(base_url('admin/manage_users'));
+            }
+
+            if ($userToDelete['id'] == $currentAdminID) {
+                $this->session->setFlashdata('error', 'You cannot delete your own account.');
+                return redirect()->to(base_url('admin/manage_users'));
+            }
+
+            $deletionActivity = [
+                'type' => 'user_deletion',
+                'icon' => '🗑️',
+                'title' => 'User Account Deleted',
+                'description' => esc($userToDelete['name']) . ' (' . ucfirst($userToDelete['role']) . ') account was removed from the system',
+                'time' => date('Y-m-d H:i:s'),
+                'user_name' => esc($userToDelete['name']),
+                'user_role' => $userToDelete['role'],
+                'deleted_by' => $this->session->get('name')
+            ];
+
+            $deletionActivities = $this->session->get('deletion_activities') ?? [];
+            array_unshift($deletionActivities, $deletionActivity);
+            $deletionActivities = array_slice($deletionActivities, 0, 10);
+            $this->session->set('deletion_activities', $deletionActivities);
+
+            $deleteBuilder = $this->db->table('users');
+            if ($deleteBuilder->where('id', $userID)->delete()) {
+                $this->session->setFlashdata('success', 'User deleted successfully!');
+            } else {
+                $this->session->setFlashdata('error', 'Failed to delete user. Please try again.');
+            }
+
+            return redirect()->to(base_url('admin/manage_users'));
+        }
+        
+        // ===== SHOW USER MANAGEMENT INTERFACE =====
         $builder = $this->db->table('users');
         $users = $builder->orderBy('created_at', 'DESC')->get()->getResultArray();
-        $currentAdminID = $this->session->get('userID');
 
         $data = [
             'user' => [
@@ -665,201 +689,38 @@ class Auth extends BaseController
             'users' => $users,
             'currentAdminID' => $currentAdminID,
             'editUser' => null,
-            'showCreateForm' => true,
-            'showEditForm' => false        ];
+            'showCreateForm' => $this->request->getGet('create') === 'true' || ($action === 'create' && $this->request->getMethod() !== 'POST'),
+            'showEditForm' => false
+        ];
+          
         return view('admin/manage_users', $data);
     }
 
-    private function handleEditUser($userID)
+    // Manage Courses Method - Consolidated method for all course management operations  
+    // This handles create, edit, delete, and display operations in one place to avoid spaghetti code
+    public function manageCourses()
     {
-        if (!$userID) {
-            $this->session->setFlashdata('error', 'User ID is required.');
-            return redirect()->to(base_url('admin/manage_users'));
+        // Security check - only admins can access this page
+        if ($this->session->get('isLoggedIn') !== true) {
+            $this->session->setFlashdata('error', 'Please login to access this page.');
+            return redirect()->to(base_url('login'));        
         }
-
-        // Get user to edit
-        $builder = $this->db->table('users');
-        $userToEdit = $builder->where('id', $userID)->get()->getRowArray();
-
-        if (!$userToEdit) {
-            $this->session->setFlashdata('error', 'User not found.');
-            return redirect()->to(base_url('admin/manage_users'));
-        }
-
-        // Check restrictions: Admin cannot edit self or other admins
-        $currentAdminID = $this->session->get('userID');
-        if ($userToEdit['id'] == $currentAdminID) {
-            $this->session->setFlashdata('error', 'You cannot edit your own account.');
-            return redirect()->to(base_url('admin/manage_users'));
-        }
-
-        if ($this->request->getMethod() === 'POST') {
-            // Validation rules for editing user
-            $rules = [
-                'name' => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
-                'email' => "required|valid_email|is_unique[users.email,id,{$userID}]|regex_match[/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]",
-                'role' => 'required|in_list[admin,teacher,student]'
-            ];
-
-            // Only validate password if provided
-            if ($this->request->getPost('password')) {
-                $rules['password'] = 'min_length[6]';
-            }
-
-            $messages = [
-                'name' => [
-                    'required'    => 'Name is required.',
-                    'min_length'  => 'Name must be at least 3 characters long.',
-                    'max_length'  => 'Name cannot exceed 100 characters.',
-                    'regex_match' => 'Name can only contain letters (including ñ/Ñ) and spaces.'
-                ],
-                'email' => [
-                    'required'    => 'Email is required.',
-                    'valid_email' => 'Please enter a valid email address.',
-                    'is_unique'   => 'This email is already registered.',
-                    'regex_match'  => 'Invalid email! Email should be like "marjovic_alejado@lms.com"'
-                ],
-                'role' => [
-                    'required' => 'Role is required.',
-                    'in_list'  => 'Invalid role selected.'
-                ],
-                'password' => [
-                    'min_length' => 'Password must be at least 6 characters long.'
-                ]
-            ];
-
-            if ($this->validate($rules, $messages)) {
-                // Prepare update data
-                $updateData = [
-                    'name'       => $this->request->getPost('name'),
-                    'email'      => $this->request->getPost('email'),
-                    'role'       => $this->request->getPost('role'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ];
-
-                // Update password only if provided
-                if ($this->request->getPost('password')) {
-                    $updateData['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
-                }
-
-                if ($builder->where('id', $userID)->update($updateData)) {
-                    // Record user update activity
-                    $updateActivity = [
-                        'type' => 'user_update',
-                        'icon' => '✏️',
-                        'title' => 'User Account Updated',
-                        'description' => esc($updateData['name']) . ' (' . ucfirst($updateData['role']) . ') account was updated by admin',
-                        'time' => date('Y-m-d H:i:s'),
-                        'user_name' => esc($updateData['name']),
-                        'user_role' => $updateData['role'],
-                        'updated_by' => $this->session->get('name')
-                    ];
-
-                    // Get existing update activities from session (if any)
-                    $updateActivities = $this->session->get('update_activities') ?? [];
-                    
-                    // Add new update activity to the beginning of the array
-                    array_unshift($updateActivities, $updateActivity);
-                    
-                    // Keep only the last 10 update activities to prevent session bloat
-                    $updateActivities = array_slice($updateActivities, 0, 10);
-                    
-                    // Store updated update activities in session
-                    $this->session->set('update_activities', $updateActivities);
-
-                    $this->session->setFlashdata('success', 'User updated successfully!');
-                    return redirect()->to(base_url('admin/manage_users'));
-                } else {
-                    $this->session->setFlashdata('error', 'Failed to update user. Please try again.');
-                }
-            } else {
-                $this->session->setFlashdata('errors', $this->validation->getErrors());
-            }
-        }
-
-        // Show edit form
-        $users = $builder->orderBy('created_at', 'DESC')->get()->getResultArray();
-        $data = [
-            'user' => [
-                'userID' => $this->session->get('userID'),
-                'name'   => $this->session->get('name'),
-                'email'  => $this->session->get('email'),
-                'role'   => $this->session->get('role')
-            ],
-            'title' => 'Edit User - Admin Dashboard',
-            'users' => $users,
-            'currentAdminID' => $this->session->get('userID'),
-            'editUser' => $userToEdit,
-            'showCreateForm' => false,
-            'showEditForm' => true
-        ];        return view('admin/manage_users', $data);
-    }
-
-    private function handleDeleteUser($userID)
-    {
-        if (!$userID) {
-            $this->session->setFlashdata('error', 'User ID is required.');
-            return redirect()->to(base_url('admin/manage_users'));
-        }
-
-        // Get user to delete
-        $builder = $this->db->table('users');
-        $userToDelete = $builder->where('id', $userID)->get()->getRowArray();
-
-        if (!$userToDelete) {
-            $this->session->setFlashdata('error', 'User not found.');
-            return redirect()->to(base_url('admin/manage_users'));
-        }
-
-        // Check restrictions: Admin cannot delete self or other admins
-        $currentAdminID = $this->session->get('userID');
-        if ($userToDelete['id'] == $currentAdminID) {
-            $this->session->setFlashdata('error', 'You cannot delete your own account.');
-            return redirect()->to(base_url('admin/manage_users'));
-        }
-
-        // Store deletion activity before deleting user
-        $deletionActivity = [
-            'type' => 'user_deletion',
-            'icon' => '🗑️',
-            'title' => 'User Account Deleted',
-            'description' => esc($userToDelete['name']) . ' (' . ucfirst($userToDelete['role']) . ') account was removed from the system',
-            'time' => date('Y-m-d H:i:s'),
-            'user_name' => esc($userToDelete['name']),
-            'user_role' => $userToDelete['role'],
-            'deleted_by' => $this->session->get('name')
-        ];
-
-        // Get existing deletion activities from session (if any)
-        $deletionActivities = $this->session->get('deletion_activities') ?? [];
         
-        // Add new deletion activity to the beginning of the array
-        array_unshift($deletionActivities, $deletionActivity);
-        
-        // Keep only the last 10 deletion activities to prevent session bloat
-        $deletionActivities = array_slice($deletionActivities, 0, 10);
-        
-        // Store updated deletion activities in session
-        $this->session->set('deletion_activities', $deletionActivities);
-
-        // Delete user
-        if ($builder->where('id', $userID)->delete()) {
-            $this->session->setFlashdata('success', 'User deleted successfully!');
-        } else {
-            $this->session->setFlashdata('error', 'Failed to delete user. Please try again.');
+        if ($this->session->get('role') !== 'admin') {
+            $this->session->setFlashdata('error', 'Access denied. You do not have permission to access this page.');
+            $userRole = $this->session->get('role');
+            return redirect()->to(base_url($userRole . '/dashboard'));
         }
 
-        return redirect()->to(base_url('admin/manage_users'));
-    }
-    
-    private function handleCreateCourse()
-    {
-        if ($this->request->getMethod() === 'POST') {            
-            // Validation rules for creating new course            
+        $action = $this->request->getGet('action');
+        $courseID = $this->request->getGet('id');
+        
+        // ===== CREATE COURSE =====
+        if ($action === 'create' && $this->request->getMethod() === 'POST') {
             $rules = [
                 'title' => 'required|min_length[3]|max_length[200]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                 'course_code' => 'required|min_length[3]|max_length[20]|regex_match[/^[A-Z]+\-?[0-9]+$/]|is_unique[courses.course_code]',
-                'instructor_ids' => 'permit_empty', // JSON array field validation will be done separately
+                'instructor_ids' => 'permit_empty',
                 'category' => 'permit_empty|max_length[100]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                 'credits' => 'permit_empty|integer|greater_than[0]|less_than[10]',
                 'duration_weeks' => 'permit_empty|integer|greater_than[0]|less_than[100]',
@@ -883,7 +744,8 @@ class Auth extends BaseController
                     'max_length' => 'Course code cannot exceed 20 characters.',
                     'regex_match' => 'Course code must start with letters followed by numbers (e.g., CS101, MATH201).',
                     'is_unique' => 'This course code is already in use.'
-                ],                'instructor_id' => [
+                ],
+                'instructor_id' => [
                     'integer' => 'Invalid instructor selected.',
                     'greater_than' => 'Please select a valid instructor if choosing one.'
                 ],
@@ -919,13 +781,13 @@ class Auth extends BaseController
                 'description' => [
                     'regex_match' => 'Description can only contain letters, numbers, spaces, hyphens, and basic punctuation (periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points •).'
                 ]
-            ];            if ($this->validate($rules, $messages)) {
-                // Handle instructor assignment - convert instructor array to JSON array
+            ];
+            
+            if ($this->validate($rules, $messages)) {
                 $instructorIds = $this->request->getPost('instructor_ids');
                 $finalInstructorIds = [];
                 
                 if ($instructorIds && is_array($instructorIds)) {
-                    // Filter and validate instructor IDs
                     foreach ($instructorIds as $instructorId) {
                         if (is_numeric($instructorId) && $instructorId > 0) {
                             $finalInstructorIds[] = (int)$instructorId;
@@ -933,7 +795,6 @@ class Auth extends BaseController
                     }
                 }
 
-                // Create new course
                 $courseData = [
                     'title' => $this->request->getPost('title'),
                     'course_code' => $this->request->getPost('course_code'),
@@ -952,7 +813,6 @@ class Auth extends BaseController
 
                 $coursesBuilder = $this->db->table('courses');
                 if ($coursesBuilder->insert($courseData)) {
-                    // Record course creation activity
                     $creationActivity = [
                         'type' => 'course_creation',
                         'icon' => '📚',
@@ -964,16 +824,9 @@ class Auth extends BaseController
                         'created_by' => $this->session->get('name')
                     ];
 
-                    // Get existing creation activities from session (if any)
                     $creationActivities = $this->session->get('creation_activities') ?? [];
-                    
-                    // Add new creation activity to the beginning of the array
                     array_unshift($creationActivities, $creationActivity);
-                    
-                    // Keep only the last 10 creation activities to prevent session bloat
                     $creationActivities = array_slice($creationActivities, 0, 10);
-                    
-                    // Store updated creation activities in session
                     $this->session->set('creation_activities', $creationActivities);
 
                     $this->session->setFlashdata('success', 'Course created successfully!');
@@ -984,7 +837,196 @@ class Auth extends BaseController
             } else {
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
             }
-        }        // Show manage courses view with create form
+        }
+        
+        // ===== EDIT COURSE =====
+        if ($action === 'edit' && $courseID) {
+            $coursesBuilder = $this->db->table('courses');
+            $courseToEdit = $coursesBuilder->where('id', $courseID)->get()->getRowArray();
+
+            if (!$courseToEdit) {
+                $this->session->setFlashdata('error', 'Course not found.');
+                return redirect()->to(base_url('admin/manage_courses'));
+            }
+            
+            if ($this->request->getMethod() === 'POST') {
+                $rules = [
+                    'title' => 'required|min_length[3]|max_length[200]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
+                    'course_code' => "required|min_length[3]|max_length[20]|regex_match[/^[A-Z]+\-?[0-9]+$/]|is_unique[courses.course_code,id,{$courseID}]",
+                    'instructor_ids' => 'permit_empty',
+                    'category' => 'permit_empty|max_length[100]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
+                    'credits' => 'permit_empty|integer|greater_than[0]|less_than[10]',
+                    'duration_weeks' => 'permit_empty|integer|greater_than[0]|less_than[100]',
+                    'max_students' => 'permit_empty|integer|greater_than[0]|less_than[1000]',
+                    'start_date' => 'permit_empty|valid_date[Y-m-d]',
+                    'end_date' => 'permit_empty|valid_date[Y-m-d]',
+                    'status' => 'required|in_list[draft,active,completed,cancelled]',
+                    'description' => 'permit_empty|regex_match[/^[a-zA-Z0-9\s\.\,\:\;\!\?\n\r•\-]+$/]'
+                ];
+
+                $messages = [
+                    'title' => [
+                        'required' => 'Course title is required.',
+                        'min_length' => 'Course title must be at least 3 characters long.',
+                        'max_length' => 'Course title cannot exceed 200 characters.',
+                        'regex_match' => 'Course title can only contain letters, spaces, hyphens, and periods.'
+                    ],
+                    'course_code' => [
+                        'required' => 'Course code is required.',
+                        'min_length' => 'Course code must be at least 3 characters long.',
+                        'max_length' => 'Course code cannot exceed 20 characters.',
+                        'regex_match' => 'Course code must start with letters followed by numbers (e.g., CS101, MATH201).',
+                        'is_unique' => 'This course code is already in use.'
+                    ],
+                    'instructor_id' => [
+                        'integer' => 'Invalid instructor selected.',
+                        'greater_than' => 'Please select a valid instructor if choosing one.'
+                    ],
+                    'category' => [
+                        'max_length' => 'Category cannot exceed 100 characters.',
+                        'regex_match' => 'Category can only contain letters, spaces, hyphens, and periods.'
+                    ],
+                    'status' => [
+                        'required' => 'Course status is required.',
+                        'in_list' => 'Invalid course status selected.'
+                    ],
+                    'description' => [
+                        'regex_match' => 'Description can only contain letters, numbers, spaces, hyphens, and basic punctuation (periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points •).'
+                    ]
+                ];
+                
+                if ($this->validate($rules, $messages)) {
+                    $instructorIds = $this->request->getPost('instructor_ids');
+                    $finalInstructorIds = [];
+                    
+                    if ($instructorIds && is_array($instructorIds)) {
+                        foreach ($instructorIds as $instructorId) {
+                            if (is_numeric($instructorId) && $instructorId > 0) {
+                                $finalInstructorIds[] = (int)$instructorId;
+                            }
+                        }
+                    }
+
+                    $updateData = [
+                        'title' => $this->request->getPost('title'),
+                        'course_code' => $this->request->getPost('course_code'),
+                        'instructor_ids' => json_encode($finalInstructorIds),
+                        'category' => $this->request->getPost('category') ?: null,
+                        'credits' => $this->request->getPost('credits') ?: 3,
+                        'duration_weeks' => $this->request->getPost('duration_weeks') ?: 16,
+                        'max_students' => $this->request->getPost('max_students') ?: 30,
+                        'start_date' => $this->request->getPost('start_date') ?: null,
+                        'end_date' => $this->request->getPost('end_date') ?: null,
+                        'status' => $this->request->getPost('status'),
+                        'description' => $this->request->getPost('description'),
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ];
+
+                    if ($coursesBuilder->where('id', $courseID)->update($updateData)) {
+                        $updateActivity = [
+                            'type' => 'course_update',
+                            'icon' => '✏️',
+                            'title' => 'Course Updated',
+                            'description' => 'Course "' . esc($updateData['title']) . '" (' . esc($updateData['course_code']) . ') was updated by admin',
+                            'time' => date('Y-m-d H:i:s'),
+                            'course_title' => esc($updateData['title']),
+                            'course_code' => esc($updateData['course_code']),
+                            'updated_by' => $this->session->get('name')
+                        ];
+
+                        $updateActivities = $this->session->get('update_activities') ?? [];
+                        array_unshift($updateActivities, $updateActivity);
+                        $updateActivities = array_slice($updateActivities, 0, 10);
+                        $this->session->set('update_activities', $updateActivities);
+
+                        $this->session->setFlashdata('success', 'Course updated successfully!');
+                        return redirect()->to(base_url('admin/manage_courses'));
+                    } else {
+                        $this->session->setFlashdata('error', 'Failed to update course. Please try again.');
+                    }
+                } else {
+                    $this->session->setFlashdata('errors', $this->validation->getErrors());
+                }
+            }
+            
+            $courses = $coursesBuilder
+                ->select('courses.*')
+                ->orderBy('courses.created_at', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            foreach ($courses as &$course) {
+                $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
+                if (!empty($instructorIds)) {
+                    $instructorNames = $this->db->table('users')
+                        ->select('name')
+                        ->whereIn('id', $instructorIds)
+                        ->where('role', 'teacher')
+                        ->get()
+                        ->getResultArray();
+                    $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
+                } else {
+                    $course['instructor_name'] = 'No instructor assigned';
+                }
+            }
+
+            $teachersBuilder = $this->db->table('users');
+            $teachers = $teachersBuilder->where('role', 'teacher')->orderBy('name', 'ASC')->get()->getResultArray();
+
+            $data = [
+                'user' => [
+                    'userID' => $this->session->get('userID'),
+                    'name'   => $this->session->get('name'),
+                    'email'  => $this->session->get('email'),
+                    'role'   => $this->session->get('role')
+                ],
+                'title' => 'Edit Course - Admin Dashboard',
+                'courses' => $courses,
+                'teachers' => $teachers,
+                'editCourse' => $courseToEdit,
+                'showCreateForm' => false,
+                'showEditForm' => true
+            ];
+            return view('admin/manage_courses', $data);
+        }
+        
+        // ===== DELETE COURSE =====
+        if ($action === 'delete' && $courseID) {
+            $coursesBuilder = $this->db->table('courses');
+            $courseToDelete = $coursesBuilder->where('id', $courseID)->get()->getRowArray();
+
+            if (!$courseToDelete) {
+                $this->session->setFlashdata('error', 'Course not found.');
+                return redirect()->to(base_url('admin/manage_courses'));
+            }
+
+            $deletionActivity = [
+                'type' => 'course_deletion',
+                'icon' => '🗑️',
+                'title' => 'Course Deleted',
+                'description' => 'Course "' . esc($courseToDelete['title']) . '" (' . esc($courseToDelete['course_code']) . ') was removed from the system',
+                'time' => date('Y-m-d H:i:s'),
+                'course_title' => esc($courseToDelete['title']),
+                'course_code' => esc($courseToDelete['course_code']),
+                'deleted_by' => $this->session->get('name')
+            ];
+
+            $deletionActivities = $this->session->get('deletion_activities') ?? [];
+            array_unshift($deletionActivities, $deletionActivity);
+            $deletionActivities = array_slice($deletionActivities, 0, 10);
+            $this->session->set('deletion_activities', $deletionActivities);
+
+            $deleteBuilder = $this->db->table('courses');
+            if ($deleteBuilder->where('id', $courseID)->delete()) {
+                $this->session->setFlashdata('success', 'Course deleted successfully!');
+            } else {
+                $this->session->setFlashdata('error', 'Failed to delete course. Please try again.');
+            }
+
+            return redirect()->to(base_url('admin/manage_courses'));
+        }
+          
+        // ===== SHOW COURSE MANAGEMENT INTERFACE =====
         $coursesBuilder = $this->db->table('courses');
         $courses = $coursesBuilder
             ->select('courses.*')
@@ -992,7 +1034,6 @@ class Auth extends BaseController
             ->get()
             ->getResultArray();
 
-        // Get instructor names for each course
         foreach ($courses as &$course) {
             $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
             if (!empty($instructorIds)) {
@@ -1008,7 +1049,6 @@ class Auth extends BaseController
             }
         }
 
-        // Get all teachers for dropdown
         $teachersBuilder = $this->db->table('users');
         $teachers = $teachersBuilder->where('role', 'teacher')->orderBy('name', 'ASC')->get()->getResultArray();
 
@@ -1023,221 +1063,11 @@ class Auth extends BaseController
             'courses' => $courses,
             'teachers' => $teachers,
             'editCourse' => null,
-            'showCreateForm' => true,
+            'showCreateForm' => $this->request->getGet('create') === 'true' || ($action === 'create' && $this->request->getMethod() !== 'POST'),
             'showEditForm' => false
-        ];        return view('admin/manage_courses', $data);
-    }
-
-    private function handleEditCourse($courseID)
-    {
-        if (!$courseID) {
-            $this->session->setFlashdata('error', 'Course ID is required.');
-            return redirect()->to(base_url('admin/manage_courses'));
-        }
-
-        // Get course to edit
-        $coursesBuilder = $this->db->table('courses');
-        $courseToEdit = $coursesBuilder->where('id', $courseID)->get()->getRowArray();
-
-        if (!$courseToEdit) {
-            $this->session->setFlashdata('error', 'Course not found.');
-            return redirect()->to(base_url('admin/manage_courses'));
-        }        if ($this->request->getMethod() === 'POST') {            // Validation rules for editing course
-            $rules = [
-                'title' => 'required|min_length[3]|max_length[200]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
-                'course_code' => "required|min_length[3]|max_length[20]|regex_match[/^[A-Z]+\-?[0-9]+$/]|is_unique[courses.course_code,id,{$courseID}]",
-                'instructor_ids' => 'permit_empty', // JSON array field validation will be done separately
-                'category' => 'permit_empty|max_length[100]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
-                'credits' => 'permit_empty|integer|greater_than[0]|less_than[10]',
-                'duration_weeks' => 'permit_empty|integer|greater_than[0]|less_than[100]',
-                'max_students' => 'permit_empty|integer|greater_than[0]|less_than[1000]',
-                'start_date' => 'permit_empty|valid_date[Y-m-d]',
-                'end_date' => 'permit_empty|valid_date[Y-m-d]',
-                'status' => 'required|in_list[draft,active,completed,cancelled]',
-                'description' => 'permit_empty|regex_match[/^[a-zA-Z0-9\s\.\,\:\;\!\?\n\r•\-]+$/]'
-            ];
-
-            $messages = [
-                'title' => [
-                    'required' => 'Course title is required.',
-                    'min_length' => 'Course title must be at least 3 characters long.',
-                    'max_length' => 'Course title cannot exceed 200 characters.',
-                    'regex_match' => 'Course title can only contain letters, spaces, hyphens, and periods.'
-                ],
-                'course_code' => [
-                    'required' => 'Course code is required.',
-                    'min_length' => 'Course code must be at least 3 characters long.',
-                    'max_length' => 'Course code cannot exceed 20 characters.',
-                    'regex_match' => 'Course code must start with letters followed by numbers (e.g., CS101, MATH201).',
-                    'is_unique' => 'This course code is already in use.'
-                ],                'instructor_id' => [
-                    'integer' => 'Invalid instructor selected.',
-                    'greater_than' => 'Please select a valid instructor if choosing one.'
-                ],
-                'category' => [
-                    'max_length' => 'Category cannot exceed 100 characters.',
-                    'regex_match' => 'Category can only contain letters, spaces, hyphens, and periods.'
-                ],
-                'status' => [
-                    'required' => 'Course status is required.',
-                    'in_list' => 'Invalid course status selected.'
-                ],
-                'description' => [
-                    'regex_match' => 'Description can only contain letters, numbers, spaces, hyphens, and basic punctuation (periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points •).'
-                ]
-            ];            if ($this->validate($rules, $messages)) {
-                // Handle instructor assignment - convert instructor array to JSON array
-                $instructorIds = $this->request->getPost('instructor_ids');
-                $finalInstructorIds = [];
-                
-                if ($instructorIds && is_array($instructorIds)) {
-                    // Filter and validate instructor IDs
-                    foreach ($instructorIds as $instructorId) {
-                        if (is_numeric($instructorId) && $instructorId > 0) {
-                            $finalInstructorIds[] = (int)$instructorId;
-                        }
-                    }
-                }
-
-                // Update course data
-                $updateData = [
-                    'title' => $this->request->getPost('title'),
-                    'course_code' => $this->request->getPost('course_code'),
-                    'instructor_ids' => json_encode($finalInstructorIds),
-                    'category' => $this->request->getPost('category') ?: null,
-                    'credits' => $this->request->getPost('credits') ?: 3,
-                    'duration_weeks' => $this->request->getPost('duration_weeks') ?: 16,
-                    'max_students' => $this->request->getPost('max_students') ?: 30,
-                    'start_date' => $this->request->getPost('start_date') ?: null,
-                    'end_date' => $this->request->getPost('end_date') ?: null,
-                    'status' => $this->request->getPost('status'),
-                    'description' => $this->request->getPost('description'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ];
-
-                if ($coursesBuilder->where('id', $courseID)->update($updateData)) {
-                    // Record course update activity
-                    $updateActivity = [
-                        'type' => 'course_update',
-                        'icon' => '✏️',
-                        'title' => 'Course Updated',
-                        'description' => 'Course "' . esc($updateData['title']) . '" (' . esc($updateData['course_code']) . ') was updated by admin',
-                        'time' => date('Y-m-d H:i:s'),
-                        'course_title' => esc($updateData['title']),
-                        'course_code' => esc($updateData['course_code']),
-                        'updated_by' => $this->session->get('name')
-                    ];
-
-                    // Get existing update activities from session (if any)
-                    $updateActivities = $this->session->get('update_activities') ?? [];
-                    
-                    // Add new update activity to the beginning of the array
-                    array_unshift($updateActivities, $updateActivity);
-                    
-                    // Keep only the last 10 update activities to prevent session bloat
-                    $updateActivities = array_slice($updateActivities, 0, 10);
-                    
-                    // Store updated update activities in session
-                    $this->session->set('update_activities', $updateActivities);                    
-                    $this->session->setFlashdata('success', 'Course updated successfully!');
-                    return redirect()->to(base_url('admin/manage_courses'));
-                } else {
-                    $this->session->setFlashdata('error', 'Failed to update course. Please try again.');
-                }
-            } else {
-                $this->session->setFlashdata('errors', $this->validation->getErrors());
-            }
-        }        // Show edit form
-        $courses = $coursesBuilder
-            ->select('courses.*')
-            ->orderBy('courses.created_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
-        // Get instructor names for each course
-        foreach ($courses as &$course) {
-            $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
-            if (!empty($instructorIds)) {
-                $instructorNames = $this->db->table('users')
-                    ->select('name')
-                    ->whereIn('id', $instructorIds)
-                    ->where('role', 'teacher')
-                    ->get()
-                    ->getResultArray();
-                $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
-            } else {
-                $course['instructor_name'] = 'No instructor assigned';
-            }
-        }
-
-        // Get all teachers for dropdown
-        $teachersBuilder = $this->db->table('users');
-        $teachers = $teachersBuilder->where('role', 'teacher')->orderBy('name', 'ASC')->get()->getResultArray();
-
-        $data = [
-            'user' => [
-                'userID' => $this->session->get('userID'),
-                'name'   => $this->session->get('name'),
-                'email'  => $this->session->get('email'),
-                'role'   => $this->session->get('role')
-            ],
-            'title' => 'Edit Course - Admin Dashboard',
-            'courses' => $courses,
-            'teachers' => $teachers,
-            'editCourse' => $courseToEdit,
-            'showCreateForm' => false,
-            'showEditForm' => true        ];
-        return view('admin/manage_courses', $data);
-    }
-
-    private function handleDeleteCourse($courseID)
-    {
-        if (!$courseID) {
-            $this->session->setFlashdata('error', 'Course ID is required.');
-            return redirect()->to(base_url('admin/manage_courses'));
-        }
-
-        // Get course to delete
-        $coursesBuilder = $this->db->table('courses');
-        $courseToDelete = $coursesBuilder->where('id', $courseID)->get()->getRowArray();
-
-        if (!$courseToDelete) {
-            $this->session->setFlashdata('error', 'Course not found.');
-            return redirect()->to(base_url('admin/manage_courses'));
-        }
-
-        // Store deletion activity before deleting course
-        $deletionActivity = [
-            'type' => 'course_deletion',
-            'icon' => '🗑️',
-            'title' => 'Course Deleted',
-            'description' => 'Course "' . esc($courseToDelete['title']) . '" (' . esc($courseToDelete['course_code']) . ') was removed from the system',
-            'time' => date('Y-m-d H:i:s'),
-            'course_title' => esc($courseToDelete['title']),
-            'course_code' => esc($courseToDelete['course_code']),
-            'deleted_by' => $this->session->get('name')
         ];
-
-        // Get existing deletion activities from session (if any)
-        $deletionActivities = $this->session->get('deletion_activities') ?? [];
         
-        // Add new deletion activity to the beginning of the array
-        array_unshift($deletionActivities, $deletionActivity);
-        
-        // Keep only the last 10 deletion activities to prevent session bloat
-        $deletionActivities = array_slice($deletionActivities, 0, 10);
-        
-        // Store updated deletion activities in session
-        $this->session->set('deletion_activities', $deletionActivities);
-
-        // Delete course
-        if ($coursesBuilder->where('id', $courseID)->delete()) {
-            $this->session->setFlashdata('success', 'Course deleted successfully!');
-        } else {
-            $this->session->setFlashdata('error', 'Failed to delete course. Please try again.');
-        }
-
-        return redirect()->to(base_url('admin/manage_courses'));
+        return view('admin/manage_courses', $data);
     }
 
     // =====================================================

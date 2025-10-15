@@ -28,7 +28,7 @@ ServerSignature Off
 </FilesMatch>
 
 # ==============================================================================
-# BLOCK ACCESS TO SENSITIVE DIRECTORIES
+# REWRITE RULES AND ROUTING
 # ==============================================================================
 
 <IfModule mod_rewrite.c>
@@ -62,14 +62,24 @@ ServerSignature Off
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Remove index.php from URLs
+    # Remove index.php from URLs (only if explicitly in the request)
     RewriteCond %{THE_REQUEST} /index\.php[?\s] [NC]
     RewriteRule ^index\.php(.*)$ /$1 [R=301,L]
 
-    # Rewrite "www.example.com -> example.com"
-    RewriteCond %{HTTPS} !=on
-    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
-    RewriteRule ^ http://%1%{REQUEST_URI} [R=301,L]
+    # Rewrite "www.example.com -> example.com" (only for production)
+    # RewriteCond %{HTTPS} !=on
+    # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    # RewriteRule ^ http://%1%{REQUEST_URI} [R=301,L]
+
+    # Block suspicious SQL injection attempts in query strings (but allow legitimate database operations)
+    RewriteCond %{QUERY_STRING} ([0-9]+)=([0-9]+)-- [NC]
+    RewriteRule ^(.*)$ - [F,L]
+    
+    # Block XSS attempts in query strings
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2})
+    RewriteRule ^(.*)$ - [F,L]
 
     # Checks to see if the user is attempting to access a valid file,
     # such as an image or css document, if this isn't true it sends the
@@ -111,27 +121,7 @@ ServerSignature Off
     Header always unset "Server"
 </IfModule>
 
-# ==============================================================================
-# ADDITIONAL SECURITY RULES
-# ==============================================================================
-
-# Block suspicious query strings
-<IfModule mod_rewrite.c>
-    # Block SQL injection attempts
-    RewriteCond %{QUERY_STRING} ([0-9]+)=([0-9]+)--
-    RewriteRule ^(.*)$ - [F,L]
-    
-    RewriteCond %{QUERY_STRING} \b(union|select|insert|drop|delete|update|cast|create|char|convert|alter|declare|exec|script)\b [NC]
-    RewriteRule ^(.*)$ - [F,L]
-    
-    # Block XSS attempts
-    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
-    RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
-    RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2})
-    RewriteRule ^(.*)$ - [F,L]
-</IfModule>
-
-# Custom error documents
-ErrorDocument 403 /index.php/error/403
-ErrorDocument 404 /index.php/error/404
-ErrorDocument 500 /index.php/error/500
+# Custom error documents (optional - can be enabled if you have error pages)
+# ErrorDocument 403 /index.php/error/403
+# ErrorDocument 404 /index.php/error/404
+# ErrorDocument 500 /index.php/error/500

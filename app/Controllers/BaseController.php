@@ -35,13 +35,12 @@ abstract class BaseController extends Controller
      *
      * @var list<string>
      */
-    protected $helpers = [];
-
-    /**
+    protected $helpers = [];    /**
      * Be sure to declare properties for any property fetch you initialized.
      * The creation of dynamic property is deprecated in PHP 8.2.
      */
-    // protected $session;
+    protected $session;
+    protected $notificationModel;
 
     /**
      * @return void
@@ -52,7 +51,20 @@ abstract class BaseController extends Controller
         parent::initController($request, $response, $logger);
 
         // Preload any models, libraries, etc, here.
-
-        // E.g.: $this->session = service('session');
+        
+        // Initialize session service
+        $this->session = service('session');
+        
+        // Initialize notification model
+        $this->notificationModel = new \App\Models\NotificationModel();
+        
+        // Load unread notification count for logged-in users
+        if ($this->session->get('isLoggedIn') === true) {
+            $userID = $this->session->get('userID');
+            $unreadCount = $this->notificationModel->getUnreadCount($userID);
+            
+            // Make unread count available to all views
+            $this->session->set('unreadNotificationCount', $unreadCount);
+        }
     }
 }

@@ -326,39 +326,69 @@ class Auth extends BaseController
                 ]);
                 return view('auth/dashboard', $dashboardData);            case 'teacher':
                 // Teacher gets course and student data 
-                $teacherID = $this->session->get('userID');
-                
-                try {
-                    // Get courses assigned to this teacher using JSON_CONTAINS
-                    $teacherCourses = $this->db->table('courses')->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)->countAllResults();
-                    $activeCourses = $this->db->table('courses')->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)->where('status', 'active')->countAllResults();
+                $teacherID = $this->session->get('userID');                try {
+                    // Get courses assigned to this teacher using JSON_CONTAINS (check both string and int format)
+                    $teacherCourses = $this->db->table('courses')
+                        ->groupStart()
+                            ->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
+                            ->orWhere("JSON_CONTAINS(instructor_ids, '$teacherID')", null, false)
+                        ->groupEnd()
+                        ->countAllResults();
+                    
+                    // Debug log
+                    log_message('debug', "Teacher Dashboard - Teacher ID: {$teacherID}, Courses Count: {$teacherCourses}");
+                        
+                    $activeCourses = $this->db->table('courses')
+                        ->where('status', 'active')
+                        ->groupStart()
+                            ->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
+                            ->orWhere("JSON_CONTAINS(instructor_ids, '$teacherID')", null, false)
+                        ->groupEnd()
+                        ->countAllResults();
+                    
+                    // Debug log
+                    log_message('debug', "Teacher Dashboard - Active Courses: {$activeCourses}");
                     
                     // Get available courses (active courses without instructors or teacher not assigned)
                     $availableCoursesCount = $this->db->table('courses')
                         ->where('status', 'active')
-                        ->where("(instructor_ids IS NULL OR instructor_ids = '[]' OR NOT JSON_CONTAINS(instructor_ids, '\"$teacherID\"'))", null, false)
-                        ->countAllResults();
-                    
-                    // Get total students enrolled in teacher's courses
+                        ->groupStart()
+                            ->where('instructor_ids IS NULL')
+                            ->orWhere('instructor_ids', '[]')
+                            ->orGroupStart()
+                                ->where("NOT JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
+                                ->where("NOT JSON_CONTAINS(instructor_ids, '$teacherID')", null, false)
+                            ->groupEnd()
+                        ->groupEnd()
+                        ->countAllResults();                    // Get total students enrolled in teacher's courses
                     $totalStudentsQuery = $this->db->query("
                         SELECT COUNT(DISTINCT e.user_id) as total_students
                         FROM enrollments e 
                         INNER JOIN courses c ON e.course_id = c.id 
-                        WHERE JSON_CONTAINS(c.instructor_ids, ?)
-                    ", ['\"' . $teacherID . '\"']);
+                        WHERE JSON_CONTAINS(c.instructor_ids, ?) OR JSON_CONTAINS(c.instructor_ids, ?)
+                    ", ['\"' . $teacherID . '\"', $teacherID]);
                     $totalStudents = $totalStudentsQuery->getRow()->total_students ?? 0;
+                    
+                    // Debug log
+                    log_message('debug', "Teacher Dashboard - Total Students: {$totalStudents}");
+                    log_message('debug', "Teacher Dashboard - Data being passed: Courses={$teacherCourses}, Active={$activeCourses}, Students={$totalStudents}");
+                    
+                    // Get assignment activities from session for recent activity display
+                    $assignmentActivities = $this->session->get('assignment_activities') ?? [];
                     
                     $dashboardData = array_merge($baseData, [
                         'title' => 'Teacher Dashboard - MGOD LMS',
                         'totalCourses' => $teacherCourses,
                         'activeCourses' => $activeCourses,
                         'availableCoursesCount' => $availableCoursesCount,
-                        'totalStudents' => $totalStudents
+                        'totalStudents' => $totalStudents,
+                        'pendingAssignments' => 0, // Placeholder - implement when assignments table exists
+                        'averageGrade' => 0,        // Placeholder - implement when grades table exists
+                        'assignment_activities' => $assignmentActivities
                     ]);
                     
                     return view('auth/dashboard', $dashboardData);
-                    
-                } catch (\Exception $e) {
+                      } catch (\Exception $e) {
                     // If there's a database error, show a simplified teacher dashboard
                     log_message('error', 'Teacher dashboard error: ' . $e->getMessage());
                     
@@ -367,7 +397,10 @@ class Auth extends BaseController
                         'totalCourses' => 0,
                         'activeCourses' => 0,
                         'availableCoursesCount' => 0,
-                        'totalStudents' => 0
+                        'totalStudents' => 0,
+                        'pendingAssignments' => 0,
+                        'averageGrade' => 0,
+                        'assignment_activities' => []
                     ]);
                     
                     return view('auth/dashboard', $dashboardData);
@@ -716,10 +749,10 @@ class Auth extends BaseController
         $courseID = $this->request->getGet('id');
         
         // ===== CREATE COURSE =====
-        if ($action === 'create' && $this->request->getMethod() === 'POST') {
-            $rules = [
+        if ($action === 'create' && $this->request->getMethod() === 'POST') {            $rules = [
                 'title' => 'required|min_length[3]|max_length[200]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                 'course_code' => 'required|min_length[3]|max_length[20]|regex_match[/^[A-Z]+\-?[0-9]+$/]|is_unique[courses.course_code]',
+                'academic_year' => 'permit_empty|max_length[20]|regex_match[/^[0-9]{4}\-[0-9]{4}$/]',
                 'instructor_ids' => 'permit_empty',
                 'category' => 'permit_empty|max_length[100]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                 'credits' => 'permit_empty|integer|greater_than[0]|less_than[10]',
@@ -728,7 +761,7 @@ class Auth extends BaseController
                 'start_date' => 'permit_empty|valid_date[Y-m-d]',
                 'end_date' => 'permit_empty|valid_date[Y-m-d]',
                 'status' => 'required|in_list[draft,active,completed,cancelled]',
-                'description' => 'permit_empty|regex_match[/^[a-zA-Z0-9\s\.\,\:\;\!\?\n\r•\-]+$/]'
+                'description' => 'permit_empty|max_length[1000]|regex_match[/^[a-zA-Z0-9\s\.\,\:\;\!\?\n\r•\-]+$/]'
             ];
 
             $messages = [
@@ -744,6 +777,10 @@ class Auth extends BaseController
                     'max_length' => 'Course code cannot exceed 20 characters.',
                     'regex_match' => 'Course code must start with letters followed by numbers (e.g., CS101, MATH201).',
                     'is_unique' => 'This course code is already in use.'
+                ],
+                'academic_year' => [
+                    'max_length' => 'Academic year cannot exceed 20 characters.',
+                    'regex_match' => 'Academic year must be in format YYYY-YYYY (e.g., 2024-2025, 2025-2026).'
                 ],
                 'instructor_id' => [
                     'integer' => 'Invalid instructor selected.',
@@ -770,8 +807,7 @@ class Auth extends BaseController
                 ],
                 'start_date' => [
                     'valid_date' => 'Please enter a valid start date.'
-                ],
-                'end_date' => [
+                ],                'end_date' => [
                     'valid_date' => 'Please enter a valid end date.'
                 ],
                 'status' => [
@@ -779,11 +815,25 @@ class Auth extends BaseController
                     'in_list' => 'Invalid course status selected.'
                 ],
                 'description' => [
+                    'max_length' => 'Description cannot exceed 1000 characters.',
                     'regex_match' => 'Description can only contain letters, numbers, spaces, hyphens, and basic punctuation (periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points •).'
                 ]
             ];
-            
-            if ($this->validate($rules, $messages)) {
+              if ($this->validate($rules, $messages)) {
+                // Additional validation: Check if dates align with academic year
+                $academicYear = $this->request->getPost('academic_year');
+                $startDate = $this->request->getPost('start_date');
+                $endDate = $this->request->getPost('end_date');
+                
+                if ($academicYear && ($startDate || $endDate)) {
+                    $academicYearError = $this->validateAcademicYearDates($academicYear, $startDate, $endDate);
+                    if ($academicYearError) {
+                        $this->session->setFlashdata('error', $academicYearError);
+                        $this->session->setFlashdata('errors', ['academic_year' => $academicYearError]);
+                        return redirect()->to(base_url('admin/manage_courses?action=create'))->withInput();
+                    }
+                }
+                
                 $instructorIds = $this->request->getPost('instructor_ids');
                 $finalInstructorIds = [];
                 
@@ -793,25 +843,22 @@ class Auth extends BaseController
                             $finalInstructorIds[] = (int)$instructorId;
                         }
                     }
-                }
-
-                $courseData = [
+                }                $courseData = [
                     'title' => $this->request->getPost('title'),
                     'course_code' => $this->request->getPost('course_code'),
+                    'academic_year' => $academicYear ?: null,
                     'instructor_ids' => json_encode($finalInstructorIds),
                     'category' => $this->request->getPost('category') ?: null,
                     'credits' => $this->request->getPost('credits') ?: 3,
                     'duration_weeks' => $this->request->getPost('duration_weeks') ?: 16,
                     'max_students' => $this->request->getPost('max_students') ?: 30,
-                    'start_date' => $this->request->getPost('start_date') ?: null,
-                    'end_date' => $this->request->getPost('end_date') ?: null,
+                    'start_date' => $startDate ?: null,
+                    'end_date' => $endDate ?: null,
                     'status' => $this->request->getPost('status'),
                     'description' => $this->request->getPost('description'),
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
-                ];
-
-                $coursesBuilder = $this->db->table('courses');
+                ];                $coursesBuilder = $this->db->table('courses');
                 if ($coursesBuilder->insert($courseData)) {
                     $creationActivity = [
                         'type' => 'course_creation',
@@ -828,6 +875,47 @@ class Auth extends BaseController
                     array_unshift($creationActivities, $creationActivity);
                     $creationActivities = array_slice($creationActivities, 0, 10);
                     $this->session->set('creation_activities', $creationActivities);
+
+                    // Generate notifications for assigned teachers
+                    if (!empty($finalInstructorIds)) {
+                        try {
+                            $courseName = $courseData['title'];
+                            $courseCode = $courseData['course_code'];
+                            $adminName = $this->session->get('name');
+                            $adminId = $this->session->get('userID');
+                            
+                            $notificationModel = new \App\Models\NotificationModel();
+                            
+                            // Get teacher details for notifications
+                            $teacherBuilder = $this->db->table('users');
+                            $teachers = $teacherBuilder
+                                ->select('id, name')
+                                ->whereIn('id', $finalInstructorIds)
+                                ->where('role', 'teacher')
+                                ->get()
+                                ->getResultArray();
+                            
+                            foreach ($teachers as $teacher) {
+                                // Notification for each teacher
+                                $notificationModel->insert([
+                                    'user_id'    => $teacher['id'],
+                                    'message'    => "You have been assigned to teach {$courseName} ({$courseCode}) by Admin {$adminName}",
+                                    'is_read'    => 0,
+                                    'created_at' => date('Y-m-d H:i:s')
+                                ]);
+                                
+                                // Notification for admin (one per teacher assigned)
+                                $notificationModel->insert([
+                                    'user_id'    => $adminId,
+                                    'message'    => "You assigned {$teacher['name']} to teach {$courseName} ({$courseCode})",
+                                    'is_read'    => 0,
+                                    'created_at' => date('Y-m-d H:i:s')
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            log_message('error', 'Failed to create course assignment notifications: ' . $e->getMessage());
+                        }
+                    }
 
                     $this->session->setFlashdata('success', 'Course created successfully!');
                     return redirect()->to(base_url('admin/manage_courses'));
@@ -848,20 +936,19 @@ class Auth extends BaseController
                 $this->session->setFlashdata('error', 'Course not found.');
                 return redirect()->to(base_url('admin/manage_courses'));
             }
-            
-            if ($this->request->getMethod() === 'POST') {
+              if ($this->request->getMethod() === 'POST') {
                 $rules = [
                     'title' => 'required|min_length[3]|max_length[200]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
                     'course_code' => "required|min_length[3]|max_length[20]|regex_match[/^[A-Z]+\-?[0-9]+$/]|is_unique[courses.course_code,id,{$courseID}]",
+                    'academic_year' => 'permit_empty|max_length[20]|regex_match[/^[0-9]{4}\-[0-9]{4}$/]',
                     'instructor_ids' => 'permit_empty',
-                    'category' => 'permit_empty|max_length[100]|regex_match[/^[a-zA-Z\s\-\.]+$/]',
-                    'credits' => 'permit_empty|integer|greater_than[0]|less_than[10]',
+                    'category' => 'permit_empty|max_length[100]|regex_match[/^[a-zA-Z\s\-\.]+$/]',                    'credits' => 'permit_empty|integer|greater_than[0]|less_than[10]',
                     'duration_weeks' => 'permit_empty|integer|greater_than[0]|less_than[100]',
                     'max_students' => 'permit_empty|integer|greater_than[0]|less_than[1000]',
                     'start_date' => 'permit_empty|valid_date[Y-m-d]',
                     'end_date' => 'permit_empty|valid_date[Y-m-d]',
                     'status' => 'required|in_list[draft,active,completed,cancelled]',
-                    'description' => 'permit_empty|regex_match[/^[a-zA-Z0-9\s\.\,\:\;\!\?\n\r•\-]+$/]'
+                    'description' => 'permit_empty|max_length[1000]|regex_match[/^[a-zA-Z0-9\s\.\,\:\;\!\?\n\r•\-]+$/]'
                 ];
 
                 $messages = [
@@ -878,6 +965,10 @@ class Auth extends BaseController
                         'regex_match' => 'Course code must start with letters followed by numbers (e.g., CS101, MATH201).',
                         'is_unique' => 'This course code is already in use.'
                     ],
+                    'academic_year' => [
+                        'max_length' => 'Academic year cannot exceed 20 characters.',
+                        'regex_match' => 'Academic year must be in format YYYY-YYYY (e.g., 2024-2025, 2025-2026).'
+                    ],
                     'instructor_id' => [
                         'integer' => 'Invalid instructor selected.',
                         'greater_than' => 'Please select a valid instructor if choosing one.'
@@ -885,17 +976,30 @@ class Auth extends BaseController
                     'category' => [
                         'max_length' => 'Category cannot exceed 100 characters.',
                         'regex_match' => 'Category can only contain letters, spaces, hyphens, and periods.'
-                    ],
-                    'status' => [
+                    ],                    'status' => [
                         'required' => 'Course status is required.',
                         'in_list' => 'Invalid course status selected.'
                     ],
                     'description' => [
+                        'max_length' => 'Description cannot exceed 1000 characters.',
                         'regex_match' => 'Description can only contain letters, numbers, spaces, hyphens, and basic punctuation (periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points •).'
-                    ]
-                ];
+                    ]                ];
                 
                 if ($this->validate($rules, $messages)) {
+                    // Additional validation: Check if dates align with academic year
+                    $academicYear = $this->request->getPost('academic_year');
+                    $startDate = $this->request->getPost('start_date');
+                    $endDate = $this->request->getPost('end_date');
+                    
+                    if ($academicYear && ($startDate || $endDate)) {
+                        $academicYearError = $this->validateAcademicYearDates($academicYear, $startDate, $endDate);
+                        if ($academicYearError) {
+                            $this->session->setFlashdata('error', $academicYearError);
+                            $this->session->setFlashdata('errors', ['academic_year' => $academicYearError]);
+                            return redirect()->to(base_url('admin/manage_courses?action=edit&id=' . $courseID))->withInput();
+                        }
+                    }
+                    
                     $instructorIds = $this->request->getPost('instructor_ids');
                     $finalInstructorIds = [];
                     
@@ -905,24 +1009,103 @@ class Auth extends BaseController
                                 $finalInstructorIds[] = (int)$instructorId;
                             }
                         }
-                    }
-
-                    $updateData = [
+                    }                    $updateData = [
                         'title' => $this->request->getPost('title'),
                         'course_code' => $this->request->getPost('course_code'),
+                        'academic_year' => $academicYear ?: null,
                         'instructor_ids' => json_encode($finalInstructorIds),
                         'category' => $this->request->getPost('category') ?: null,
                         'credits' => $this->request->getPost('credits') ?: 3,
                         'duration_weeks' => $this->request->getPost('duration_weeks') ?: 16,
                         'max_students' => $this->request->getPost('max_students') ?: 30,
-                        'start_date' => $this->request->getPost('start_date') ?: null,
-                        'end_date' => $this->request->getPost('end_date') ?: null,
+                        'start_date' => $startDate ?: null,
+                        'end_date' => $endDate ?: null,
                         'status' => $this->request->getPost('status'),
                         'description' => $this->request->getPost('description'),
                         'updated_at' => date('Y-m-d H:i:s')
-                    ];
-
-                    if ($coursesBuilder->where('id', $courseID)->update($updateData)) {
+                    ];                    if ($coursesBuilder->where('id', $courseID)->update($updateData)) {
+                        // Detect instructor changes and send notifications
+                        $originalInstructorIds = json_decode($courseToEdit['instructor_ids'] ?? '[]', true);
+                        if (!is_array($originalInstructorIds)) {
+                            $originalInstructorIds = [];
+                        }
+                        
+                        // Find added and removed instructors
+                        $addedInstructorIds = array_diff($finalInstructorIds, $originalInstructorIds);
+                        $removedInstructorIds = array_diff($originalInstructorIds, $finalInstructorIds);
+                        
+                        // Send notifications for instructor changes
+                        if (!empty($addedInstructorIds) || !empty($removedInstructorIds)) {
+                            try {
+                                $courseName = $updateData['title'];
+                                $courseCode = $updateData['course_code'];
+                                $adminName = $this->session->get('name');
+                                $adminId = $this->session->get('userID');
+                                
+                                $notificationModel = new \App\Models\NotificationModel();
+                                
+                                // Handle added instructors
+                                if (!empty($addedInstructorIds)) {
+                                    $teacherBuilder = $this->db->table('users');
+                                    $addedTeachers = $teacherBuilder
+                                        ->select('id, name')
+                                        ->whereIn('id', $addedInstructorIds)
+                                        ->where('role', 'teacher')
+                                        ->get()
+                                        ->getResultArray();
+                                    
+                                    foreach ($addedTeachers as $teacher) {
+                                        // Notification for teacher
+                                        $notificationModel->insert([
+                                            'user_id'    => $teacher['id'],
+                                            'message'    => "You have been assigned to teach {$courseName} ({$courseCode}) by Admin {$adminName}",
+                                            'is_read'    => 0,
+                                            'created_at' => date('Y-m-d H:i:s')
+                                        ]);
+                                        
+                                        // Notification for admin
+                                        $notificationModel->insert([
+                                            'user_id'    => $adminId,
+                                            'message'    => "You assigned {$teacher['name']} to teach {$courseName} ({$courseCode})",
+                                            'is_read'    => 0,
+                                            'created_at' => date('Y-m-d H:i:s')
+                                        ]);
+                                    }
+                                }
+                                
+                                // Handle removed instructors
+                                if (!empty($removedInstructorIds)) {
+                                    $teacherBuilder = $this->db->table('users');
+                                    $removedTeachers = $teacherBuilder
+                                        ->select('id, name')
+                                        ->whereIn('id', $removedInstructorIds)
+                                        ->where('role', 'teacher')
+                                        ->get()
+                                        ->getResultArray();
+                                    
+                                    foreach ($removedTeachers as $teacher) {
+                                        // Notification for teacher
+                                        $notificationModel->insert([
+                                            'user_id'    => $teacher['id'],
+                                            'message'    => "You have been removed from teaching {$courseName} ({$courseCode}) by Admin {$adminName}",
+                                            'is_read'    => 0,
+                                            'created_at' => date('Y-m-d H:i:s')
+                                        ]);
+                                        
+                                        // Notification for admin
+                                        $notificationModel->insert([
+                                            'user_id'    => $adminId,
+                                            'message'    => "You removed {$teacher['name']} from teaching {$courseName} ({$courseCode})",
+                                            'is_read'    => 0,
+                                            'created_at' => date('Y-m-d H:i:s')
+                                        ]);
+                                    }
+                                }
+                            } catch (\Exception $e) {
+                                log_message('error', 'Failed to create instructor change notifications: ' . $e->getMessage());
+                            }
+                        }
+                        
                         $updateActivity = [
                             'type' => 'course_update',
                             'icon' => '✏️',
@@ -1100,15 +1283,17 @@ class Auth extends BaseController
         // Handle course unassignment request
         if ($this->request->getMethod() === 'POST' && $this->request->getPost('action') === 'unassign_course') {
             return $this->handleCourseUnassignmentRequest($teacherID);
-        }
-
-        // Get courses assigned to this teacher using JSON_CONTAINS
+        }        // Get courses assigned to this teacher using JSON_CONTAINS
+        // Use both string and integer format to ensure compatibility
         $assignedCoursesBuilder = $this->db->table('courses');
         $assignedCourses = $assignedCoursesBuilder
             ->select('courses.*, 
                       COUNT(enrollments.id) as enrolled_students')
             ->join('enrollments', 'courses.id = enrollments.course_id', 'left')
-            ->where("JSON_CONTAINS(courses.instructor_ids, '\"$teacherID\"')", null, false)
+            ->groupStart()
+                ->where("JSON_CONTAINS(courses.instructor_ids, '\"$teacherID\"')", null, false)
+                ->orWhere("JSON_CONTAINS(courses.instructor_ids, '$teacherID')", null, false)
+            ->groupEnd()
             ->groupBy('courses.id')
             ->orderBy('courses.created_at', 'DESC')            ->get()
             ->getResultArray();
@@ -1148,13 +1333,20 @@ class Auth extends BaseController
             } else {
                 $course['co_instructors'] = [];
             }
-        }        // Get available courses (active courses without instructors or with room for more instructors)
+        }        // Get available courses (active courses without instructors or teacher not already assigned)
         $availableCoursesBuilder = $this->db->table('courses');
         $availableCourses = $availableCoursesBuilder
             ->select('courses.*, COUNT(enrollments.id) as enrolled_students')
             ->join('enrollments', 'courses.id = enrollments.course_id', 'left')
             ->where('courses.status', 'active')
-            ->where("(courses.instructor_ids IS NULL OR courses.instructor_ids = '[]' OR NOT JSON_CONTAINS(courses.instructor_ids, '\"$teacherID\"'))", null, false)
+            ->groupStart()
+                ->where('courses.instructor_ids IS NULL')
+                ->orWhere('courses.instructor_ids', '[]')
+                ->orGroupStart()
+                    ->where("NOT JSON_CONTAINS(courses.instructor_ids, '\"$teacherID\"')", null, false)
+                    ->where("NOT JSON_CONTAINS(courses.instructor_ids, '$teacherID')", null, false)
+                ->groupEnd()
+            ->groupEnd()
             ->groupBy('courses.id')
             ->orderBy('courses.created_at', 'DESC')
             ->get()
@@ -1346,7 +1538,7 @@ class Auth extends BaseController
         $course = $courseBuilder
             ->where('id', $courseID)
             ->where('status', 'active')
-            ->where("(instructor_ids IS NULL OR instructor_ids = '[]' OR NOT JSON_CONTAINS(instructor_ids, '\"$teacherID\"'))", null, false)
+            ->where("(instructor_ids IS NULL OR instructor_ids = '[]' OR (NOT JSON_CONTAINS(instructor_ids, '\"$teacherID\"') AND NOT JSON_CONTAINS(instructor_ids, '$teacherID')))", null, false)
             ->get()
             ->getRowArray();
             
@@ -1415,7 +1607,10 @@ class Auth extends BaseController
         $courseBuilder = $this->db->table('courses');
         $course = $courseBuilder
             ->where('id', $courseID)
-            ->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
+            ->groupStart()
+                ->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
+                ->orWhere("JSON_CONTAINS(instructor_ids, '$teacherID')", null, false)
+            ->groupEnd()
             ->get()
             ->getRowArray();
             
@@ -1443,8 +1638,7 @@ class Auth extends BaseController
             'instructor_ids' => json_encode($currentInstructorIds),
             'updated_at' => date('Y-m-d H:i:s')
         ];
-        
-        if ($courseBuilder->where('id', $courseID)->update($updateData)) {
+          if ($courseBuilder->where('id', $courseID)->update($updateData)) {
             // Record course unassignment activity
             $unassignmentActivity = [
                 'type' => 'course_unassignment',
@@ -1471,6 +1665,35 @@ class Auth extends BaseController
             // Store updated assignment activities in session
             $this->session->set('assignment_activities', $assignmentActivities);
 
+            // Generate notification for admin when teacher self-unassigns
+            try {
+                $courseName = $course['title'] ?? 'a course';
+                $courseCode = $course['course_code'] ?? '';
+                $teacherName = $this->session->get('name');
+                
+                $notificationModel = new \App\Models\NotificationModel();
+                
+                // Get all admin users
+                $adminBuilder = $this->db->table('users');
+                $admins = $adminBuilder
+                    ->select('id, name')
+                    ->where('role', 'admin')
+                    ->get()
+                    ->getResultArray();
+                
+                // Send notification to each admin
+                foreach ($admins as $admin) {
+                    $notificationModel->insert([
+                        'user_id'    => $admin['id'],
+                        'message'    => "Teacher {$teacherName} has unassigned themselves from {$courseName} ({$courseCode})",
+                        'is_read'    => 0,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            } catch (\Exception $e) {
+                log_message('error', 'Failed to create teacher self-unassignment notification: ' . $e->getMessage());
+            }
+
             // Show appropriate success message
             if ($enrollmentCount > 0) {
                 $this->session->setFlashdata('success', 'You have been unassigned from "' . esc($course['title']) . '"! Note: ' . $enrollmentCount . ' student(s) are still enrolled in this course.');
@@ -1482,5 +1705,46 @@ class Auth extends BaseController
         }
         
         return redirect()->to(base_url('teacher/courses'));
+    }
+    
+    /**
+     * Validate that course dates fall within the specified academic year
+     * 
+     * @param string $academicYear Academic year in YYYY-YYYY format
+     * @param string|null $startDate Course start date
+     * @param string|null $endDate Course end date
+     * @return string|null Error message if validation fails, null if valid
+     */
+    private function validateAcademicYearDates($academicYear, $startDate, $endDate)
+    {
+        // Parse academic year (e.g., "2024-2025")
+        if (!preg_match('/^([0-9]{4})\-([0-9]{4})$/', $academicYear, $matches)) {
+            return null; // Invalid academic year format, skip validation
+        }
+        
+        $startYear = (int)$matches[1];
+        $endYear = (int)$matches[2];
+        
+        // Academic year typically runs from August of start year to June of end year
+        $academicYearStart = strtotime($startYear . '-08-01'); // August 1 of start year
+        $academicYearEnd = strtotime($endYear . '-06-30'); // June 30 of end year
+        
+        // Validate start date
+        if ($startDate) {
+            $startTimestamp = strtotime($startDate);
+            if ($startTimestamp < $academicYearStart || $startTimestamp > $academicYearEnd) {
+                return "Start date must fall within academic year {$academicYear} (August {$startYear} - June {$endYear}).";
+            }
+        }
+        
+        // Validate end date
+        if ($endDate) {
+            $endTimestamp = strtotime($endDate);
+            if ($endTimestamp < $academicYearStart || $endTimestamp > $academicYearEnd) {
+                return "End date must fall within academic year {$academicYear} (August {$startYear} - June {$endYear}).";
+            }
+        }
+        
+        return null;
     }
 }

@@ -13,7 +13,7 @@ class CourseSeeder extends Seeder
                 'title' => 'Introduction to Programming',
                 'description' => 'Learn the fundamentals of programming with hands-on examples and projects.',
                 'course_code' => 'CS101',
-                'instructor_ids' => json_encode([2]), // JSON array with single instructor
+                'academic_year' => '2024-2025',
                 'category' => 'Computer Science',
                 'credits' => 3,
                 'duration_weeks' => 16,
@@ -28,7 +28,7 @@ class CourseSeeder extends Seeder
                 'title' => 'Web Development Basics',
                 'description' => 'Master HTML, CSS, and JavaScript to build modern web applications.',
                 'course_code' => 'WEB101',
-                'instructor_ids' => json_encode([2, 3]), // JSON array with multiple instructors
+                'academic_year' => '2024-2025',
                 'category' => 'Web Development',
                 'credits' => 4,
                 'duration_weeks' => 12,
@@ -43,7 +43,7 @@ class CourseSeeder extends Seeder
                 'title' => 'Database Design',
                 'description' => 'Learn relational database concepts, SQL, and database optimization.',
                 'course_code' => 'DB201',
-                'instructor_ids' => json_encode([2]), // JSON array with single instructor
+                'academic_year' => '2024-2025',
                 'category' => 'Database',
                 'credits' => 3,
                 'duration_weeks' => 14,

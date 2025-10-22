@@ -26,7 +26,12 @@ class CreateCoursesTable extends Migration
             'course_code' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 20,
-            ],            
+            ],
+            'academic_year' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 20,
+                'null'       => true,
+            ],
             'instructor_ids' => [
                 'type' => 'JSON',
                 'null' => true,

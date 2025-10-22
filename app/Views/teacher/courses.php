@@ -2,16 +2,19 @@
 
 <!-- Teacher Courses View - Shows assigned courses and available courses -->
 <div class="bg-light min-vh-100">
-    <div class="container py-4">
+    <div class="container py-4">        
         <!-- Header Section -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3">
                     <div class="card-body bg-success text-white p-4 rounded-3">
                         <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h2 class="mb-2 fw-bold">👨‍🏫 My Courses</h2>
-                                <p class="mb-0 opacity-75">Manage your assigned courses and request new course assignments</p>
+                            <div class="d-flex align-items-center">
+                                <div class="me-3" style="font-size: 3rem;">📚</div>
+                                <div>
+                                    <h2 class="mb-2 fw-bold">My Courses</h2>
+                                    <p class="mb-0 opacity-75">Manage your assigned courses and request new course assignments</p>
+                                </div>
                             </div>
                             <div>
                                 <a href="<?= base_url('teacher/dashboard') ?>" class="btn btn-light btn-sm">
@@ -22,7 +25,7 @@
                     </div>
                 </div>
             </div>
-        </div>        
+        </div>
         <div class="row mb-4">
             <div class="col-md-6 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-primary text-center p-4 rounded-3 h-100">

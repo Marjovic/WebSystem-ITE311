@@ -156,12 +156,30 @@ class Course extends BaseController
                 'user_id' => $user_id,
                 'course_id' => $course_id,
                 'enrollment_date' => $currentDateTime->format('Y-m-d H:i:s')
-            ];
-
-            // 10. ATTEMPT TO ENROLL USER
+            ];            // 10. ATTEMPT TO ENROLL USER
             $enrollmentResult = $this->enrollmentModel->enrollUser($enrollmentData);
 
             if ($enrollmentResult) {
+                // Step 7: Generate notification for student upon successful enrollment
+                try {
+                    // Get course details for notification message
+                    $db = \Config\Database::connect();
+                    $course = $db->table('courses')->where('id', $course_id)->get()->getRowArray();
+                    $courseName = $course['course_name'] ?? 'the course';
+                    
+                    // Create notification for the student
+                    $notificationModel = new \App\Models\NotificationModel();
+                    $notificationModel->insert([
+                        'user_id'    => $user_id,
+                        'message'    => "You have been successfully enrolled in {$courseName}",
+                        'is_read'    => 0,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                } catch (\Exception $e) {
+                    // Log notification error but don't fail the enrollment
+                    log_message('error', 'Failed to create enrollment notification: ' . $e->getMessage());
+                }
+                
                 // Success: User enrolled successfully
                 return $this->response->setJSON([
                     'success' => true,
@@ -280,13 +298,14 @@ class Course extends BaseController
 
         // Convert to integers for safety
         $student_id = (int)$student_id;
-        $course_id = (int)$course_id;
-
-        try {            // 7. VERIFY TEACHER OWNS THE COURSE
+        $course_id = (int)$course_id;        try {            // 7. VERIFY TEACHER OWNS THE COURSE
             $db = \Config\Database::connect();
             $course = $db->table('courses')
                 ->where('id', $course_id)
-                ->where("JSON_CONTAINS(instructor_ids, '\"$teacher_id\"')", null, false)
+                ->groupStart()
+                    ->where("JSON_CONTAINS(instructor_ids, '\"$teacher_id\"')", null, false)
+                    ->orWhere("JSON_CONTAINS(instructor_ids, '$teacher_id')", null, false)
+                ->groupEnd()
                 ->get()
                 ->getRowArray();
 
@@ -330,15 +349,41 @@ class Course extends BaseController
                     'error_code' => 'STUDENT_NOT_FOUND',
                     'csrf_hash' => csrf_hash()
                 ])->setStatusCode(404);
-            }
-
-            // 10. REMOVE STUDENT FROM COURSE
+            }            // 10. REMOVE STUDENT FROM COURSE
             $removeResult = $db->table('enrollments')
                 ->where('user_id', $student_id)
                 ->where('course_id', $course_id)
                 ->delete();
 
             if ($removeResult) {
+                // Generate notifications for both student and teacher
+                try {
+                    $courseName = $course['title'] ?? 'a course';
+                    $courseCode = $course['course_code'] ?? '';
+                    $teacherName = $this->session->get('name');
+                    
+                    $notificationModel = new \App\Models\NotificationModel();
+                    
+                    // Notification for the student
+                    $notificationModel->insert([
+                        'user_id'    => $student_id,
+                        'message'    => "You have been removed from {$courseName} ({$courseCode}) by {$teacherName}",
+                        'is_read'    => 0,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                    
+                    // Notification for the teacher
+                    $notificationModel->insert([
+                        'user_id'    => $teacher_id,
+                        'message'    => "You removed {$student['name']} from {$courseName} ({$courseCode})",
+                        'is_read'    => 0,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                } catch (\Exception $e) {
+                    // Log notification error but don't fail the removal
+                    log_message('error', 'Failed to create removal notifications: ' . $e->getMessage());
+                }
+                
                 // Log the removal activity
                 log_message('info', 'Teacher ' . $this->session->get('name') . ' (ID: ' . $teacher_id . ') removed student ' . $student['name'] . ' (ID: ' . $student_id . ') from course "' . $course['title'] . '" (ID: ' . $course_id . ')');
 
@@ -444,14 +489,15 @@ class Course extends BaseController
 
         // Convert to integers for safety
         $student_id = (int)$student_id;
-        $course_id = (int)$course_id;
-
-        try {
+        $course_id = (int)$course_id;        try {
             // 7. VERIFY TEACHER OWNS THE COURSE
             $db = \Config\Database::connect();
             $course = $db->table('courses')
                 ->where('id', $course_id)
-                ->where("JSON_CONTAINS(instructor_ids, '\"$teacher_id\"')", null, false)
+                ->groupStart()
+                    ->where("JSON_CONTAINS(instructor_ids, '\"$teacher_id\"')", null, false)
+                    ->orWhere("JSON_CONTAINS(instructor_ids, '$teacher_id')", null, false)
+                ->groupEnd()
                 ->get()
                 ->getRowArray();
 
@@ -516,11 +562,37 @@ class Course extends BaseController
                 'user_id' => $student_id,
                 'course_id' => $course_id,
                 'enrollment_date' => date('Y-m-d H:i:s')
-            ];
-
-            $addResult = $db->table('enrollments')->insert($enrollmentData);
+            ];            $addResult = $db->table('enrollments')->insert($enrollmentData);
 
             if ($addResult) {
+                // Generate notifications for both student and teacher
+                try {
+                    $courseName = $course['title'] ?? 'a course';
+                    $courseCode = $course['course_code'] ?? '';
+                    $teacherName = $this->session->get('name');
+                    
+                    $notificationModel = new \App\Models\NotificationModel();
+                    
+                    // Notification for the student
+                    $notificationModel->insert([
+                        'user_id'    => $student_id,
+                        'message'    => "You have been added to {$courseName} ({$courseCode}) by {$teacherName}",
+                        'is_read'    => 0,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                    
+                    // Notification for the teacher
+                    $notificationModel->insert([
+                        'user_id'    => $teacher_id,
+                        'message'    => "You added {$student['name']} to {$courseName} ({$courseCode})",
+                        'is_read'    => 0,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                } catch (\Exception $e) {
+                    // Log notification error but don't fail the enrollment
+                    log_message('error', 'Failed to create teacher-add notifications: ' . $e->getMessage());
+                }
+                
                 // Log the addition activity
                 log_message('info', 'Teacher ' . $this->session->get('name') . ' (ID: ' . $teacher_id . ') added student ' . $student['name'] . ' (ID: ' . $student_id . ') to course "' . $course['title'] . '" (ID: ' . $course_id . ')');
 
@@ -605,15 +677,16 @@ class Course extends BaseController
         }
 
         $course_id = (int)$course_id;
-        $teacher_id = $this->session->get('userID');
-
-        try {
+        $teacher_id = $this->session->get('userID');        try {
             $db = \Config\Database::connect();
             
             // 4. VERIFY TEACHER OWNS THE COURSE
             $course = $db->table('courses')
                 ->where('id', $course_id)
-                ->where("JSON_CONTAINS(instructor_ids, '\"$teacher_id\"')", null, false)
+                ->groupStart()
+                    ->where("JSON_CONTAINS(instructor_ids, '\"$teacher_id\"')", null, false)
+                    ->orWhere("JSON_CONTAINS(instructor_ids, '$teacher_id')", null, false)
+                ->groupEnd()
                 ->get()
                 ->getRowArray();
 

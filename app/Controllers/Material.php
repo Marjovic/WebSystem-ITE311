@@ -115,10 +115,34 @@ class Material extends BaseController
                             'file_name' => $originalName,
                             'file_path' => 'uploads/materials/course_' . $course_id . '/' . $uniqueName
                         ];
-                        
-                        // Save to database using MaterialModel
+                          // Save to database using MaterialModel
                         $materialId = $this->materialModel->insertMaterial($materialData);
                           if ($materialId) {
+                            // Step 7: Generate notifications for enrolled students when material is uploaded
+                            try {
+                                // Get course name for notification
+                                $courseName = $course['course_name'] ?? $course['title'] ?? 'your course';
+                                
+                                // Get all students enrolled in this course
+                                $enrolledStudents = $this->enrollmentModel->getEnrolledStudents($course_id);
+                                
+                                // Create notification for each enrolled student
+                                if (!empty($enrolledStudents)) {
+                                    $notificationModel = new \App\Models\NotificationModel();
+                                    foreach ($enrolledStudents as $student) {
+                                        $notificationModel->insert([
+                                            'user_id'    => $student['id'],
+                                            'message'    => "New material '{$originalName}' uploaded in {$courseName}",
+                                            'is_read'    => 0,
+                                            'created_at' => date('Y-m-d H:i:s')
+                                        ]);
+                                    }
+                                }
+                            } catch (\Exception $e) {
+                                // Log notification error but don't fail the upload
+                                log_message('error', 'Failed to create material upload notifications: ' . $e->getMessage());
+                            }
+                            
                             // Step 4.5: Set success flash message and redirect based on user role
                             $this->session->setFlashdata('success', 'Material "' . $originalName . '" uploaded successfully!');
                             

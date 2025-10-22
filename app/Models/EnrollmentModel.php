@@ -239,4 +239,39 @@ class EnrollmentModel extends Model
             return false; // Return false on error to be safe
         }
     }
+
+    /**
+     * Get all students enrolled in a specific course
+     * Used for sending notifications when materials are uploaded
+     * 
+     * @param int $course_id - The ID of the course
+     * @return array - Array of student data (id, name, email)
+     */
+    public function getEnrolledStudents($course_id)
+    {
+        // Validate input parameter
+        if (!is_numeric($course_id) || $course_id <= 0) {
+            return [];
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            $builder = $db->table('enrollments e');
+            
+            $students = $builder
+                ->select('u.id, u.name, u.email')
+                ->join('users u', 'e.user_id = u.id', 'inner')
+                ->where('e.course_id', $course_id)
+                ->where('u.role', 'student')
+                ->orderBy('u.name', 'ASC')
+                ->get()
+                ->getResultArray();
+            
+            return $students;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to fetch enrolled students: ' . $e->getMessage());
+            return [];
+        }
+    }
 }

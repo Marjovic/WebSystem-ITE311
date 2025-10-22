@@ -58,3 +58,7 @@ $routes->get(from: '/material/download/(:num)', to: 'Material::download/$1');
 // Material download routes (with enrollment check)
 $routes->get('/material/download/(:num)', 'Material::download/$1');
 $routes->get('/material/view/(:num)', 'Material::view/$1');
+
+// Notification API routes
+$routes->get('/notifications', 'Notifications::get');
+$routes->post('/notifications/mark_read/(:num)', 'Notifications::mark_as_read/$1');

@@ -13,8 +13,7 @@ class Notifications extends BaseController
     {
         $this->notificationModel = new \App\Models\NotificationModel();
     }
-    
-    /**
+      /**
      * Get notifications - Returns JSON response with unread count and notification list
      * Called via AJAX to fetch current user's notifications
      * 
@@ -36,8 +35,8 @@ class Notifications extends BaseController
         // Get unread notification count
         $unreadCount = $this->notificationModel->getUnreadCount($userID);
         
-        // Get latest notifications (default limit is 5)
-        $notifications = $this->notificationModel->getNotificationsForUser($userID, 5);
+        // Get ALL notifications (no limit) - only visible ones (not hidden)
+        $notifications = $this->notificationModel->getNotificationsForUser($userID);
         
         // Format notifications for display
         foreach ($notifications as &$notification) {
@@ -114,6 +113,72 @@ class Notifications extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Failed to mark notification as read'
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Hide notification - Accepts notification ID via POST
+     * Marks the notification as hidden without deleting from database
+     * 
+     * @param int $id The notification ID to hide
+     * @return ResponseInterface JSON response indicating success or failure
+     */
+    public function hide($id = null)
+    {
+        // Check if user is logged in
+        if ($this->session->get('isLoggedIn') !== true) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized - Please login'
+            ])->setStatusCode(401);
+        }
+        
+        // Validate notification ID
+        if (!$id || !is_numeric($id)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid notification ID'
+            ])->setStatusCode(400);
+        }
+        
+        // Get current user ID from session
+        $userID = $this->session->get('userID');
+        
+        // Verify the notification belongs to the current user before hiding
+        $notification = $this->notificationModel->where('id', $id)->first();
+        
+        if (!$notification) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Notification not found'
+            ])->setStatusCode(404);
+        }
+        
+        // Security check: Ensure the notification belongs to the logged-in user
+        if ($notification['user_id'] != $userID) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized - This notification does not belong to you'
+            ])->setStatusCode(403);
+        }
+        
+        // Hide notification (don't delete)
+        $result = $this->notificationModel->hideNotification($id);
+        
+        if ($result) {
+            // Get updated unread count
+            $unreadCount = $this->notificationModel->getUnreadCount($userID);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Notification dismissed',
+                'unread_count' => $unreadCount
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to hide notification'
             ])->setStatusCode(500);
         }
     }

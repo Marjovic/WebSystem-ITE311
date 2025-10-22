@@ -304,8 +304,7 @@
                 badge.hide();
             }
         }
-        
-        /**
+          /**
          * Populate dropdown menu with notification list
          * Uses Bootstrap alert classes for styling
          */
@@ -344,18 +343,26 @@
                                         <i class="fas fa-clock me-1"></i>
                                         ${notification.formatted_date}
                                     </small>
-                                    ${notification.is_unread ? `
-                                        <button class="btn btn-sm btn-primary mt-2 mark-read-btn" 
+                                    <div class="mt-2">
+                                        ${notification.is_unread ? `
+                                            <button class="btn btn-sm btn-primary me-1 mark-read-btn" 
+                                                    data-id="${notification.id}"
+                                                    onclick="markAsRead(${notification.id})">
+                                                <i class="fas fa-check me-1"></i>
+                                                Mark as Read
+                                            </button>
+                                        ` : `
+                                            <span class="badge bg-success me-1">
+                                                <i class="fas fa-check-circle"></i> Read
+                                            </span>
+                                        `}
+                                        <button class="btn btn-sm btn-outline-secondary dismiss-btn" 
                                                 data-id="${notification.id}"
-                                                onclick="markAsRead(${notification.id})">
-                                            <i class="fas fa-check me-1"></i>
-                                            Mark as Read
+                                                onclick="dismissNotification(${notification.id})">
+                                            <i class="fas fa-times me-1"></i>
+                                            Dismiss
                                         </button>
-                                    ` : `
-                                        <span class="badge bg-success mt-2">
-                                            <i class="fas fa-check-circle"></i> Read
-                                        </span>
-                                    `}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -423,6 +430,67 @@
                 // Re-enable button
                 $(`button[data-id="${notificationId}"]`).prop('disabled', false).html(`
                     <i class="fas fa-check me-1"></i> Mark as Read
+                `);
+            });
+        }
+        
+        /**
+         * Dismiss notification (hide it from view)
+         * Uses $.post() to call /notifications/hide/{id} endpoint
+         * Upon success, removes notification from list and updates badge
+         */
+        function dismissNotification(notificationId) {
+            const csrfToken = $('meta[name="csrf-token"]').attr('content');
+            const csrfHash = $('meta[name="csrf-hash"]').attr('content');
+            
+            // Disable the button to prevent double-clicks
+            $(`button.dismiss-btn[data-id="${notificationId}"]`).prop('disabled', true).html(`
+                <span class="spinner-border spinner-border-sm me-1"></span>
+                Dismissing...
+            `);
+            
+            $.post(
+                '<?= base_url('notifications/hide/') ?>' + notificationId,
+                JSON.stringify({ [csrfToken]: csrfHash }),
+                function(data) {
+                    if (data.success) {
+                        // Remove notification from list with fade effect
+                        $(`#notification-${notificationId}`).fadeOut(300, function() {
+                            $(this).remove();
+                            
+                            // Update badge count
+                            updateNotificationBadge(data.unread_count);
+                            
+                            // If no notifications left, show empty state
+                            if ($('#notificationsList li').length === 0) {
+                                $('#notificationsList').html(`
+                                    <li class="px-3 py-4 text-center">
+                                        <i class="fas fa-bell-slash text-muted fs-2 mb-2"></i>
+                                        <p class="mb-0 text-muted">No notifications</p>
+                                        <small class="text-muted">You're all caught up!</small>
+                                    </li>
+                                `);
+                            }
+                        });
+                        
+                        // Show success toast (optional)
+                        showToast('Success', 'Notification dismissed', 'success');
+                    } else {
+                        // Show error message
+                        alert('Failed to dismiss notification: ' + data.message);
+                        // Re-enable button
+                        $(`button.dismiss-btn[data-id="${notificationId}"]`).prop('disabled', false).html(`
+                            <i class="fas fa-times me-1"></i> Dismiss
+                        `);
+                    }
+                },
+                'json'
+            ).fail(function(xhr, status, error) {
+                console.error('Error dismissing notification:', error);
+                alert('An error occurred while dismissing the notification');
+                // Re-enable button
+                $(`button.dismiss-btn[data-id="${notificationId}"]`).prop('disabled', false).html(`
+                    <i class="fas fa-times me-1"></i> Dismiss
                 `);
             });
         }

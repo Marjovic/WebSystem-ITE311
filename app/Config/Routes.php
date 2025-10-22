@@ -62,3 +62,4 @@ $routes->get('/material/view/(:num)', 'Material::view/$1');
 // Notification API routes
 $routes->get('/notifications', 'Notifications::get');
 $routes->post('/notifications/mark_read/(:num)', 'Notifications::mark_as_read/$1');
+$routes->post('/notifications/hide/(:num)', 'Notifications::hide/$1');

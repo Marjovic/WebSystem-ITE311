@@ -30,6 +30,12 @@ class CreateNotificationsTable extends Migration
                 'constraint' => 1,
                 'default'    => 0,
             ],
+            'is_hidden' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 0,
+                'null'       => false,
+            ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,

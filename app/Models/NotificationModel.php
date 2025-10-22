@@ -12,7 +12,7 @@ class NotificationModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['user_id', 'message', 'is_read', 'created_at'];
+    protected $allowedFields    = ['user_id', 'message', 'is_read', 'is_hidden', 'created_at'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
@@ -56,10 +56,9 @@ class NotificationModel extends Model
     protected $beforeFind     = [];
     protected $afterFind      = [];
     protected $beforeDelete   = [];
-    protected $afterDelete    = [];
-
-    /**
+    protected $afterDelete    = [];    /**
      * Get the count of unread notifications for a specific user
+     * Only counts notifications that are not hidden
      * 
      * @param int $userId The ID of the user
      * @return int The count of unread notifications
@@ -68,21 +67,22 @@ class NotificationModel extends Model
     {
         return $this->where('user_id', $userId)
                     ->where('is_read', 0)
+                    ->where('is_hidden', 0)
                     ->countAllResults();
     }
 
     /**
-     * Get the latest notifications for a specific user
+     * Get ALL notifications for a specific user
+     * Excludes hidden notifications
      * 
      * @param int $userId The ID of the user
-     * @param int $limit The maximum number of notifications to retrieve (default: 5)
-     * @return array An array of notifications
+     * @return array An array of all visible notifications
      */
-    public function getNotificationsForUser($userId, $limit = 5)
+    public function getNotificationsForUser($userId)
     {
         return $this->where('user_id', $userId)
+                    ->where('is_hidden', 0)
                     ->orderBy('created_at', 'DESC')
-                    ->limit($limit)
                     ->findAll();
     }   
     
@@ -95,5 +95,17 @@ class NotificationModel extends Model
     public function markAsRead($notificationId)
     {
         return $this->update($notificationId, ['is_read' => 1]);
+    }
+
+    /**
+     * Hide a specific notification from the user's view
+     * Does not delete the notification, just marks it as hidden
+     * 
+     * @param int $notificationId The ID of the notification to hide
+     * @return bool True if the update was successful, false otherwise
+     */
+    public function hideNotification($notificationId)
+    {
+        return $this->update($notificationId, ['is_hidden' => 1]);
     }
 }

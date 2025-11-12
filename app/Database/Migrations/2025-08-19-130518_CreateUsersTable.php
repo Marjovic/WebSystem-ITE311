@@ -37,6 +37,11 @@ class CreateUsersTable extends Migration
                 'default' => 'student',
                 'null' => false,
             ],
+             'year_level' => [
+                'type'       => 'ENUM',
+                'constraint' => ['1st Year', '2nd Year', '3rd Year', '4th Year'],
+                'null'       => true,
+             ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,

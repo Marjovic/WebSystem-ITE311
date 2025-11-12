@@ -105,8 +105,7 @@
                                                required minlength="6">
                                         <div class="form-text">Password must be at least 6 characters long</div>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
+                                </div>                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="role" class="form-label fw-semibold">Role</label>
                                         <select class="form-select" id="role" name="role" required>
@@ -117,8 +116,21 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="col-md-6" id="year_level_container" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="year_level" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="year_level" name="year_level">
+                                            <option value="">Select Year Level</option>
+                                            <option value="1st Year" <?= old('year_level') === '1st Year' ? 'selected' : '' ?>>1st Year</option>
+                                            <option value="2nd Year" <?= old('year_level') === '2nd Year' ? 'selected' : '' ?>>2nd Year</option>
+                                            <option value="3rd Year" <?= old('year_level') === '3rd Year' ? 'selected' : '' ?>>3rd Year</option>
+                                            <option value="4th Year" <?= old('year_level') === '4th Year' ? 'selected' : '' ?>>4th Year</option>
+                                        </select>
+                                        <div class="form-text">Required for student accounts</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="d-flex gap-2">                                
+                            <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-success">
                                     💾 Create User
                                 </button>
@@ -168,8 +180,7 @@
                                                minlength="6">
                                         <div class="form-text">Password must be at least 6 characters long (if changing)</div>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
+                                </div>                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="edit_role" class="form-label fw-semibold">Role</label>
                                         <select class="form-select" id="edit_role" name="role" required>
@@ -179,8 +190,21 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="col-md-6" id="edit_year_level_container" style="display: <?= old('role', $editUser['role']) === 'student' ? 'block' : 'none' ?>;">
+                                    <div class="mb-3">
+                                        <label for="edit_year_level" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="edit_year_level" name="year_level">
+                                            <option value="">Select Year Level</option>
+                                            <option value="1st Year" <?= old('year_level', $editUser['year_level'] ?? '') === '1st Year' ? 'selected' : '' ?>>1st Year</option>
+                                            <option value="2nd Year" <?= old('year_level', $editUser['year_level'] ?? '') === '2nd Year' ? 'selected' : '' ?>>2nd Year</option>
+                                            <option value="3rd Year" <?= old('year_level', $editUser['year_level'] ?? '') === '3rd Year' ? 'selected' : '' ?>>3rd Year</option>
+                                            <option value="4th Year" <?= old('year_level', $editUser['year_level'] ?? '') === '4th Year' ? 'selected' : '' ?>>4th Year</option>
+                                        </select>
+                                        <div class="form-text">Required for student accounts</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="d-flex gap-2">                                
+                            <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-warning">
                                     💾 Update User
                                 </button>
@@ -333,6 +357,54 @@
 <!-- JavaScript for Enhanced Validation -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Show/Hide year_level field based on role selection - CREATE FORM
+    const roleSelect = document.getElementById('role');
+    const yearLevelContainer = document.getElementById('year_level_container');
+    const yearLevelSelect = document.getElementById('year_level');
+    
+    if (roleSelect && yearLevelContainer) {
+        roleSelect.addEventListener('change', function() {
+            if (this.value === 'student') {
+                yearLevelContainer.style.display = 'block';
+                yearLevelSelect.setAttribute('required', 'required');
+            } else {
+                yearLevelContainer.style.display = 'none';
+                yearLevelSelect.removeAttribute('required');
+                yearLevelSelect.value = '';
+            }
+        });
+        
+        // Trigger on page load if role is already selected
+        if (roleSelect.value === 'student') {
+            yearLevelContainer.style.display = 'block';
+            yearLevelSelect.setAttribute('required', 'required');
+        }
+    }
+    
+    // Show/Hide year_level field based on role selection - EDIT FORM
+    const editRoleSelect = document.getElementById('edit_role');
+    const editYearLevelContainer = document.getElementById('edit_year_level_container');
+    const editYearLevelSelect = document.getElementById('edit_year_level');
+    
+    if (editRoleSelect && editYearLevelContainer) {
+        editRoleSelect.addEventListener('change', function() {
+            if (this.value === 'student') {
+                editYearLevelContainer.style.display = 'block';
+                editYearLevelSelect.setAttribute('required', 'required');
+            } else {
+                editYearLevelContainer.style.display = 'none';
+                editYearLevelSelect.removeAttribute('required');
+                editYearLevelSelect.value = '';
+            }
+        });
+        
+        // Trigger on page load if role is already student
+        if (editRoleSelect.value === 'student') {
+            editYearLevelContainer.style.display = 'block';
+            editYearLevelSelect.setAttribute('required', 'required');
+        }
+    }
+    
     // Name field validation for both create and edit forms
     const nameFields = document.querySelectorAll('input[name="name"]');
       nameFields.forEach(function(field) {

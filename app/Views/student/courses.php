@@ -65,14 +65,12 @@
                     <small class="opacity-75">Awaiting completion</small>
                 </div>
             </div>
-            
-            <!-- Average Grade -->
-            <div class="col-lg-3 col-md-6">
+              <!-- Available Courses -->            <div class="col-lg-3 col-md-6">
                 <div class="card border-0 shadow-sm text-white bg-info text-center p-4 rounded-3 h-100">
-                    <div class="display-4 mb-3">📊</div>
-                    <div class="display-5 fw-bold">0%</div>
-                    <div class="fw-semibold">Average Grade</div>
-                    <small class="opacity-75">Overall performance</small>
+                    <div class="display-4 mb-3">🎓</div>
+                    <div class="display-5 fw-bold"><?= $totalAvailable ?></div>
+                    <div class="fw-semibold">Available Courses</div>
+                    <small class="opacity-75">Ready to enroll</small>
                 </div>
             </div>
         </div><!-- Tab Header -->
@@ -169,11 +167,97 @@
                                                 </div>
                                             </div>
                                         </div>                                        <!-- Enrollment Information -->
-                                        <div class="alert alert-success py-2 mb-3">
-                                            <small class="mb-0">
-                                                <i class="fas fa-check-circle me-1"></i>
-                                                <strong>Enrolled:</strong> <?= $course['enrollment_date_formatted'] ?>
-                                            </small>
+                                        <div class="card border-success mb-3">
+                                            <div class="card-header bg-success text-white py-2">
+                                                <small class="fw-semibold mb-0">
+                                                    <i class="fas fa-check-circle me-1"></i>Enrollment Details
+                                                </small>
+                                            </div>
+                                            <div class="card-body p-2">
+                                                <div class="row g-2 small">
+                                                    <!-- Enrollment Date -->
+                                                    <div class="col-6">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-calendar me-1"></i>
+                                                            <span>Enrolled: <strong class="text-dark"><?= $course['enrollment_date_formatted'] ?></strong></span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Year Level -->
+                                                    <?php if (!empty($course['year_level_at_enrollment'])): ?>
+                                                    <div class="col-6">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-graduation-cap me-1"></i>
+                                                            <span>Year: <strong class="text-dark"><?= esc($course['year_level_at_enrollment']) ?></strong></span>
+                                                        </div>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                    
+                                                    <!-- Semester -->
+                                                    <?php if (!empty($course['semester'])): ?>
+                                                    <div class="col-6">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-calendar-check me-1"></i>
+                                                            <span>Semester: <strong class="text-dark"><?= esc($course['semester']) ?></strong></span>
+                                                        </div>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                    
+                                                    <!-- Semester Duration -->
+                                                    <?php if (!empty($course['semester_duration_weeks'])): ?>
+                                                    <div class="col-6">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-hourglass-half me-1"></i>
+                                                            <span>Duration: <strong class="text-dark"><?= esc($course['semester_duration_weeks']) ?> weeks</strong></span>
+                                                        </div>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                    
+                                                    <!-- Semester End Date -->
+                                                    <?php if (!empty($course['semester_end_date_formatted'])): ?>
+                                                    <div class="col-6">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-calendar-times me-1"></i>
+                                                            <span>Ends: <strong class="text-dark"><?= $course['semester_end_date_formatted'] ?></strong></span>
+                                                        </div>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                    
+                                                    <!-- Academic Year -->
+                                                    <?php if (!empty($course['academic_year'])): ?>
+                                                    <div class="col-6">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-book me-1"></i>
+                                                            <span>A.Y.: <strong class="text-dark"><?= esc($course['academic_year']) ?></strong></span>
+                                                        </div>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                    
+                                                    <!-- Enrollment Type -->
+                                                    <?php if (!empty($course['enrollment_type'])): ?>
+                                                    <div class="col-6">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-tag me-1"></i>
+                                                            <span>Type: <strong class="text-dark"><?= ucfirst($course['enrollment_type']) ?></strong></span>
+                                                        </div>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                    
+                                                    <!-- Payment Status -->
+                                                    <?php if (!empty($course['payment_status'])): ?>
+                                                    <div class="col-6">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-credit-card me-1"></i>
+                                                            <span>Payment: 
+                                                                <strong class="<?= $course['payment_status'] === 'paid' ? 'text-success' : ($course['payment_status'] === 'partial' ? 'text-warning' : 'text-danger') ?>">
+                                                                    <?= ucfirst($course['payment_status']) ?>
+                                                                </strong>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <!-- Course Materials Section -->

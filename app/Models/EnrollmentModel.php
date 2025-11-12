@@ -5,14 +5,27 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class EnrollmentModel extends Model
-{
-    protected $table            = 'enrollments';
+{    protected $table            = 'enrollments';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
-    protected $allowedFields    = ['user_id', 'course_id', 'enrollment_date'];
+    protected $protectFields    = true;    protected $allowedFields    = [
+        'user_id', 
+        'course_id', 
+        'enrollment_date',
+        'enrollment_status',
+        'status_date',
+        'semester',
+        'semester_duration_weeks',
+        'semester_end_date',
+        'academic_year',
+        'year_level_at_enrollment',
+        'enrollment_type',
+        'payment_status',
+        'enrolled_by',
+        'notes'
+    ];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
@@ -21,7 +34,7 @@ class EnrollmentModel extends Model
     protected array $castHandlers = [];
 
     // Dates
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
@@ -42,8 +55,7 @@ class EnrollmentModel extends Model
     protected $beforeFind     = [];
     protected $afterFind      = [];
     protected $beforeDelete   = [];
-    protected $afterDelete    = [];
-
+    protected $afterDelete    = [];    
     /**
      * Insert a new enrollment record
      * 
@@ -74,24 +86,32 @@ class EnrollmentModel extends Model
         // Validate that user_id and course_id exist in their respective tables
         $db = \Config\Database::connect();
         
-        // Check if user exists
-        $userExists = $db->table('users')->where('id', $data['user_id'])->countAllResults() > 0;
-        if (!$userExists) {
+        // Check if user exists and get their current year level
+        $user = $db->table('users')->where('id', $data['user_id'])->get()->getRowArray();
+        if (!$user) {
             return false;
         }
 
-        // Check if course exists
-        $courseExists = $db->table('courses')->where('id', $data['course_id'])->countAllResults() > 0;
-        if (!$courseExists) {
+        // Check if course exists and get course details
+        $course = $db->table('courses')->where('id', $data['course_id'])->get()->getRowArray();
+        if (!$course) {
             return false;
-        }
-
-        // Insert the enrollment record
+        }        // Insert the enrollment record
         try {
             $insertData = [
                 'user_id' => (int)$data['user_id'],
                 'course_id' => (int)$data['course_id'],
-                'enrollment_date' => $data['enrollment_date']
+                'enrollment_date' => $data['enrollment_date'],
+                'enrollment_status' => $data['enrollment_status'] ?? 'enrolled',
+                'year_level_at_enrollment' => $data['year_level_at_enrollment'] ?? $user['year_level'] ?? null,
+                'semester' => $data['semester'] ?? null,
+                'semester_duration_weeks' => $data['semester_duration_weeks'] ?? null,
+                'semester_end_date' => $data['semester_end_date'] ?? null,
+                'academic_year' => $data['academic_year'] ?? $course['academic_year'] ?? null,
+                'enrollment_type' => $data['enrollment_type'] ?? 'regular',
+                'payment_status' => $data['payment_status'] ?? 'unpaid',
+                'enrolled_by' => $data['enrolled_by'] ?? null,
+                'notes' => $data['notes'] ?? null
             ];
             
             return $this->insert($insertData);
@@ -118,13 +138,22 @@ class EnrollmentModel extends Model
         $db = \Config\Database::connect();
         $builder = $db->table('enrollments e');
         
-        try {            
-            $enrollments = $builder
+        try {              $enrollments = $builder
                 ->select('
                     e.id as enrollment_id,
                     e.user_id,
                     e.course_id,
                     e.enrollment_date,
+                    e.enrollment_status,
+                    e.status_date,
+                    e.semester,
+                    e.academic_year,
+                    e.year_level_at_enrollment,
+                    e.enrollment_type,
+                    e.payment_status,
+                    e.semester_duration_weeks,
+                    e.semester_end_date,
+                    e.notes,
                     c.title as course_title,
                     c.description as course_description,
                     c.course_code,
@@ -159,30 +188,38 @@ class EnrollmentModel extends Model
                     $enrollment['instructor_name'] = 'No instructor assigned';
                     $enrollment['instructor_email'] = '';
                 }
-                
-                // Format dates for better display
+                  // Format dates for better display
                 $enrollment['enrollment_date_formatted'] = date('M j, Y', strtotime($enrollment['enrollment_date']));
                 $enrollment['start_date_formatted'] = $enrollment['start_date'] ? date('M j, Y', strtotime($enrollment['start_date'])) : 'TBA';
                 $enrollment['end_date_formatted'] = $enrollment['end_date'] ? date('M j, Y', strtotime($enrollment['end_date'])) : 'TBA';
+                $enrollment['semester_end_date_formatted'] = $enrollment['semester_end_date'] ? date('M j, Y', strtotime($enrollment['semester_end_date'])) : null;
                 
                 // Calculate enrollment duration
                 $enrollmentDate = new \DateTime($enrollment['enrollment_date']);
                 $currentDate = new \DateTime();
                 $interval = $enrollmentDate->diff($currentDate);
-                $enrollment['enrollment_duration_days'] = $interval->days;
-                
-                // Add enrollment status based on course dates
+                $enrollment['enrollment_duration_days'] = $interval->days;                // Add course progress status (different from enrollment_status)
                 $now = date('Y-m-d');
                 if ($enrollment['start_date'] && $enrollment['end_date']) {
                     if ($now < $enrollment['start_date']) {
-                        $enrollment['enrollment_status'] = 'upcoming';
+                        $enrollment['course_progress'] = 'upcoming';
                     } elseif ($now > $enrollment['end_date']) {
-                        $enrollment['enrollment_status'] = 'completed';
+                        $enrollment['course_progress'] = 'finished';
                     } else {
-                        $enrollment['enrollment_status'] = 'active';
+                        $enrollment['course_progress'] = 'ongoing';
                     }
                 } else {
-                    $enrollment['enrollment_status'] = 'active';
+                    $enrollment['course_progress'] = 'ongoing';
+                }
+                
+                // Add status badge color
+                $enrollment['status_badge'] = $this->getStatusBadge($enrollment['enrollment_status']);
+                
+                // Format status date
+                if ($enrollment['status_date']) {
+                    $enrollment['status_date_formatted'] = date('M j, Y', strtotime($enrollment['status_date']));
+                } else {
+                    $enrollment['status_date_formatted'] = 'N/A';
                 }
             }
 
@@ -271,6 +308,88 @@ class EnrollmentModel extends Model
             
         } catch (\Exception $e) {
             log_message('error', 'Failed to fetch enrolled students: ' . $e->getMessage());
+            return [];
+        }
+    }    /**
+     * Get Bootstrap badge class for enrollment status
+     * 
+     * @param string $status - Enrollment status
+     * @return string - Bootstrap badge class
+     */
+    private function getStatusBadge($status)
+    {
+        $badges = [
+            'enrolled' => 'bg-success',
+            'dropped' => 'bg-warning',
+            'completed' => 'bg-primary',
+            'withdrawn' => 'bg-secondary'
+        ];
+        
+        return $badges[$status] ?? 'bg-secondary';
+    }    /**
+     * Update enrollment status (for dropping, completing courses, etc.)
+     * 
+     * @param int $enrollment_id - ID of the enrollment
+     * @param string $status - New status (enrolled, dropped, completed, withdrawn)
+     * @param array $additionalData - Additional data to update (notes, etc.)
+     * @return bool - Success status
+     */
+    public function updateEnrollmentStatus($enrollment_id, $status, $additionalData = [])
+    {
+        try {
+            $updateData = [
+                'enrollment_status' => $status,
+                'status_date' => date('Y-m-d H:i:s')
+            ];
+            
+            // Merge any additional data (like notes)
+            $updateData = array_merge($updateData, $additionalData);
+            
+            return $this->update($enrollment_id, $updateData);
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to update enrollment status: ' . $e->getMessage());
+            return false;
+        }
+    }    /**
+     * Get enrollment statistics for a student
+     * 
+     * @param int $user_id - Student ID
+     * @return array - Statistics array
+     */
+    public function getStudentStatistics($user_id)
+    {
+        try {
+            $enrollments = $this->where('user_id', $user_id)->findAll();
+            
+            $stats = [
+                'total_enrollments' => count($enrollments),
+                'active_courses' => 0,
+                'completed_courses' => 0,
+                'dropped_courses' => 0,
+                'withdrawn_courses' => 0
+            ];
+            
+            foreach ($enrollments as $enrollment) {
+                // Count by status
+                switch ($enrollment['enrollment_status']) {
+                    case 'enrolled':
+                        $stats['active_courses']++;
+                        break;
+                    case 'completed':
+                        $stats['completed_courses']++;
+                        break;
+                    case 'dropped':
+                        $stats['dropped_courses']++;
+                        break;
+                    case 'withdrawn':
+                        $stats['withdrawn_courses']++;
+                        break;
+                }
+            }
+            
+            return $stats;
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to get student statistics: ' . $e->getMessage());
             return [];
         }
     }

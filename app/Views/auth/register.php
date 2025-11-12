@@ -51,13 +51,23 @@
                                        value="<?= old('name') ?>" required pattern="[A-Za-zñÑ\s]+" 
                                        title="Name can only contain letters and spaces">
                                 <div class="form-text">Enter your full name</div>
-                            </div>
-
-                            <div class="mb-3">
+                            </div>                            <div class="mb-3">
                                 <label for="email" class="form-label">Email Address *</label>
                                 <input type="email" class="form-control" id="email" name="email" 
                                        value="<?= old('email') ?>" required pattern="[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
                                 <div class="form-text">Enter a valid email address</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="year_level" class="form-label">Year Level *</label>
+                                <select class="form-select" id="year_level" name="year_level" required>
+                                    <option value="" selected disabled>Select your year level</option>
+                                    <option value="1st Year" <?= old('year_level') === '1st Year' ? 'selected' : '' ?>>1st Year</option>
+                                    <option value="2nd Year" <?= old('year_level') === '2nd Year' ? 'selected' : '' ?>>2nd Year</option>
+                                    <option value="3rd Year" <?= old('year_level') === '3rd Year' ? 'selected' : '' ?>>3rd Year</option>
+                                    <option value="4th Year" <?= old('year_level') === '4th Year' ? 'selected' : '' ?>>4th Year</option>
+                                </select>
+                                <div class="form-text">Select your current year level</div>
                             </div>
 
                             <div class="mb-3">

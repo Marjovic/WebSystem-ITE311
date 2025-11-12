@@ -42,14 +42,14 @@ class Auth extends BaseController
 
         // Step 2: Check if the registration form was submitted
         // This happens when user fills the form and clicks "Register" button
-        if ($this->request->getMethod() === 'POST') {
-            // Step 2a: Set validation rules - these are the requirements for each form field
+        if ($this->request->getMethod() === 'POST') {            // Step 2a: Set validation rules - these are the requirements for each form field
             // Each rule tells the system what to check for in the user's input
             $rules = [
                 'name'             => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',  // Name must exist, be 3-100 characters, and only contain letters (including ñ/Ñ) and spaces
                 'email'            => 'required|valid_email|is_unique[users.email]|regex_match[/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]',
                 'password'         => 'required|min_length[6]',                 // Password must exist and be at least 6 characters
-                'password_confirm' => 'required|matches[password]'              // Password confirmation must match the password
+                'password_confirm' => 'required|matches[password]',             // Password confirmation must match the password
+                'year_level'       => 'required|in_list[1st Year,2nd Year,3rd Year,4th Year]'  // Year level is required for students
             ];// Step 2b: Set error messages - these are shown to user if validation fails
             // Each message explains what went wrong in simple language
             $messages = [                
@@ -64,14 +64,17 @@ class Auth extends BaseController
                     'valid_email' => 'Please enter a valid email address.',     // Show if email format is wrong (no @ sign, etc.)
                     'is_unique'   => 'This email is already registered.',
                     'regex_match'  => 'Invalid email! Email should be like "marjovic_alejado@lms.com".'
-                ],
-                'password' => [
+                ],                'password' => [
                     'required'   => 'Password is required.',                    // Show if user didn't enter password
                     'min_length' => 'Password must be at least 6 characters long.' // Show if password is too short (less than 6 characters)
                 ],
                 'password_confirm' => [
                     'required' => 'Password confirmation is required.',         // Show if user didn't confirm password
                     'matches'  => 'Password confirmation does not match.'       // Show if password and confirmation are different
+                ],
+                'year_level' => [
+                    'required' => 'Year level is required.',                    // Show if user didn't select year level
+                    'in_list'  => 'Please select a valid year level.'           // Show if invalid year level selected
                 ]
             ];
 
@@ -83,14 +86,14 @@ class Auth extends BaseController
                 // Hashing scrambles the password so hackers can't read it even if they steal the database
                 // We never store plain text passwords - always hashed for security
                 $hashedPassword = password_hash(password: $this->request->getPost(index: 'password'), algo: PASSWORD_DEFAULT);
-                
-                // Step 3b: Prepare user data to save in database
+                  // Step 3b: Prepare user data to save in database
                 // Get all form data and organize it into an array for database storage
                 $userData = [
                     'name'       => $this->request->getPost(index: 'name'),      // Get user's full name from form
                     'email'      => $this->request->getPost(index: 'email'),     // Get user's email address from form
                     'password'   => $hashedPassword,                      // Use the hashed (secure) version of password
                     'role'       => 'student',                            // Set default role as student (new users start as students)
+                    'year_level' => $this->request->getPost(index: 'year_level'), // Get student's year level from form
                     'created_at' => date(format: 'Y-m-d H:i:s'),          // Record when account was created (current date/time)
                     'updated_at' => date(format: 'Y-m-d H:i:s')           // Record when account was last updated (same as created for new accounts)
                 ];
@@ -326,48 +329,59 @@ class Auth extends BaseController
                 ]);
                 return view('auth/dashboard', $dashboardData);            case 'teacher':
                 // Teacher gets course and student data 
-                $teacherID = $this->session->get('userID');                try {
-                    // Get courses assigned to this teacher using JSON_CONTAINS (check both string and int format)
-                    $teacherCourses = $this->db->table('courses')
-                        ->groupStart()
-                            ->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
-                            ->orWhere("JSON_CONTAINS(instructor_ids, '$teacherID')", null, false)
-                        ->groupEnd()
-                        ->countAllResults();
+                $teacherID = $this->session->get('userID');                try {                    // Get all courses and filter by teacher manually (compatible with all MySQL versions)
+                    $allCourses = $this->db->table('courses')
+                        ->select('id, title, instructor_ids, status')
+                        ->get()
+                        ->getResultArray();
                     
-                    // Debug log
-                    log_message('debug', "Teacher Dashboard - Teacher ID: {$teacherID}, Courses Count: {$teacherCourses}");
-                        
-                    $activeCourses = $this->db->table('courses')
-                        ->where('status', 'active')
-                        ->groupStart()
-                            ->where("JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
-                            ->orWhere("JSON_CONTAINS(instructor_ids, '$teacherID')", null, false)
-                        ->groupEnd()
-                        ->countAllResults();
+                    // Count courses where teacher is in instructor_ids
+                    $teacherCourses = 0;
+                    $activeCourses = 0;
                     
-                    // Debug log
-                    log_message('debug', "Teacher Dashboard - Active Courses: {$activeCourses}");
+                    foreach ($allCourses as $course) {
+                        $instructorIds = json_decode($course['instructor_ids'], true);
+                        if (is_array($instructorIds) && in_array($teacherID, $instructorIds)) {
+                            $teacherCourses++;
+                            if ($course['status'] === 'active') {
+                                $activeCourses++;
+                            }
+                        }
+                    }
+                      // Debug log
+                    log_message('debug', "Teacher Dashboard - Teacher ID: {$teacherID}, Courses Count: {$teacherCourses}, Active: {$activeCourses}");
                     
-                    // Get available courses (active courses without instructors or teacher not assigned)
-                    $availableCoursesCount = $this->db->table('courses')
-                        ->where('status', 'active')
-                        ->groupStart()
-                            ->where('instructor_ids IS NULL')
-                            ->orWhere('instructor_ids', '[]')
-                            ->orGroupStart()
-                                ->where("NOT JSON_CONTAINS(instructor_ids, '\"$teacherID\"')", null, false)
-                                ->where("NOT JSON_CONTAINS(instructor_ids, '$teacherID')", null, false)
-                            ->groupEnd()
-                        ->groupEnd()
-                        ->countAllResults();                    // Get total students enrolled in teacher's courses
-                    $totalStudentsQuery = $this->db->query("
-                        SELECT COUNT(DISTINCT e.user_id) as total_students
-                        FROM enrollments e 
-                        INNER JOIN courses c ON e.course_id = c.id 
-                        WHERE JSON_CONTAINS(c.instructor_ids, ?) OR JSON_CONTAINS(c.instructor_ids, ?)
-                    ", ['\"' . $teacherID . '\"', $teacherID]);
-                    $totalStudents = $totalStudentsQuery->getRow()->total_students ?? 0;
+                    // Count available courses (active courses where teacher is not assigned)
+                    $availableCoursesCount = 0;
+                    foreach ($allCourses as $course) {
+                        if ($course['status'] === 'active') {
+                            $instructorIds = json_decode($course['instructor_ids'], true);
+                            // Course is available if no instructors or teacher not in list
+                            if (empty($instructorIds) || !in_array($teacherID, $instructorIds)) {
+                                $availableCoursesCount++;
+                            }
+                        }
+                    }
+                    
+                    // Get course IDs where teacher is assigned
+                    $teacherCourseIds = [];
+                    foreach ($allCourses as $course) {
+                        $instructorIds = json_decode($course['instructor_ids'], true);
+                        if (is_array($instructorIds) && in_array($teacherID, $instructorIds)) {
+                            $teacherCourseIds[] = $course['id'];
+                        }
+                    }
+                    
+                    // Get total students enrolled in teacher's courses
+                    $totalStudents = 0;
+                    if (!empty($teacherCourseIds)) {
+                        $totalStudents = $this->db->table('enrollments')
+                            ->select('COUNT(DISTINCT user_id) as total')
+                            ->whereIn('course_id', $teacherCourseIds)
+                            ->get()
+                            ->getRow()
+                            ->total ?? 0;
+                    }
                     
                     // Debug log
                     log_message('debug', "Teacher Dashboard - Total Students: {$totalStudents}");
@@ -490,8 +504,7 @@ class Auth extends BaseController
         $action = $this->request->getGet('action');
         $userID = $this->request->getGet('id');
         $currentAdminID = $this->session->get('userID');
-        
-        // ===== CREATE USER =====
+          // ===== CREATE USER =====
         if ($action === 'create' && $this->request->getMethod() === 'POST') {
             $rules = [
                 'name'     => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
@@ -499,6 +512,12 @@ class Auth extends BaseController
                 'password' => 'required|min_length[6]',
                 'role'     => 'required|in_list[admin,teacher,student]'
             ];
+            
+            // Add year_level validation if role is student
+            $role = $this->request->getPost('role');
+            if ($role === 'student') {
+                $rules['year_level'] = 'required|in_list[1st Year,2nd Year,3rd Year,4th Year]';
+            }
 
             $messages = [
                 'name' => [
@@ -520,6 +539,10 @@ class Auth extends BaseController
                 'role' => [
                     'required' => 'Role is required.',
                     'in_list'  => 'Invalid role selected.'
+                ],
+                'year_level' => [
+                    'required' => 'Year level is required for students.',
+                    'in_list'  => 'Please select a valid year level.'
                 ]
             ];
 
@@ -532,6 +555,11 @@ class Auth extends BaseController
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
+                
+                // Add year_level only if role is student
+                if ($role === 'student') {
+                    $userData['year_level'] = $this->request->getPost('year_level');
+                }
 
                 $builder = $this->db->table('users');
                 if ($builder->insert($userData)) {
@@ -574,9 +602,7 @@ class Auth extends BaseController
             if ($userToEdit['id'] == $currentAdminID) {
                 $this->session->setFlashdata('error', 'You cannot edit your own account.');
                 return redirect()->to(base_url('admin/manage_users'));
-            }
-
-            if ($this->request->getMethod() === 'POST') {
+            }            if ($this->request->getMethod() === 'POST') {
                 $rules = [
                     'name' => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
                     'email' => "required|valid_email|is_unique[users.email,id,{$userID}]|regex_match[/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]",
@@ -585,6 +611,12 @@ class Auth extends BaseController
 
                 if ($this->request->getPost('password')) {
                     $rules['password'] = 'min_length[6]';
+                }
+                
+                // Add year_level validation if role is student
+                $role = $this->request->getPost('role');
+                if ($role === 'student') {
+                    $rules['year_level'] = 'required|in_list[1st Year,2nd Year,3rd Year,4th Year]';
                 }
 
                 $messages = [
@@ -606,6 +638,10 @@ class Auth extends BaseController
                     ],
                     'password' => [
                         'min_length' => 'Password must be at least 6 characters long.'
+                    ],
+                    'year_level' => [
+                        'required' => 'Year level is required for students.',
+                        'in_list'  => 'Please select a valid year level.'
                     ]
                 ];
 
@@ -619,6 +655,14 @@ class Auth extends BaseController
 
                     if ($this->request->getPost('password')) {
                         $updateData['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
+                    }
+                    
+                    // Add or update year_level if role is student
+                    if ($role === 'student') {
+                        $updateData['year_level'] = $this->request->getPost('year_level');
+                    } else {
+                        // Clear year_level if role changed from student to admin/teacher
+                        $updateData['year_level'] = null;
                     }
 
                     if ($builder->where('id', $userID)->update($updateData)) {
@@ -1296,13 +1340,14 @@ class Auth extends BaseController
             ->groupEnd()
             ->groupBy('courses.id')
             ->orderBy('courses.created_at', 'DESC')            ->get()
-            ->getResultArray();
-
-        // Get detailed student information for each course
+            ->getResultArray();        // Get detailed student information for each course with enhanced enrollment data
         foreach ($assignedCourses as &$course) {
-            $studentsBuilder = $this->db->table('enrollments');
-            $course['students'] = $studentsBuilder
-                ->select('users.id as user_id, users.name, users.email, enrollments.enrollment_date')
+            $studentsBuilder = $this->db->table('enrollments');                $course['students'] = $studentsBuilder
+                ->select('users.id as user_id, users.name, users.email, 
+                         enrollments.enrollment_date, enrollments.enrollment_status,
+                         enrollments.year_level_at_enrollment, enrollments.enrollment_type,
+                         enrollments.payment_status, enrollments.semester, enrollments.academic_year,
+                         enrollments.semester_duration_weeks, enrollments.semester_end_date')
                 ->join('users', 'enrollments.user_id = users.id')
                 ->where('enrollments.course_id', $course['id'])
                 ->where('users.role', 'student')
@@ -1706,9 +1751,12 @@ class Auth extends BaseController
         
         return redirect()->to(base_url('teacher/courses'));
     }
-    
-    /**
+      /**
      * Validate that course dates fall within the specified academic year
+     * Enforces: 
+     * - Academic year must be current year or future (e.g., 2025-2026 onward)
+     * - Start date must be today or later
+     * - End date must be no more than 220 class days from start date
      * 
      * @param string $academicYear Academic year in YYYY-YYYY format
      * @param string|null $startDate Course start date
@@ -1717,7 +1765,10 @@ class Auth extends BaseController
      */
     private function validateAcademicYearDates($academicYear, $startDate, $endDate)
     {
-        // Parse academic year (e.g., "2024-2025")
+        $today = date('Y-m-d');
+        $currentYear = (int)date('Y');
+        
+        // Parse academic year (e.g., "2025-2026")
         if (!preg_match('/^([0-9]{4})\-([0-9]{4})$/', $academicYear, $matches)) {
             return null; // Invalid academic year format, skip validation
         }
@@ -1725,23 +1776,67 @@ class Auth extends BaseController
         $startYear = (int)$matches[1];
         $endYear = (int)$matches[2];
         
-        // Academic year typically runs from August of start year to June of end year
-        $academicYearStart = strtotime($startYear . '-08-01'); // August 1 of start year
-        $academicYearEnd = strtotime($endYear . '-06-30'); // June 30 of end year
+        // VALIDATION 1: Academic year must be current year or future
+        if ($startYear < $currentYear) {
+            return "Academic year cannot be in the past. Please use {$currentYear}-" . ($currentYear + 1) . " or later.";
+        }
         
-        // Validate start date
+        // Academic year must be consecutive (e.g., 2025-2026, not 2025-2027)
+        if ($endYear != $startYear + 1) {
+            return "Academic year must be consecutive years (e.g., {$startYear}-" . ($startYear + 1) . ").";
+        }
+        
+        // VALIDATION 2: Start date must be today or later
         if ($startDate) {
-            $startTimestamp = strtotime($startDate);
-            if ($startTimestamp < $academicYearStart || $startTimestamp > $academicYearEnd) {
-                return "Start date must fall within academic year {$academicYear} (August {$startYear} - June {$endYear}).";
+            if ($startDate < $today) {
+                return "Start date cannot be in the past. Please select today (" . date('M j, Y') . ") or a future date.";
+            }
+            
+            // Start date must fall within the specified academic year
+            $academicYearStart = $startYear . '-08-01'; // August 1 of start year
+            $academicYearEnd = $endYear . '-06-30'; // June 30 of end year
+            
+            if ($startDate < $academicYearStart || $startDate > $academicYearEnd) {
+                return "Start date must fall within academic year {$academicYear} (August 1, {$startYear} - June 30, {$endYear}).";
             }
         }
         
-        // Validate end date
-        if ($endDate) {
+        // VALIDATION 3: End date validation with 220 class days maximum
+        if ($startDate && $endDate) {
+            $startTimestamp = strtotime($startDate);
             $endTimestamp = strtotime($endDate);
-            if ($endTimestamp < $academicYearStart || $endTimestamp > $academicYearEnd) {
-                return "End date must fall within academic year {$academicYear} (August {$startYear} - June {$endYear}).";
+            
+            // End date must be after start date
+            if ($endTimestamp <= $startTimestamp) {
+                return "End date must be after start date.";
+            }
+            
+            // Calculate the maximum allowed end date (220 class days from start)
+            // Class days = weekdays only, approximately 220 class days = ~44 weeks
+            $maxClassDays = 220;
+            $classDay = 0;
+            $currentDate = $startTimestamp;
+            
+            while ($classDay < $maxClassDays) {
+                $currentDate = strtotime('+1 day', $currentDate);
+                $dayOfWeek = date('N', $currentDate); // 1 (Monday) through 7 (Sunday)
+                
+                // Count only weekdays (Monday-Friday)
+                if ($dayOfWeek <= 5) {
+                    $classDay++;
+                }
+            }
+            
+            if ($endTimestamp > $currentDate) {
+                $maxEndDate = date('M j, Y', $currentDate);
+                $daysDiff = round(($endTimestamp - $startTimestamp) / (60 * 60 * 24));
+                return "End date exceeds the maximum of 220 class days from start date. Maximum allowed end date is {$maxEndDate}. Your selected range spans {$daysDiff} calendar days.";
+            }
+            
+            // End date must also fall within the academic year
+            $academicYearEnd = strtotime($endYear . '-06-30');
+            if ($endTimestamp > $academicYearEnd) {
+                return "End date must fall within academic year {$academicYear} (before June 30, {$endYear}).";
             }
         }
         

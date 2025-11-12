@@ -147,15 +147,34 @@ class Course extends BaseController
                     'message' => 'You are already enrolled in this course.',
                     'error_code' => 'ALREADY_ENROLLED',
                     'csrf_hash' => csrf_hash()
-                ])->setStatusCode(409);
-            }            
+                ])->setStatusCode(409);            }            
             $philippineTimezone = new \DateTimeZone('Asia/Manila');
             $currentDateTime = new \DateTime('now', $philippineTimezone);
+            
+            // Get course details for semester and academic year
+            $db = \Config\Database::connect();
+            $course = $db->table('courses')->where('id', $course_id)->get()->getRowArray();
+            
+            // Determine semester based on current date
+            // First semester: August - December, Second semester: January - July
+            $currentMonth = (int)date('n');
+            $semester = ($currentMonth >= 8 && $currentMonth <= 12) ? 'First Semester' : 'Second Semester';
+            
+            // Calculate semester end date (16 weeks from enrollment)
+            $semesterEndDate = clone $currentDateTime;
+            $semesterEndDate->modify('+16 weeks'); // Add 16 weeks (112 days)
+            
+            // Calculate semester duration in weeks
+            $semesterDuration = 16; // Standard semester duration
             
             $enrollmentData = [
                 'user_id' => $user_id,
                 'course_id' => $course_id,
-                'enrollment_date' => $currentDateTime->format('Y-m-d H:i:s')
+                'enrollment_date' => $currentDateTime->format('Y-m-d H:i:s'),
+                'semester' => $semester,
+                'semester_duration_weeks' => $semesterDuration,
+                'semester_end_date' => $semesterEndDate->format('Y-m-d H:i:s'),
+                'academic_year' => $course['academic_year'] ?? null
             ];            // 10. ATTEMPT TO ENROLL USER
             $enrollmentResult = $this->enrollmentModel->enrollUser($enrollmentData);
 
@@ -508,11 +527,9 @@ class Course extends BaseController
                     'error_code' => 'COURSE_NOT_OWNED',
                     'csrf_hash' => csrf_hash()
                 ])->setStatusCode(403);
-            }
-
-            // 8. VERIFY STUDENT EXISTS AND IS A STUDENT
+            }            // 8. VERIFY STUDENT EXISTS AND IS A STUDENT
             $student = $db->table('users')
-                ->select('name, email')
+                ->select('name, email, year_level')
                 ->where('id', $student_id)
                 ->where('role', 'student')
                 ->get()
@@ -555,14 +572,39 @@ class Course extends BaseController
                     'error_code' => 'ENROLLMENT_LIMIT_REACHED',
                     'csrf_hash' => csrf_hash()
                 ])->setStatusCode(400);
-            }
-
-            // 11. ADD STUDENT TO COURSE
+            }            // 11. GET STUDENT'S YEAR LEVEL
+            $studentYearLevel = $student['year_level'] ?? null;
+            
+            // 11a. DETERMINE SEMESTER BASED ON CURRENT DATE
+            // First semester: August - December, Second semester: January - July
+            $currentMonth = (int)date('n');
+            $semester = ($currentMonth >= 8 && $currentMonth <= 12) ? 'First Semester' : 'Second Semester';
+            
+            // 11b. CALCULATE SEMESTER END DATE (16 weeks from enrollment)
+            $enrollmentDateTime = new \DateTime('now', new \DateTimeZone('Asia/Manila'));
+            $semesterEndDate = clone $enrollmentDateTime;
+            $semesterEndDate->modify('+16 weeks'); // Add 16 weeks (112 days)
+            
+            // 11c. CALCULATE SEMESTER DURATION IN WEEKS
+            $semesterDuration = 16; // Standard semester duration
+            
+            // 12. ADD STUDENT TO COURSE
             $enrollmentData = [
                 'user_id' => $student_id,
                 'course_id' => $course_id,
-                'enrollment_date' => date('Y-m-d H:i:s')
-            ];            $addResult = $db->table('enrollments')->insert($enrollmentData);
+                'enrollment_date' => $enrollmentDateTime->format('Y-m-d H:i:s'),
+                'enrollment_status' => 'enrolled',
+                'year_level_at_enrollment' => $studentYearLevel,
+                'academic_year' => $course['academic_year'] ?? null,
+                'semester' => $semester,
+                'semester_duration_weeks' => $semesterDuration,
+                'semester_end_date' => $semesterEndDate->format('Y-m-d H:i:s'),
+                'enrollment_type' => 'regular',
+                'payment_status' => 'unpaid',
+                'enrolled_by' => $teacher_id
+            ];
+            
+            $addResult = $db->table('enrollments')->insert($enrollmentData);
 
             if ($addResult) {
                 // Generate notifications for both student and teacher
@@ -594,9 +636,7 @@ class Course extends BaseController
                 }
                 
                 // Log the addition activity
-                log_message('info', 'Teacher ' . $this->session->get('name') . ' (ID: ' . $teacher_id . ') added student ' . $student['name'] . ' (ID: ' . $student_id . ') to course "' . $course['title'] . '" (ID: ' . $course_id . ')');
-
-                // Success: Student added successfully
+                log_message('info', 'Teacher ' . $this->session->get('name') . ' (ID: ' . $teacher_id . ') added student ' . $student['name'] . ' (ID: ' . $student_id . ') to course "' . $course['title'] . '" (ID: ' . $course_id . ')');                // Success: Student added successfully
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Student successfully added to the course.',
@@ -608,6 +648,15 @@ class Course extends BaseController
                         'course_code' => $course['course_code'],
                         'enrollment_date' => $enrollmentData['enrollment_date'],
                         'enrollment_date_formatted' => date('M j, Y', strtotime($enrollmentData['enrollment_date'])),
+                        'year_level_at_enrollment' => $studentYearLevel,
+                        'semester' => $semester,
+                        'semester_duration_weeks' => $semesterDuration,
+                        'semester_end_date' => $enrollmentData['semester_end_date'],
+                        'semester_end_date_formatted' => $semesterEndDate->format('M j, Y'),
+                        'academic_year' => $course['academic_year'] ?? null,
+                        'enrollment_type' => 'regular',
+                        'enrollment_status' => 'enrolled',
+                        'payment_status' => 'unpaid',
                         'added_by' => $this->session->get('name'),
                         'addition_date' => date('M j, Y g:iA')
                     ],
@@ -696,11 +745,9 @@ class Course extends BaseController
                     'message' => 'Course not found or access denied.',
                     'error_code' => 'COURSE_NOT_OWNED'
                 ])->setStatusCode(403);
-            }
-
-            // 5. GET STUDENTS NOT ENROLLED IN THIS COURSE
+            }            // 5. GET STUDENTS NOT ENROLLED IN THIS COURSE
             $availableStudents = $db->table('users')
-                ->select('id, name, email')
+                ->select('id, name, email, year_level')
                 ->where('role', 'student')
                 ->where('id NOT IN (SELECT user_id FROM enrollments WHERE course_id = ' . $course_id . ')', null, false)
                 ->orderBy('name', 'ASC')

@@ -20,7 +20,7 @@ class CreateSubmissionsTable extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
             ],
-            'user_id' => [  // Changed from student_id to user_id for consistency
+            'user_id' => [ 
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,

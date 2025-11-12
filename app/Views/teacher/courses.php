@@ -59,108 +59,233 @@
                                 Total: <?= count($assignedCourses) ?> courses
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body pt-0">
+                    </div>                    <div class="card-body pt-0">
                         <?php if (!empty($assignedCourses)): ?>
                             <div class="row">
                                 <?php foreach ($assignedCourses as $course): ?>
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-0 shadow-sm h-100 course-card">
-                                        <div class="card-header bg-primary text-white border-0">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div class="flex-grow-1">
-                                                    <h6 class="mb-1 fw-bold"><?= esc($course['title']) ?></h6>
-                                                    <small class="opacity-75"><?= esc($course['course_code']) ?></small>
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card border-0 shadow-sm h-100 course-card">                                        <div class="card-header bg-gradient-primary text-white border-0">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="flex-grow-1 me-2">
+                                                    <h6 class="mb-0 fw-bold"><?= esc($course['title']) ?></h6>
+                                                    <small class="opacity-75 d-block mt-1">
+                                                        <i class="fas fa-code me-1"></i><?= esc($course['course_code']) ?>
+                                                    </small>
                                                 </div>
-                                                <?php
-                                                $statusStyles = [
-                                                    'draft' => ['color' => 'warning', 'icon' => '📝'],
-                                                    'active' => ['color' => 'success', 'icon' => '✅'],
-                                                    'completed' => ['color' => 'secondary', 'icon' => '🎯'],
-                                                    'cancelled' => ['color' => 'danger', 'icon' => '❌']
-                                                ];
-                                                $style = $statusStyles[$course['status']] ?? ['color' => 'secondary', 'icon' => '❓'];
-                                                ?>
-                                                <span class="badge bg-<?= $style['color'] ?> rounded-pill ms-2">
-                                                    <?= $style['icon'] ?>
-                                                </span>
+                                                <div>
+                                                    <?php
+                                                    $statusStyles = [
+                                                        'draft' => ['color' => 'warning', 'icon' => 'fas fa-pencil-alt', 'text' => 'Draft'],
+                                                        'active' => ['color' => 'success', 'icon' => 'fas fa-check-circle', 'text' => 'Active'],
+                                                        'completed' => ['color' => 'info', 'icon' => 'fas fa-flag-checkered', 'text' => 'Done'],
+                                                        'cancelled' => ['color' => 'danger', 'icon' => 'fas fa-times-circle', 'text' => 'Cancelled']
+                                                    ];
+                                                    $style = $statusStyles[$course['status']] ?? ['color' => 'secondary', 'icon' => 'fas fa-question-circle', 'text' => 'Unknown'];
+                                                    ?>
+                                                    <span class="badge bg-<?= $style['color'] ?> rounded-pill px-3 py-2" style="font-size: 0.75rem;">
+                                                        <i class="<?= $style['icon'] ?> me-1"></i><?= $style['text'] ?>
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <!-- Course Details -->
+                                        </div>                                        <div class="card-body">                                            <!-- Course Details -->
                                             <div class="mb-3">
-                                                <?php if ($course['category']): ?>
-                                                    <div class="badge bg-light text-dark mb-2"><?= esc($course['category']) ?></div>
-                                                <?php endif; ?>
-                                                <div class="small text-muted">
-                                                    <div class="d-flex justify-content-between mb-1">
-                                                        <span>📅 Duration:</span>
-                                                        <span><?= $course['duration_weeks'] ?> weeks</span>
+                                                <!-- Badges Row -->
+                                                <div class="mb-3">
+                                                    <?php if ($course['category']): ?>
+                                                        <span class="badge bg-light text-dark border"><?= esc($course['category']) ?></span>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($course['academic_year'])): ?>
+                                                        <span class="badge bg-primary text-white ms-1">📚 <?= esc($course['academic_year']) ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                
+                                                <!-- Course Info Grid - 2 Columns for Better Spacing -->
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <div class="p-2 bg-light rounded-3 text-center">
+                                                            <div class="text-muted small mb-1">📅 Duration</div>
+                                                            <div class="fw-bold text-dark"><?= $course['duration_weeks'] ?> weeks</div>
+                                                        </div>
                                                     </div>
-                                                    <div class="d-flex justify-content-between mb-1">
-                                                        <span>⭐ Credits:</span>
-                                                        <span><?= $course['credits'] ?></span>
+                                                    <div class="col-6">
+                                                        <div class="p-2 bg-light rounded-3 text-center">
+                                                            <div class="text-muted small mb-1">⭐ Credits</div>
+                                                            <div class="fw-bold text-dark"><?= $course['credits'] ?></div>
+                                                        </div>
                                                     </div>
-                                                    <div class="d-flex justify-content-between mb-1">
-                                                        <span>👥 Max Students:</span>
-                                                        <span><?= $course['max_students'] ?></span>
+                                                    <div class="col-6">
+                                                        <div class="p-2 bg-light rounded-3 text-center">
+                                                            <div class="text-muted small mb-1">👥 Max Students</div>
+                                                            <div class="fw-bold text-dark"><?= $course['max_students'] ?></div>
+                                                        </div>
                                                     </div>
                                                     <?php if ($course['start_date']): ?>
-                                                    <div class="d-flex justify-content-between mb-1">
-                                                        <span>🚀 Start Date:</span>
-                                                        <span><?= date('M j, Y', strtotime($course['start_date'])) ?></span>
+                                                    <div class="col-6">
+                                                        <div class="p-2 bg-light rounded-3 text-center">
+                                                            <div class="text-muted small mb-1">🚀 Start Date</div>
+                                                            <div class="fw-bold text-dark"><?= date('M j, Y', strtotime($course['start_date'])) ?></div>
+                                                        </div>
                                                     </div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>                                            <!-- Enrolled Students -->
                                             <div class="mb-3">
-                                                <h6 class="fw-semibold text-primary mb-2">👥 Enrolled Students (<?= $course['enrolled_students'] ?>)</h6>
+                                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                                    <h6 class="fw-bold text-primary mb-0">
+                                                        <i class="fas fa-users me-2"></i>Enrolled Students
+                                                    </h6>
+                                                    <span class="badge bg-primary rounded-pill px-3 py-2">
+                                                        <?= $course['enrolled_students'] ?> Student<?= $course['enrolled_students'] !== 1 ? 's' : '' ?>
+                                                    </span>
+                                                </div>
                                                 <?php if ($course['enrolled_students'] > 0 && !empty($course['students'])): ?>
-                                                    <div class="bg-light p-3 rounded-3">
-                                                        <div class="small">
+                                                    <div class="bg-light p-3 rounded-3"><div class="student-list">
                                                             <?php foreach ($course['students'] as $student): ?>
-                                                                <div class="d-flex align-items-center justify-content-between mb-2 p-2 bg-white rounded border">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
-                                                                             style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                                                <div class="student-card mb-2 p-3 bg-white rounded border">
+                                                                    <div class="d-flex align-items-start">
+                                                                        <!-- Student Avatar -->
+                                                                        <div class="student-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                                             style="width: 45px; height: 45px; min-width: 45px; font-size: 1.1rem;">
                                                                             👤
                                                                         </div>
-                                                                        <div>
-                                                                            <div class="fw-semibold"><?= esc($student['name']) ?></div>
-                                                                            <div class="text-muted small"><?= esc($student['email']) ?></div>
-                                                                            <div class="text-muted small">Enrolled: <?= date('M j, Y', strtotime($student['enrollment_date'])) ?></div>
+                                                                        
+                                                                        <!-- Student Info -->
+                                                                        <div class="flex-grow-1">
+                                                                            <!-- Name and Status -->
+                                                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                                                <h6 class="mb-0 fw-semibold text-dark"><?= esc($student['name']) ?></h6>
+                                                                                <?php if (!empty($student['enrollment_status'])): ?>
+                                                                                    <?php
+                                                                                    $statusBadges = [
+                                                                                        'enrolled' => 'bg-success',
+                                                                                        'dropped' => 'bg-warning text-dark',
+                                                                                        'completed' => 'bg-info',
+                                                                                        'withdrawn' => 'bg-secondary'
+                                                                                    ];
+                                                                                    $badgeClass = $statusBadges[$student['enrollment_status']] ?? 'bg-secondary';
+                                                                                    ?>
+                                                                                    <span class="badge <?= $badgeClass ?> rounded-pill">
+                                                                                        <?= ucfirst($student['enrollment_status']) ?>
+                                                                                    </span>
+                                                                                <?php endif; ?>
+                                                                            </div>
+                                                                            
+                                                                            <!-- Email -->
+                                                                            <div class="text-muted small mb-2">
+                                                                                <i class="fas fa-envelope me-1"></i><?= esc($student['email']) ?>
+                                                                            </div>
+                                                                            
+                                                                            <!-- Enrollment Details Grid -->
+                                                                            <div class="row g-2 small">
+                                                                                <div class="col-sm-6">
+                                                                                    <div class="d-flex align-items-center text-muted">
+                                                                                        <i class="fas fa-calendar-alt me-1"></i>
+                                                                                        <span>Enrolled: <strong class="text-dark"><?= date('M j, Y', strtotime($student['enrollment_date'])) ?></strong></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <?php if (!empty($student['year_level_at_enrollment'])): ?>
+                                                                                <div class="col-sm-6">
+                                                                                    <div class="d-flex align-items-center text-muted">
+                                                                                        <i class="fas fa-graduation-cap me-1"></i>
+                                                                                        <span>Year: <strong class="text-dark"><?= esc($student['year_level_at_enrollment']) ?></strong></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($student['enrollment_type'])): ?>
+                                                                                <div class="col-sm-6">
+                                                                                    <div class="d-flex align-items-center text-muted">
+                                                                                        <i class="fas fa-file-alt me-1"></i>
+                                                                                        <span>Type: <strong class="text-dark"><?= ucfirst($student['enrollment_type']) ?></strong></span>
+                                                                                    </div>
+                                                                                </div>                                                                                <?php endif; ?>                                                                                <?php if (!empty($student['semester'])): ?>
+                                                                                <div class="col-sm-6">
+                                                                                    <div class="d-flex align-items-center text-muted">
+                                                                                        <i class="fas fa-calendar-check me-1"></i>
+                                                                                        <span>Semester: <strong class="text-dark"><?= esc($student['semester']) ?></strong></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($student['semester_duration_weeks'])): ?>
+                                                                                <div class="col-sm-6">
+                                                                                    <div class="d-flex align-items-center text-muted">
+                                                                                        <i class="fas fa-hourglass-half me-1"></i>
+                                                                                        <span>Duration: <strong class="text-dark"><?= esc($student['semester_duration_weeks']) ?> weeks</strong></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($student['semester_end_date'])): ?>
+                                                                                <div class="col-sm-6">
+                                                                                    <div class="d-flex align-items-center text-muted">
+                                                                                        <i class="fas fa-calendar-times me-1"></i>
+                                                                                        <span>Ends: <strong class="text-dark"><?= date('M j, Y', strtotime($student['semester_end_date'])) ?></strong></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($student['academic_year'])): ?>
+                                                                                <div class="col-sm-6">
+                                                                                    <div class="d-flex align-items-center text-muted">
+                                                                                        <i class="fas fa-book me-1"></i>
+                                                                                        <span>A.Y.: <strong class="text-dark"><?= esc($student['academic_year']) ?></strong></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($student['payment_status'])): ?>
+                                                                                <div class="col-sm-6">
+                                                                                    <div class="d-flex align-items-center text-muted">
+                                                                                        <i class="fas fa-credit-card me-1"></i>
+                                                                                        <span>Payment: 
+                                                                                            <?php
+                                                                                            $paymentIcons = [
+                                                                                                'paid' => '<span class="text-success fw-bold">Paid ✓</span>',
+                                                                                                'partial' => '<span class="text-warning fw-bold">Partial</span>',
+                                                                                                'pending' => '<span class="text-danger fw-bold">Pending</span>',
+                                                                                                'unpaid' => '<span class="text-danger fw-bold">Unpaid</span>',
+                                                                                                'scholarship' => '<span class="text-primary fw-bold">Scholarship</span>',
+                                                                                                'waived' => '<span class="text-info fw-bold">Waived</span>'
+                                                                                            ];
+                                                                                            echo $paymentIcons[$student['payment_status']] ?? '<span class="text-muted">'.ucfirst($student['payment_status']).'</span>';
+                                                                                            ?>
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <?php endif; ?>
+                                                                            </div>
+                                                                        </div>
+                                                                        
+                                                                        <!-- Remove Button -->
+                                                                        <div class="ms-2">
+                                                                            <button type="button" 
+                                                                                    class="btn btn-outline-danger btn-sm remove-student-btn"
+                                                                                    data-student-id="<?= $student['user_id'] ?>"
+                                                                                    data-student-name="<?= esc($student['name']) ?>"
+                                                                                    data-course-id="<?= $course['id'] ?>"
+                                                                                    data-course-title="<?= esc($course['title']) ?>"
+                                                                                    title="Remove student from course">
+                                                                                <i class="fas fa-times"></i>
+                                                                            </button>
                                                                         </div>
                                                                     </div>
-                                                                    <button type="button" 
-                                                                            class="btn btn-outline-danger btn-sm remove-student-btn"
-                                                                            data-student-id="<?= $student['user_id'] ?>"
-                                                                            data-student-name="<?= esc($student['name']) ?>"
-                                                                            data-course-id="<?= $course['id'] ?>"
-                                                                            data-course-title="<?= esc($course['title']) ?>"
-                                                                            title="Remove student from course">
-                                                                        <i class="fas fa-user-minus me-1"></i>Remove
-                                                                    </button>
                                                                 </div>
                                                             <?php endforeach; ?>
+                                                        </div>                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="text-center py-4 bg-light rounded-3">
+                                                        <div class="mb-3">
+                                                            <i class="fas fa-user-graduate text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
                                                         </div>
-                                                    </div>                                                <?php else: ?>
-                                                    <div class="text-center py-3 text-muted">
-                                                        <div class="mb-2">
-                                                            <i class="fas fa-users text-muted" style="font-size: 2rem;"></i>
-                                                        </div>
-                                                        <small>No students enrolled yet</small>
+                                                        <p class="text-muted mb-2 fw-semibold">No students enrolled yet</p>
+                                                        <small class="text-muted">Click "Add New Student" below to enroll students</small>
                                                     </div>
                                                 <?php endif; ?>
-                                                
                                                 <!-- Add Student Button -->
-                                                <div class="d-flex justify-content-end mt-2">
+                                                <div class="d-grid gap-2 mt-3">
                                                     <button type="button" 
-                                                            class="btn btn-outline-success btn-sm add-student-btn"
+                                                            class="btn btn-success btn-sm add-student-btn"
                                                             data-course-id="<?= $course['id'] ?>"
                                                             data-course-title="<?= esc($course['title']) ?>"
                                                             data-course-code="<?= esc($course['course_code']) ?>"
                                                             title="Add student to course">
-                                                        <i class="fas fa-user-plus me-1"></i>Add Student
+                                                        <i class="fas fa-user-plus me-2"></i>Add New Student
                                                     </button>
                                                 </div>
                                             </div><!-- Co-Instructors -->
@@ -249,12 +374,11 @@
                                 Available: <?= count($availableCourses) ?> courses
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body pt-0">
+                    </div>                    <div class="card-body pt-0">
                         <?php if (!empty($availableCourses)): ?>
                             <div class="row">
                                 <?php foreach ($availableCourses as $course): ?>
-                                <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="col-lg-6 mb-4">
                                     <div class="card border-0 shadow-sm h-100 course-card available-course">
                                         <div class="card-header bg-info text-white border-0">
                                             <div class="d-flex justify-content-between align-items-start">
@@ -370,11 +494,16 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: default;
     border-radius: 12px !important;
+    overflow: hidden;
 }
 
 .course-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 30px rgba(0,0,0,0.15) !important;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
 }
 
 /* Course Type Indicators */
@@ -512,6 +641,60 @@
 .student-selection-item.selected {
     background-color: #e3f2fd !important;
     border-color: #2196f3 !important;
+}
+
+/* Enhanced Student Card Styling */
+.student-card {
+    transition: all 0.2s ease;
+    border: 1px solid #e0e0e0 !important;
+    background: #ffffff !important;
+}
+
+.student-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e0 !important;
+}
+
+.student-avatar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.student-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.student-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.student-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.student-list::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 10px;
+}
+
+.student-list::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+.student-card .remove-student-btn {
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.student-card:hover .remove-student-btn {
+    opacity: 1;
+}
+
+.student-card .remove-student-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
 }
 </style>
 
@@ -1051,27 +1234,36 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentCount = parseInt(enrolledHeader.textContent.match(/\d+/)[0]);
             const newCount = currentCount + 1;
             enrolledHeader.innerHTML = `👥 Enrolled Students (${newCount})`;
-            
-            // Check if there's currently a "no students" message
-            const noStudentsMessage = studentContainer.querySelector('.text-center.py-3.text-muted');
+              // Check if there's currently a "no students" message            const noStudentsMessage = studentContainer.querySelector('.text-center.py-3.text-muted');
             if (noStudentsMessage) {
                 // Replace no students message with student list
                 studentContainer.innerHTML = `
                     <div class="small">
-                        <div class="d-flex align-items-center justify-content-between mb-2 p-2 bg-white rounded border">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
-                                     style="width: 30px; height: 30px; font-size: 0.8rem;">
+                        <div class="d-flex align-items-center justify-content-between mb-3 p-3 bg-white rounded border">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 40px; height: 40px; font-size: 0.9rem;">
                                     👤
                                 </div>
-                                <div>
-                                    <div class="fw-semibold">${studentData.student_name}</div>
-                                    <div class="text-muted small">${studentData.student_email}</div>
-                                    <div class="text-muted small">Enrolled: ${studentData.enrollment_date_formatted}</div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <div class="fw-semibold">${studentData.student_name}</div>
+                                        <span class="badge bg-success badge-sm">enrolled</span>
+                                    </div>
+                                    <div class="text-muted small mb-1">${studentData.student_email}</div>
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        <span class="badge bg-light text-dark border">📅 ${studentData.enrollment_date_formatted}</span>
+                                        ${studentData.year_level_at_enrollment ? '<span class="badge bg-info">🎓 ' + studentData.year_level_at_enrollment + '</span>' : ''}
+                                        ${studentData.semester ? '<span class="badge bg-primary">📚 ' + studentData.semester + '</span>' : ''}
+                                        ${studentData.semester_duration_weeks ? '<span class="badge bg-success">⏱️ ' + studentData.semester_duration_weeks + ' weeks</span>' : ''}
+                                        ${studentData.semester_end_date_formatted ? '<span class="badge bg-warning text-dark">🏁 Ends: ' + studentData.semester_end_date_formatted + '</span>' : ''}
+                                        ${studentData.academic_year ? '<span class="badge bg-dark">📖 ' + studentData.academic_year + '</span>' : ''}
+                                        <span class="badge bg-secondary">💳 unpaid</span>
+                                    </div>
                                 </div>
                             </div>
                             <button type="button" 
-                                    class="btn btn-outline-danger btn-sm remove-student-btn"
+                                    class="btn btn-outline-danger btn-sm remove-student-btn ms-2"
                                     data-student-id="${studentData.student_id}"
                                     data-student-name="${studentData.student_name}"
                                     data-course-id="${currentAddCourseId}"
@@ -1081,26 +1273,36 @@ document.addEventListener('DOMContentLoaded', function() {
                             </button>
                         </div>
                     </div>
-                `;
-            } else {
+                `;            } else {
                 // Add to existing student list
                 const studentList = studentContainer.querySelector('.small');
                 if (studentList) {
                     const newStudentHtml = `
-                        <div class="d-flex align-items-center justify-content-between mb-2 p-2 bg-white rounded border">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
-                                     style="width: 30px; height: 30px; font-size: 0.8rem;">
+                        <div class="d-flex align-items-center justify-content-between mb-3 p-3 bg-white rounded border">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 40px; height: 40px; font-size: 0.9rem;">
                                     👤
                                 </div>
-                                <div>
-                                    <div class="fw-semibold">${studentData.student_name}</div>
-                                    <div class="text-muted small">${studentData.student_email}</div>
-                                    <div class="text-muted small">Enrolled: ${studentData.enrollment_date_formatted}</div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <div class="fw-semibold">${studentData.student_name}</div>
+                                        <span class="badge bg-success badge-sm">enrolled</span>
+                                    </div>
+                                    <div class="text-muted small mb-1">${studentData.student_email}</div>
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        <span class="badge bg-light text-dark border">📅 ${studentData.enrollment_date_formatted}</span>
+                                        ${studentData.year_level_at_enrollment ? '<span class="badge bg-info">🎓 ' + studentData.year_level_at_enrollment + '</span>' : ''}
+                                        ${studentData.semester ? '<span class="badge bg-primary">📚 ' + studentData.semester + '</span>' : ''}
+                                        ${studentData.semester_duration_weeks ? '<span class="badge bg-success">⏱️ ' + studentData.semester_duration_weeks + ' weeks</span>' : ''}
+                                        ${studentData.semester_end_date_formatted ? '<span class="badge bg-warning text-dark">🏁 Ends: ' + studentData.semester_end_date_formatted + '</span>' : ''}
+                                        ${studentData.academic_year ? '<span class="badge bg-dark">📖 ' + studentData.academic_year + '</span>' : ''}
+                                        <span class="badge bg-secondary">💳 unpaid</span>
+                                    </div>
                                 </div>
                             </div>
                             <button type="button" 
-                                    class="btn btn-outline-danger btn-sm remove-student-btn"
+                                    class="btn btn-outline-danger btn-sm remove-student-btn ms-2"
                                     data-student-id="${studentData.student_id}"
                                     data-student-name="${studentData.student_name}"
                                     data-course-id="${currentAddCourseId}"

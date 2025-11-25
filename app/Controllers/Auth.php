@@ -617,7 +617,7 @@ class Auth extends BaseController
                 $role = $this->request->getPost('role');
                 if ($role === 'student') {
                     $rules['year_level'] = 'required|in_list[1st Year,2nd Year,3rd Year,4th Year]';
-                }
+                }   
 
                 $messages = [
                     'name' => [

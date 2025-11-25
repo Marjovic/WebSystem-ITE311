@@ -15,30 +15,30 @@ class CreateCoursesTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
+            'course_code' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 20,
+                'null'       => false,
+            ],
             'title' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 200,
+                'null'       => false,
             ],
             'description' => [
                 'type' => 'TEXT',
                 'null' => true,
             ],
-            'course_code' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 20,
-            ],
-            'academic_year' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 20,
+            'department_id' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
                 'null'       => true,
             ],
-            'instructor_ids' => [
-                'type' => 'JSON',
-                'null' => true,
-            ],
-            'category' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
+            'category_id' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
                 'null'       => true,
             ],
             'credits' => [
@@ -46,40 +46,44 @@ class CreateCoursesTable extends Migration
                 'constraint' => 2,
                 'default'    => 3,
             ],
-            'duration_weeks' => [
+            'lecture_hours' => [
                 'type'       => 'INT',
-                'constraint' => 3,
-                'default'    => 16,
+                'constraint' => 2,
+                'default'    => 3,
             ],
-            'max_students' => [
+            'lab_hours' => [
                 'type'       => 'INT',
-                'constraint' => 4,
-                'default'    => 30,
+                'constraint' => 2,
+                'default'    => 0,
             ],
-            'start_date' => [
-                'type' => 'DATE',
-                'null' => true,
+            'year_level_id' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
+                'null'       => true,
             ],
-            'end_date' => [
-                'type' => 'DATE',
-                'null' => true,
-            ],
-            'status' => [
-                'type'       => 'ENUM',
-                'constraint' => ['draft', 'active', 'completed', 'cancelled'],
-                'default'    => 'draft',
+            'is_active' => [
+                'type'    => 'BOOLEAN',
+                'default' => true,
             ],
             'created_at' => [
-                'type'    => 'DATETIME',
-                'null'    => true,
+                'type' => 'DATETIME',
+                'null' => true,
             ],
             'updated_at' => [
-                'type'    => 'DATETIME',
-                'null'    => true,
+                'type' => 'DATETIME',
+                'null' => true,
             ],
-        ]);        
+        ]);
+
         $this->forge->addKey('id', true);
-        $this->forge->addKey('course_code');
+        $this->forge->addUniqueKey('course_code');
+        $this->forge->addKey('department_id');
+        $this->forge->addKey('category_id');
+        $this->forge->addKey('year_level_id');
+        $this->forge->addForeignKey('department_id', 'departments', 'id', 'SET NULL', 'CASCADE');
+        $this->forge->addForeignKey('category_id', 'categories', 'id', 'SET NULL', 'CASCADE');
+        $this->forge->addForeignKey('year_level_id', 'year_levels', 'id', 'SET NULL', 'CASCADE');
         $this->forge->createTable('courses');
     }
 

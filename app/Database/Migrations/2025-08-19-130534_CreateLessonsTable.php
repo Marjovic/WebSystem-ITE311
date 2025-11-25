@@ -15,14 +15,16 @@ class CreateLessonsTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'course_id' => [
+            'course_offering_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
+                'null'       => false,
             ],
             'title' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 200,
+                'null'       => false,
             ],
             'content' => [
                 'type' => 'LONGTEXT',
@@ -30,7 +32,7 @@ class CreateLessonsTable extends Migration
             ],
             'lesson_type' => [
                 'type'       => 'ENUM',
-                'constraint' => ['video', 'text', 'document', 'interactive'],
+                'constraint' => ['video', 'text', 'document', 'interactive', 'mixed'],
                 'default'    => 'text',
             ],
             'video_url' => [
@@ -54,27 +56,27 @@ class CreateLessonsTable extends Migration
                 'null'       => true,
             ],
             'is_published' => [
-                'type'       => 'BOOLEAN',
-                'default'    => false,
+                'type'    => 'BOOLEAN',
+                'default' => false,
             ],
             'publish_date' => [
                 'type' => 'DATETIME',
                 'null' => true,
             ],
             'created_at' => [
-                'type'    => 'DATETIME',
-                'null'    => true,
+                'type' => 'DATETIME',
+                'null' => true,
             ],
             'updated_at' => [
-                'type'    => 'DATETIME',
-                'null'    => true,
+                'type' => 'DATETIME',
+                'null' => true,
             ],
         ]);
 
         $this->forge->addKey('id', true);
-        $this->forge->addKey('course_id');
-        $this->forge->addKey(['course_id', 'lesson_order']);
-        $this->forge->addForeignKey('course_id', 'courses', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addKey('course_offering_id');
+        $this->forge->addKey(['course_offering_id', 'lesson_order']);
+        $this->forge->addForeignKey('course_offering_id', 'course_offerings', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('lessons');
     }
 

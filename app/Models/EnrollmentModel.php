@@ -5,12 +5,14 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class EnrollmentModel extends Model
-{    protected $table            = 'enrollments';
+{    
+    protected $table            = 'enrollments';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $protectFields    = true;    protected $allowedFields    = [
+    protected $protectFields    = true;    
+    protected $allowedFields    = [
         'user_id', 
         'course_id', 
         'enrollment_date',
@@ -49,13 +51,14 @@ class EnrollmentModel extends Model
     // Callbacks
     protected $allowCallbacks = true;
     protected $beforeInsert   = [];
-    protected $afterInsert    = [];
+    protected $afterInsert    = ['updateEnrollmentCount'];
     protected $beforeUpdate   = [];
-    protected $afterUpdate    = [];
+    protected $afterUpdate    = ['updateEnrollmentCount'];
     protected $beforeFind     = [];
     protected $afterFind      = [];
     protected $beforeDelete   = [];
-    protected $afterDelete    = [];    
+    protected $afterDelete    = ['updateEnrollmentCount'];
+
     /**
      * Insert a new enrollment record
      * 
@@ -96,7 +99,8 @@ class EnrollmentModel extends Model
         $course = $db->table('courses')->where('id', $data['course_id'])->get()->getRowArray();
         if (!$course) {
             return false;
-        }        // Insert the enrollment record
+        }        
+        // Insert the enrollment record
         try {
             $insertData = [
                 'user_id' => (int)$data['user_id'],
@@ -138,7 +142,8 @@ class EnrollmentModel extends Model
         $db = \Config\Database::connect();
         $builder = $db->table('enrollments e');
         
-        try {              $enrollments = $builder
+        try {              
+            $enrollments = $builder
                 ->select('
                     e.id as enrollment_id,
                     e.user_id,
@@ -188,7 +193,8 @@ class EnrollmentModel extends Model
                     $enrollment['instructor_name'] = 'No instructor assigned';
                     $enrollment['instructor_email'] = '';
                 }
-                  // Format dates for better display
+                  
+                // Format dates for better display
                 $enrollment['enrollment_date_formatted'] = date('M j, Y', strtotime($enrollment['enrollment_date']));
                 $enrollment['start_date_formatted'] = $enrollment['start_date'] ? date('M j, Y', strtotime($enrollment['start_date'])) : 'TBA';
                 $enrollment['end_date_formatted'] = $enrollment['end_date'] ? date('M j, Y', strtotime($enrollment['end_date'])) : 'TBA';
@@ -198,7 +204,8 @@ class EnrollmentModel extends Model
                 $enrollmentDate = new \DateTime($enrollment['enrollment_date']);
                 $currentDate = new \DateTime();
                 $interval = $enrollmentDate->diff($currentDate);
-                $enrollment['enrollment_duration_days'] = $interval->days;                // Add course progress status (different from enrollment_status)
+                $enrollment['enrollment_duration_days'] = $interval->days;                
+                // Add course progress status (different from enrollment_status)
                 $now = date('Y-m-d');
                 if ($enrollment['start_date'] && $enrollment['end_date']) {
                     if ($now < $enrollment['start_date']) {
@@ -310,7 +317,9 @@ class EnrollmentModel extends Model
             log_message('error', 'Failed to fetch enrolled students: ' . $e->getMessage());
             return [];
         }
-    }    /**
+    }    
+    
+    /**
      * Get Bootstrap badge class for enrollment status
      * 
      * @param string $status - Enrollment status
@@ -326,7 +335,9 @@ class EnrollmentModel extends Model
         ];
         
         return $badges[$status] ?? 'bg-secondary';
-    }    /**
+    }    
+    
+    /**
      * Update enrollment status (for dropping, completing courses, etc.)
      * 
      * @param int $enrollment_id - ID of the enrollment
@@ -350,7 +361,9 @@ class EnrollmentModel extends Model
             log_message('error', 'Failed to update enrollment status: ' . $e->getMessage());
             return false;
         }
-    }    /**
+    }    
+    
+    /**
      * Get enrollment statistics for a student
      * 
      * @param int $user_id - Student ID
@@ -392,5 +405,80 @@ class EnrollmentModel extends Model
             log_message('error', 'Failed to get student statistics: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Update course_offerings.current_enrollment count
+     * Triggered after insert, update, or delete
+     */
+    protected function updateEnrollmentCount(array $data)
+    {
+        $db = \Config\Database::connect();
+        
+        // Determine course_offering_id based on operation
+        $courseOfferingId = null;
+        
+        if (isset($data['data']['course_offering_id'])) {
+            // After INSERT or UPDATE
+            $courseOfferingId = $data['data']['course_offering_id'];
+        } elseif (isset($data['id'])) {
+            // After DELETE - get from deleted record
+            $deleted = $data['data'][0] ?? null;
+            if ($deleted && isset($deleted['course_offering_id'])) {
+                $courseOfferingId = $deleted['course_offering_id'];
+            }
+        }
+        
+        if ($courseOfferingId) {
+            // Count all 'enrolled' students for this course offering
+            $count = $this->where('course_offering_id', $courseOfferingId)
+                         ->where('enrollment_status', 'enrolled')
+                         ->countAllResults(false); // false = don't reset query
+            
+            // Update the course_offerings table
+            $db->table('course_offerings')
+               ->where('id', $courseOfferingId)
+               ->update(['current_enrollment' => $count]);
+        }
+        
+        return $data;
+    }
+
+    /**
+     * Manually recalculate enrollment counts for a specific course offering
+     * Useful for fixing inconsistencies
+     */
+    public function recalculateEnrollmentCount($courseOfferingId)
+    {
+        $count = $this->where('course_offering_id', $courseOfferingId)
+                     ->where('enrollment_status', 'enrolled')
+                     ->countAllResults();
+        
+        $db = \Config\Database::connect();
+        $db->table('course_offerings')
+           ->where('id', $courseOfferingId)
+           ->update(['current_enrollment' => $count]);
+        
+        return $count;
+    }
+
+    /**
+     * Recalculate enrollment counts for ALL course offerings
+     * Run this periodically or after data imports
+     */
+    public function recalculateAllEnrollmentCounts()
+    {
+        $db = \Config\Database::connect();
+        
+        // Get all course offerings
+        $offerings = $db->table('course_offerings')->select('id')->get()->getResultArray();
+        
+        $updated = 0;
+        foreach ($offerings as $offering) {
+            $this->recalculateEnrollmentCount($offering['id']);
+            $updated++;
+        }
+        
+        return $updated;
     }
 }

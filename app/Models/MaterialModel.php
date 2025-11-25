@@ -12,123 +12,160 @@ class MaterialModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['course_id', 'file_name', 'file_path', 'created_at'];
+    protected $allowedFields    = [
+        'course_offering_id',
+        'title',
+        'description',
+        'file_name',
+        'file_path',
+        'file_size',
+        'file_type',
+        'is_active'
+    ];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
 
-    protected array $casts = [];
-    protected array $castHandlers = [];
-
     // Dates
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
-    protected $deletedField  = 'deleted_at';
 
     // Validation
     protected $validationRules = [
-        'course_id' => 'required|integer|greater_than[0]',
-        'file_name' => 'required|max_length[255]',
-        'file_path' => 'required|max_length[255]'
+        'course_offering_id' => 'required|integer',
+        'title'              => 'required|string|max_length[255]',
+        'description'        => 'permit_empty|string',
+        'file_name'          => 'required|string|max_length[255]',
+        'file_path'          => 'required|string|max_length[255]',
+        'file_size'          => 'permit_empty|integer',
+        'file_type'          => 'permit_empty|string|max_length[50]',
+        'is_active'          => 'permit_empty|in_list[0,1]'
     ];
-    
+
     protected $validationMessages = [
-        'course_id' => [
-            'required' => 'Course ID is required',
-            'integer' => 'Course ID must be an integer',
-            'greater_than' => 'Course ID must be greater than 0'
+        'course_offering_id' => [
+            'required' => 'Course offering is required'
+        ],
+        'title' => [
+            'required' => 'Material title is required'
         ],
         'file_name' => [
-            'required' => 'File name is required',
-            'max_length' => 'File name cannot exceed 255 characters'
+            'required' => 'File name is required'
         ],
         'file_path' => [
-            'required' => 'File path is required',
-            'max_length' => 'File path cannot exceed 255 characters'
+            'required' => 'File path is required'
         ]
     ];
-    
-    protected $skipValidation       = false;
-    protected $cleanValidationRules = true;
 
     // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
-    protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
-    protected $afterUpdate    = [];
-    protected $beforeFind     = [];
-    protected $afterFind      = [];
-    protected $beforeDelete   = [];
-    protected $afterDelete    = [];
 
     /**
-     * Insert a new material record
-     * 
-     * @param array $data Material data containing course_id, file_name, file_path
-     * @return int|bool Insert ID on success, false on failure
+     * Get all materials for a course offering
      */
-    public function insertMaterial($data)
+    public function getOfferingMaterials($offeringId)
     {
-        try {
-            // Ensure created_at is set to current timestamp
-            if (!isset($data['created_at'])) {
-                $data['created_at'] = date('Y-m-d H:i:s');
-            }
-
-            // Insert the material record
-            $result = $this->insert($data);
-            
-            if ($result) {
-                return $this->getInsertID();
-            }
-            
-            return false;
-        } catch (\Exception $e) {
-            log_message('error', 'MaterialModel::insertMaterial() - ' . $e->getMessage());
-            return false;
-        }
+        return $this->where('course_offering_id', $offeringId)
+                    ->where('is_active', 1)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
     }
 
     /**
-     * Get all materials for a specific course
-     * 
-     * @param int $course_id Course ID
-     * @return array Array of materials ordered by creation date (newest first)
+     * Get material with course details
      */
-    public function getMaterialsByCourse($course_id)
+    public function getMaterialWithDetails($materialId)
     {
-        try {
-            return $this->where('course_id', $course_id)
-                        ->orderBy('created_at', 'DESC')
-                        ->findAll();
-        } catch (\Exception $e) {
-            log_message('error', 'MaterialModel::getMaterialsByCourse() - ' . $e->getMessage());
-            return [];
-        }
+        return $this->select('
+                materials.*,
+                co.section,
+                c.course_code,
+                c.title as course_title
+            ')
+            ->join('course_offerings co', 'co.id = materials.course_offering_id')
+            ->join('courses c', 'c.id = co.course_id')
+            ->find($materialId);
     }
 
     /**
-     * Get materials for courses that a student is enrolled in
-     * 
-     * @param int $user_id Student user ID
-     * @return array Array of materials with course information
+     * Get materials by file type
      */
-    public function getMaterialsForEnrolledCourses($user_id)
+    public function getMaterialsByType($offeringId, $fileType)
     {
-        try {
-            return $this->select('materials.*, courses.title as course_title, courses.course_code')
-                        ->join('courses', 'courses.id = materials.course_id')
-                        ->join('enrollments', 'enrollments.course_id = materials.course_id')
-                        ->where('enrollments.user_id', $user_id)
-                        ->orderBy('courses.title', 'ASC')
-                        ->orderBy('materials.created_at', 'DESC')
-                        ->findAll();
-        } catch (\Exception $e) {
-            log_message('error', 'MaterialModel::getMaterialsForEnrolledCourses() - ' . $e->getMessage());
-            return [];
+        return $this->where('course_offering_id', $offeringId)
+                    ->where('file_type', $fileType)
+                    ->where('is_active', 1)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+    }
+
+    /**
+     * Search materials
+     */
+    public function searchMaterials($offeringId, $keyword)
+    {
+        return $this->where('course_offering_id', $offeringId)
+                    ->groupStart()
+                        ->like('title', $keyword)
+                        ->orLike('description', $keyword)
+                        ->orLike('file_name', $keyword)
+                    ->groupEnd()
+                    ->where('is_active', 1)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+    }
+
+    /**
+     * Get total storage used by course offering
+     */
+    public function getTotalStorageUsed($offeringId)
+    {
+        $result = $this->selectSum('file_size')
+                      ->where('course_offering_id', $offeringId)
+                      ->where('is_active', 1)
+                      ->get()
+                      ->getRow();
+        
+        return $result->file_size ?? 0;
+    }
+
+    /**
+     * Delete material and file
+     */
+    public function deleteMaterial($materialId)
+    {
+        $material = $this->find($materialId);
+        
+        if ($material && file_exists($material['file_path'])) {
+            unlink($material['file_path']);
         }
+        
+        return $this->delete($materialId);
+    }
+
+    /**
+     * Format file size
+     */
+    public function formatFileSize($bytes)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+        
+        return round($bytes, 2) . ' ' . $units[$pow];
+    }
+
+    /**
+     * Get materials count by offering
+     */
+    public function countMaterials($offeringId)
+    {
+        return $this->where('course_offering_id', $offeringId)
+                    ->where('is_active', 1)
+                    ->countAllResults();
     }
 }

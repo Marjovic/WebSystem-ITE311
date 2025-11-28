@@ -46,37 +46,48 @@ class CourseInstructorModel extends Model
     ];
 
     // Callbacks
-    protected $allowCallbacks = true;
-
-    /**
+    protected $allowCallbacks = true;    /**
      * Get all instructors for a course offering
+     * Joins with instructors and users tables to get complete instructor information
      */
     public function getOfferingInstructors($offeringId)
     {
         return $this->select('
                 course_instructors.*,
-                users.name,
+                instructors.employee_id,
+                instructors.specialization,
+                instructors.employment_status,
+                users.id as user_id,
+                users.first_name,
+                users.middle_name,
+                users.last_name,
                 users.email,
                 departments.department_name
             ')
-            ->join('users', 'users.id = course_instructors.instructor_id')
-            ->join('departments', 'departments.id = users.department_id', 'left')
+            ->join('instructors', 'instructors.id = course_instructors.instructor_id')
+            ->join('users', 'users.id = instructors.user_id')
+            ->join('departments', 'departments.id = instructors.department_id', 'left')
             ->where('course_instructors.course_offering_id', $offeringId)
             ->orderBy('course_instructors.is_primary', 'DESC')
             ->findAll();
-    }
-
-    /**
+    }    /**
      * Get primary instructor for an offering
+     * Returns the primary instructor with complete user information
      */
     public function getPrimaryInstructor($offeringId)
     {
         return $this->select('
                 course_instructors.*,
-                users.name,
+                instructors.employee_id,
+                instructors.specialization,
+                users.id as user_id,
+                users.first_name,
+                users.middle_name,
+                users.last_name,
                 users.email
             ')
-            ->join('users', 'users.id = course_instructors.instructor_id')
+            ->join('instructors', 'instructors.id = course_instructors.instructor_id')
+            ->join('users', 'users.id = instructors.user_id')
             ->where('course_instructors.course_offering_id', $offeringId)
             ->where('course_instructors.is_primary', 1)
             ->first();
@@ -195,5 +206,135 @@ class CourseInstructorModel extends Model
                     ->where('course_instructors.instructor_id', $instructorId)
                     ->where('co.term_id', $termId)
                     ->countAllResults();
+    }
+
+    /**
+     * Get instructor full name from user data
+     * @param int $instructorId - The instructor ID (from instructors table)
+     * @return string|null
+     */
+    public function getInstructorName($instructorId)
+    {
+        $result = $this->db->table('instructors')
+            ->select('users.first_name, users.middle_name, users.last_name, users.suffix')
+            ->join('users', 'users.id = instructors.user_id')
+            ->where('instructors.id', $instructorId)
+            ->get()
+            ->getRowArray();
+
+        if (!$result) {
+            return null;
+        }
+
+        $name = trim($result['first_name'] . ' ' . ($result['middle_name'] ?? '') . ' ' . $result['last_name']);
+        if (!empty($result['suffix'])) {
+            $name .= ' ' . $result['suffix'];
+        }
+
+        return $name;
+    }
+
+    /**
+     * Get instructor ID from user ID
+     * @param int $userId - The user ID
+     * @return int|null - The instructor ID or null if not found
+     */
+    public function getInstructorIdByUserId($userId)
+    {
+        $result = $this->db->table('instructors')
+            ->select('id')
+            ->where('user_id', $userId)
+            ->get()
+            ->getRowArray();
+
+        return $result ? $result['id'] : null;
+    }
+
+    /**
+     * Get all course offerings for a user (by user_id)
+     * Converts user_id to instructor_id and gets offerings
+     * @param int $userId - The user ID
+     * @param int|null $termId - Optional term ID filter
+     * @return array
+     */
+    public function getOfferingsByUserId($userId, $termId = null)
+    {
+        $instructorId = $this->getInstructorIdByUserId($userId);
+        
+        if (!$instructorId) {
+            return [];
+        }
+
+        return $this->getInstructorOfferings($instructorId, $termId);
+    }
+
+    /**
+     * Assign instructor by user ID
+     * Converts user_id to instructor_id and assigns to offering
+     * @param int $offeringId - The course offering ID
+     * @param int $userId - The user ID
+     * @param bool $isPrimary - Whether this is the primary instructor
+     * @return bool|int
+     */
+    public function assignInstructorByUserId($offeringId, $userId, $isPrimary = false)
+    {
+        $instructorId = $this->getInstructorIdByUserId($userId);
+        
+        if (!$instructorId) {
+            return false;
+        }
+
+        return $this->assignInstructor($offeringId, $instructorId, $isPrimary);
+    }
+
+    /**
+     * Remove instructor by user ID
+     * @param int $offeringId - The course offering ID
+     * @param int $userId - The user ID
+     * @return bool
+     */
+    public function removeInstructorByUserId($offeringId, $userId)
+    {
+        $instructorId = $this->getInstructorIdByUserId($userId);
+        
+        if (!$instructorId) {
+            return false;
+        }
+
+        return $this->removeInstructor($offeringId, $instructorId);
+    }
+
+    /**
+     * Check if a user is assigned to an offering (by user_id)
+     * @param int $offeringId - The course offering ID
+     * @param int $userId - The user ID
+     * @return bool
+     */
+    public function isUserAssigned($offeringId, $userId)
+    {
+        $instructorId = $this->getInstructorIdByUserId($userId);
+        
+        if (!$instructorId) {
+            return false;
+        }
+
+        return $this->isAssigned($offeringId, $instructorId);
+    }
+
+    /**
+     * Get instructor workload by user ID
+     * @param int $userId - The user ID
+     * @param int $termId - The term ID
+     * @return int
+     */
+    public function getUserWorkload($userId, $termId)
+    {
+        $instructorId = $this->getInstructorIdByUserId($userId);
+        
+        if (!$instructorId) {
+            return 0;
+        }
+
+        return $this->getInstructorWorkload($instructorId, $termId);
     }
 }

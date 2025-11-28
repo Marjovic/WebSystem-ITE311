@@ -19,7 +19,7 @@ class AddHeadUserIdToDepartments extends Migration
             ],
         ]);
         
-        $this->forge->addForeignKey('head_user_id', 'users', 'id', 'SET NULL', 'CASCADE', 'departments');
+        $this->forge->addForeignKey('head_user_id', 'instructors', 'id', 'SET NULL', 'CASCADE', 'departments');
     }    public function down()
     {
         // Check if foreign key exists before dropping

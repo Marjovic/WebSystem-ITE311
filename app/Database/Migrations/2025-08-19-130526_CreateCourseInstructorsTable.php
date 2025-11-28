@@ -48,7 +48,7 @@ class CreateCourseInstructorsTable extends Migration
         $this->forge->addKey('id', true);
         $this->forge->addUniqueKey(['course_offering_id', 'instructor_id']);
         $this->forge->addForeignKey('course_offering_id', 'course_offerings', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('instructor_id', 'users', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('instructor_id', 'instructors', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('course_instructors');
     }
 

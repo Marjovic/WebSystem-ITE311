@@ -79,7 +79,7 @@ class CreateEnrollmentsTable extends Migration
         $this->forge->addKey('id', true);
         $this->forge->addUniqueKey(['student_id', 'course_offering_id']);
         $this->forge->addKey('course_offering_id');
-        $this->forge->addForeignKey('student_id', 'users', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('student_id', 'students', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('course_offering_id', 'course_offerings', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('year_level_id', 'year_levels', 'id', 'SET NULL', 'CASCADE');
         $this->forge->addForeignKey('enrolled_by', 'users', 'id', 'SET NULL', 'CASCADE');

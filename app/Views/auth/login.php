@@ -23,12 +23,24 @@
                                 <?= session()->getFlashdata('success') ?>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
-                        <?php endif; ?>
-
-                        <?php if (session()->getFlashdata('error')): ?>
+                        <?php endif; ?>                        <?php if (session()->getFlashdata('error')): ?>
                             <div class="alert alert-danger alert-dismissible fade show">
                                 <?= session()->getFlashdata('error') ?>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (session()->getFlashdata('show_resend')): ?>
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading">📧 Email Not Verified</h6>
+                                <p class="mb-2">Didn't receive the email?</p>
+                                <form method="POST" action="<?= base_url('resend-verification') ?>" class="d-inline">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="email" value="<?= session()->getFlashdata('user_email') ?? old('email') ?>">
+                                    <button type="submit" class="btn btn-sm btn-warning">
+                                        📨 Resend Verification Email
+                                    </button>
+                                </form>
                             </div>
                         <?php endif; ?>
 

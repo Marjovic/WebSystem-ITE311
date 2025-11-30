@@ -6,8 +6,16 @@ use CodeIgniter\Config\BaseConfig;
 
 class Email extends BaseConfig
 {
-    public string $fromEmail  = '';
-    public string $fromName   = '';
+    /**
+     * Default From Email Address
+     */
+    public string $fromEmail  = 'marjovicalejado123@gmail.com';
+    
+    /**
+     * Default From Name
+     */
+    public string $fromName   = 'MGOD LMS';
+    
     public string $recipients = '';
 
     /**
@@ -17,8 +25,9 @@ class Email extends BaseConfig
 
     /**
      * The mail sending protocol: mail, sendmail, smtp
+     * For Gmail, we use 'smtp'
      */
-    public string $protocol = 'mail';
+    public string $protocol = 'smtp';
 
     /**
      * The server path to Sendmail.
@@ -27,23 +36,27 @@ class Email extends BaseConfig
 
     /**
      * SMTP Server Hostname
+     * Gmail SMTP server
      */
-    public string $SMTPHost = '';
+    public string $SMTPHost = 'smtp.gmail.com';
 
     /**
      * SMTP Username
+     * Your Gmail address
      */
-    public string $SMTPUser = '';
+    public string $SMTPUser = 'marjovicalejado123@gmail.com';
 
     /**
      * SMTP Password
+     * Gmail App Password (NOT your regular Gmail password)
      */
-    public string $SMTPPass = '';
+    public string $SMTPPass = 'jpfknrbfdadhtttm';
 
     /**
      * SMTP Port
+     * Gmail uses port 587 for TLS or 465 for SSL
      */
-    public int $SMTPPort = 25;
+    public int $SMTPPort = 587;
 
     /**
      * SMTP Timeout (in seconds)
@@ -57,6 +70,7 @@ class Email extends BaseConfig
 
     /**
      * SMTP Encryption.
+     * Gmail requires 'tls' on port 587 or 'ssl' on port 465
      *
      * @var string '', 'tls' or 'ssl'. 'tls' will issue a STARTTLS command
      *             to the server. 'ssl' means implicit SSL. Connection on port
@@ -76,8 +90,9 @@ class Email extends BaseConfig
 
     /**
      * Type of mail, either 'text' or 'html'
+     * Set to 'html' for better formatting in emails
      */
-    public string $mailType = 'text';
+    public string $mailType = 'html';
 
     /**
      * Character set (utf-8, iso-8859-1, etc.)

@@ -41,17 +41,36 @@
                                     <?php endforeach; ?>
                                 </ul>
                             </div>
-                        <?php endif; ?>
-
+                        <?php endif; ?>                        
                         <!-- Registration Form -->
                         <form method="POST" action="<?= base_url('register') ?>">
-                            <?= csrf_field() ?>                            <div class="mb-3">
-                                <label for="name" class="form-label">Full Name *</label>
-                                <input type="text" class="form-control" id="name" name="name" 
-                                       value="<?= old('name') ?>" required pattern="[A-Za-zñÑ\s]+" 
-                                       title="Name can only contain letters and spaces">
-                                <div class="form-text">Enter your full name</div>
-                            </div>                            <div class="mb-3">
+                            <?= csrf_field() ?>
+                            
+                            <div class="mb-3">
+                                <label for="first_name" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" 
+                                       value="<?= old('first_name') ?>" required pattern="[A-Za-zñÑ\s]+" 
+                                       title="First name can only contain letters and spaces">
+                                <div class="form-text">Enter your first name</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="middle_name" class="form-label">Middle Name *</label>
+                                <input type="text" class="form-control" id="middle_name" name="middle_name" 
+                                       value="<?= old('middle_name') ?>" required pattern="[A-Za-zñÑ\s]+" 
+                                       title="Middle name can only contain letters and spaces">
+                                <div class="form-text">Enter your middle name</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="last_name" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" 
+                                       value="<?= old('last_name') ?>" required pattern="[A-Za-zñÑ\s]+" 
+                                       title="Last name can only contain letters and spaces">
+                                <div class="form-text">Enter your last name</div>
+                            </div>
+                            
+                            <div class="mb-3">
                                 <label for="email" class="form-label">Email Address *</label>
                                 <input type="email" class="form-control" id="email" name="email" 
                                        value="<?= old('email') ?>" required pattern="[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
@@ -59,13 +78,19 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="year_level" class="form-label">Year Level *</label>
-                                <select class="form-select" id="year_level" name="year_level" required>
+                                <label for="year_level_id" class="form-label">Year Level *</label>
+                                <select class="form-select" id="year_level_id" name="year_level_id" required>
                                     <option value="" selected disabled>Select your year level</option>
-                                    <option value="1st Year" <?= old('year_level') === '1st Year' ? 'selected' : '' ?>>1st Year</option>
-                                    <option value="2nd Year" <?= old('year_level') === '2nd Year' ? 'selected' : '' ?>>2nd Year</option>
-                                    <option value="3rd Year" <?= old('year_level') === '3rd Year' ? 'selected' : '' ?>>3rd Year</option>
-                                    <option value="4th Year" <?= old('year_level') === '4th Year' ? 'selected' : '' ?>>4th Year</option>
+                                    <?php if (isset($yearLevels) && !empty($yearLevels)): ?>
+                                        <?php foreach ($yearLevels as $yearLevel): ?>
+                                            <option value="<?= $yearLevel['id'] ?>" 
+                                                <?= old('year_level_id') == $yearLevel['id'] ? 'selected' : '' ?>>
+                                                <?= esc($yearLevel['year_level_name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="" disabled>No year levels available</option>
+                                    <?php endif; ?>
                                 </select>
                                 <div class="form-text">Select your current year level</div>
                             </div>
@@ -103,36 +128,45 @@
             </div>
         </div>
     </div>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    
-    <!-- Enhanced Form Validation -->
+      <!-- Enhanced Form Validation -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Name field validation
-        const nameField = document.getElementById('name');
+        const firstNameField = document.getElementById('first_name');
+        const middleNameField = document.getElementById('middle_name');
+        const lastNameField = document.getElementById('last_name');
         const emailField = document.getElementById('email');
         const passwordField = document.getElementById('password');
         const confirmPasswordField = document.getElementById('password_confirm');
-          // Name validation - only letters (including ñ/Ñ) and spaces
-        nameField.addEventListener('input', function(e) {
-            const value = e.target.value;
-            const validPattern = /^[A-Za-zñÑ\s]*$/;
-            
-            // Remove invalid characters as user types
-            if (!validPattern.test(value)) {
-                e.target.value = value.replace(/[^A-Za-zñÑ\s]/g, '');
-            }
-            
-            // Visual feedback
-            if (e.target.value.length >= 3 && validPattern.test(e.target.value)) {
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-            } else if (e.target.value.length > 0) {
-                e.target.classList.remove('is-valid');
-                e.target.classList.add('is-invalid');
-            } else {
-                e.target.classList.remove('is-valid', 'is-invalid');
-            }
-        });
+        
+        // Function to validate name fields
+        function validateNameField(field, minLength = 2) {
+            field.addEventListener('input', function(e) {
+                const value = e.target.value;
+                const validPattern = /^[A-Za-zñÑ\s]*$/;
+                
+                // Remove invalid characters as user types
+                if (!validPattern.test(value)) {
+                    e.target.value = value.replace(/[^A-Za-zñÑ\s]/g, '');
+                }
+                
+                // Visual feedback
+                if (e.target.value.length >= minLength && validPattern.test(e.target.value)) {
+                    e.target.classList.remove('is-invalid');
+                    e.target.classList.add('is-valid');
+                } else if (e.target.value.length > 0) {
+                    e.target.classList.remove('is-valid');
+                    e.target.classList.add('is-invalid');
+                } else {
+                    e.target.classList.remove('is-valid', 'is-invalid');
+                }
+            });
+        }
+        
+        // Apply validation to all name fields
+        validateNameField(firstNameField, 2);
+        validateNameField(middleNameField, 1);
+        validateNameField(lastNameField, 2);
         
         // Email validation
         emailField.addEventListener('input', function(e) {

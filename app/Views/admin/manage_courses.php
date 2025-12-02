@@ -12,7 +12,8 @@
                             <div>
                                 <h2 class="mb-2 fw-bold">📚 Manage Courses</h2>
                                 <p class="mb-0 opacity-75">Create, edit, and manage courses in the learning management system</p>
-                            </div>                            <div>
+                            </div>
+                            <div>
                                 <a href="<?= base_url('admin/dashboard') ?>" class="btn btn-light btn-sm">
                                     ← Back to Dashboard
                                 </a>
@@ -20,7 +21,8 @@
                         </div>
                     </div>
                 </div>
-            </div>        </div>
+            </div>
+        </div>
 
         <!-- Course Statistics Cards -->
         <div class="row mb-4">
@@ -35,35 +37,63 @@
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
                     <div class="display-4 mb-2">✅</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($courses, fn($c) => $c['status'] === 'active')) ?></div>
+                    <div class="display-5 fw-bold"><?= count(array_filter($courses, fn($c) => $c['is_active'] == 1)) ?></div>
                     <div class="fw-semibold">Active</div>
-                    <small class="opacity-75">Currently running</small>
+                    <small class="opacity-75">Currently available</small>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-warning text-center p-4 rounded-3 h-100">
                     <div class="display-4 mb-2">📝</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($courses, fn($c) => $c['status'] === 'draft')) ?></div>
-                    <div class="fw-semibold">Draft</div>
-                    <small class="opacity-75">Being prepared</small>
+                    <div class="display-5 fw-bold"><?= count(array_filter($courses, fn($c) => $c['is_active'] == 0)) ?></div>
+                    <div class="fw-semibold">Inactive</div>
+                    <small class="opacity-75">Not available</small>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-secondary text-center p-4 rounded-3 h-100">
-                    <div class="display-4 mb-2">🎯</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($courses, fn($c) => $c['status'] === 'completed')) ?></div>
-                    <div class="fw-semibold">Completed</div>
-                    <small class="opacity-75">Finished courses</small>
+                    <div class="display-4 mb-2">🏫</div>
+                    <div class="display-5 fw-bold"><?= count(array_unique(array_filter(array_column($courses, 'department_name')))) ?></div>
+                    <div class="fw-semibold">Departments</div>
+                    <small class="opacity-75">With courses</small>
                 </div>
             </div>
         </div>
+
+        <!-- Flash Messages -->
+        <?php if (session()->getFlashdata('success')): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>Success!</strong> <?= session()->getFlashdata('success') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Error!</strong> <?= session()->getFlashdata('error') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('errors')): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Validation Errors:</strong>
+                <ul class="mb-0 mt-2">
+                    <?php foreach (session()->getFlashdata('errors') as $error): ?>
+                        <li><?= esc($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
 
         <!-- Action Buttons -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3">
                     <div class="card-header bg-white border-0 pb-0">
-                        <div class="d-flex justify-content-between align-items-center">                            <h5 class="mb-0 fw-bold text-dark">⚡ Course Management</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold text-dark">⚡ Course Management</h5>
                             <a href="<?= base_url('admin/manage_courses?action=create') ?>" class="btn btn-success">
                                 ➕ Create New Course
                             </a>
@@ -80,7 +110,8 @@
                 <div class="card border-0 shadow-sm rounded-3 border-success">
                     <div class="card-header bg-success text-white border-0">
                         <h5 class="mb-0">➕ Create New Course</h5>
-                    </div>                    <div class="card-body">
+                    </div>
+                    <div class="card-body">
                         <form method="post" action="<?= base_url('admin/manage_courses?action=create') ?>">
                             <?= csrf_field() ?>
                             
@@ -92,76 +123,22 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="title" class="form-label fw-semibold">Course Title</label>
-                                            <input type="text" class="form-control" id="title" name="title" 
-                                                   value="<?= old('title') ?>" required 
-                                                   pattern="[a-zA-Z\s\-\.]+"
-                                                   minlength="3" maxlength="200"
-                                                   title="Course title can only contain letters, spaces, hyphens, and periods">
-                                            <div class="form-text">Enter the full course title (letters, spaces, hyphens, periods only)</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="course_code" class="form-label fw-semibold">Course Code</label>
+                                            <label for="course_code" class="form-label fw-semibold">Course Code <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="course_code" name="course_code" 
                                                    value="<?= old('course_code') ?>" required 
-                                                   pattern="[A-Z]+\-?[0-9]+"
-                                                   minlength="3" maxlength="20" 
-                                                   placeholder="e.g., CS101, MATH201"
-                                                   title="Course code must start with letters followed by numbers (e.g., CS101, CS-101)">
-                                            <div class="form-text">Letters followed by numbers, with optional hyphen (e.g., CS101, CS-101, MATH201)</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="category" class="form-label fw-semibold">Category</label>
-                                            <input type="text" class="form-control" id="category" name="category" 
-                                                   value="<?= old('category') ?>" 
-                                                   pattern="[a-zA-Z\s\-\.]+"
-                                                   maxlength="100" 
-                                                   placeholder="e.g., Computer Science, Mathematics"
-                                                   title="Category can only contain letters, spaces, hyphens, and periods">
-                                            <div class="form-text">Letters, spaces, hyphens, periods only (max 100 characters)</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="academic_year" class="form-label fw-semibold">Academic Year <span class="text-muted">(Optional)</span></label>
-                                            <input type="text" class="form-control" id="academic_year" name="academic_year" 
-                                                   value="<?= old('academic_year') ?>" 
-                                                   pattern="[0-9]{4}\-[0-9]{4}"
                                                    maxlength="20" 
-                                                   placeholder="e.g., 2024-2025, 2025-2026"
-                                                   title="Academic year must be in format YYYY-YYYY (e.g., 2024-2025)">
-                                            <div class="form-text">Format: YYYY-YYYY (e.g., 2024-2025, 2025-2026)</div>
+                                                   placeholder="e.g., CS101, MATH201">
+                                            <div class="form-text">Unique course identifier</div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- Instructor Assignment Section -->
-                            <div class="mb-4">
-                                <h6 class="text-success fw-bold mb-3">
-                                    <i class="fas fa-chalkboard-teacher me-2"></i>Instructors (Optional)
-                                </h6>
-                                <div class="row">
-                                    <div class="col-12">
+                                    <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="instructor_ids" class="form-label fw-semibold">Instructors <span class="text-muted">(Optional)</span></label>
-                                            <select class="form-select" id="instructor_ids" name="instructor_ids[]" multiple>
-                                                <?php 
-                                                $selectedInstructors = old('instructor_ids') ? (array)old('instructor_ids') : [];
-                                                ?>
-                                                <?php foreach ($teachers as $teacher): ?>
-                                                    <option value="<?= $teacher['id'] ?>" <?= in_array($teacher['id'], $selectedInstructors) ? 'selected' : '' ?>>
-                                                        <?= esc($teacher['name']) ?> (<?= esc($teacher['email']) ?>)
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <div class="form-text">
-                                                Hold Ctrl/Cmd to select multiple instructors. Course can have multiple instructors assigned.
-                                            </div>
+                                            <label for="title" class="form-label fw-semibold">Course Title <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="title" name="title" 
+                                                   value="<?= old('title') ?>" required 
+                                                   maxlength="255" 
+                                                   placeholder="e.g., Introduction to Programming">
+                                            <div class="form-text">Full course title</div>
                                         </div>
                                     </div>
                                 </div>
@@ -173,68 +150,82 @@
                                     <i class="fas fa-cogs me-2"></i>Course Details
                                 </h6>
                                 <div class="row">
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="credits" class="form-label fw-semibold">Credits</label>
+                                            <label for="credits" class="form-label fw-semibold">Credits <span class="text-danger">*</span></label>
                                             <input type="number" class="form-control" id="credits" name="credits" 
-                                                   value="<?= old('credits', 3) ?>" 
-                                                   min="1" max="9">
-                                            <div class="form-text">Credit hours (1-9, default: 3)</div>
+                                                   value="<?= old('credits', 3) ?>" required
+                                                   min="1" max="12" step="1">
+                                            <div class="form-text">Credit units (typically 1-6)</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="duration_weeks" class="form-label fw-semibold">Duration (weeks)</label>
-                                            <input type="number" class="form-control" id="duration_weeks" name="duration_weeks" 
-                                                   value="<?= old('duration_weeks', 16) ?>" 
-                                                   min="1" max="99">
-                                            <div class="form-text">Course length (1-99, default: 16)</div>
+                                            <label for="lecture_hours" class="form-label fw-semibold">Lecture Hours</label>
+                                            <input type="number" class="form-control" id="lecture_hours" name="lecture_hours" 
+                                                   value="<?= old('lecture_hours') ?>" 
+                                                   min="0" max="10" step="0.5">
+                                            <div class="form-text">Hours per week (optional)</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="max_students" class="form-label fw-semibold">Max Students</label>
-                                            <input type="number" class="form-control" id="max_students" name="max_students" 
-                                                   value="<?= old('max_students', 30) ?>" 
-                                                   min="1" max="999">
-                                            <div class="form-text">Maximum enrollment (1-999, default: 30)</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label for="status" class="form-label fw-semibold">Status</label>
-                                            <select class="form-select" id="status" name="status" required>
-                                                <option value="draft" <?= old('status') === 'draft' ? 'selected' : '' ?>>📝 Draft</option>
-                                                <option value="active" <?= old('status') === 'active' ? 'selected' : '' ?>>✅ Active</option>
-                                                <option value="completed" <?= old('status') === 'completed' ? 'selected' : '' ?>>🎯 Completed</option>
-                                                <option value="cancelled" <?= old('status') === 'cancelled' ? 'selected' : '' ?>>❌ Cancelled</option>
-                                            </select>
+                                            <label for="lab_hours" class="form-label fw-semibold">Lab Hours</label>
+                                            <input type="number" class="form-control" id="lab_hours" name="lab_hours" 
+                                                   value="<?= old('lab_hours') ?>" 
+                                                   min="0" max="10" step="0.5">
+                                            <div class="form-text">Hours per week (optional)</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Schedule Section -->
+                            <!-- Classification Section -->
                             <div class="mb-4">
                                 <h6 class="text-success fw-bold mb-3">
-                                    <i class="fas fa-calendar-alt me-2"></i>Schedule
+                                    <i class="fas fa-layer-group me-2"></i>Classification
                                 </h6>
-                                <div class="row">                                    <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="start_date" class="form-label fw-semibold">Start Date</label>
-                                            <input type="date" class="form-control" id="start_date" name="start_date" 
-                                                   value="<?= old('start_date') ?>"
-                                                   min="<?= date('Y-m-d') ?>">
-                                            <div class="form-text">Course start date (must be today or later)</div>
+                                            <label for="department_id" class="form-label fw-semibold">Department</label>
+                                            <select class="form-select" id="department_id" name="department_id">
+                                                <option value="">-- Select Department --</option>
+                                                <?php foreach ($departments as $dept): ?>
+                                                    <option value="<?= $dept['id'] ?>" <?= old('department_id') == $dept['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($dept['department_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <div class="form-text">Optional: Select department</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="end_date" class="form-label fw-semibold">End Date</label>
-                                            <input type="date" class="form-control" id="end_date" name="end_date" 
-                                                   value="<?= old('end_date') ?>"
-                                                   min="<?= date('Y-m-d') ?>">
-                                            <div class="form-text">Course end date (max 220 class days from start)</div>
+                                            <label for="category_id" class="form-label fw-semibold">Category</label>
+                                            <select class="form-select" id="category_id" name="category_id">
+                                                <option value="">-- Select Category --</option>
+                                                <?php foreach ($categories as $cat): ?>
+                                                    <option value="<?= $cat['id'] ?>" <?= old('category_id') == $cat['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($cat['category_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <div class="form-text">Optional: Select category</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="year_level_id" class="form-label fw-semibold">Year Level</label>
+                                            <select class="form-select" id="year_level_id" name="year_level_id">
+                                                <option value="">-- Select Year Level --</option>
+                                                <?php foreach ($yearLevels as $year): ?>
+                                                    <option value="<?= $year['id'] ?>" <?= old('year_level_id') == $year['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($year['year_level_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <div class="form-text">Optional: Recommended year level</div>
                                         </div>
                                     </div>
                                 </div>
@@ -243,29 +234,42 @@
                             <!-- Description Section -->
                             <div class="mb-4">
                                 <h6 class="text-success fw-bold mb-3">
-                                    <i class="fas fa-align-left me-2"></i>Description (Optional)
+                                    <i class="fas fa-align-left me-2"></i>Description
                                 </h6>
                                 <div class="row">
                                     <div class="col-12">
                                         <div class="mb-3">
-                                            <label for="description" class="form-label fw-semibold">Description <span class="text-muted">(Optional)</span></label>
+                                            <label for="description" class="form-label fw-semibold">Description</label>
                                             <textarea class="form-control" 
                                                       id="description" 
                                                       name="description" 
                                                       rows="4" 
-                                                      maxlength="1000"
-                                                      placeholder="Enter course description (letters, numbers, spaces, and basic punctuation only)..."><?= old('description') ?></textarea>
-                                            <div class="form-text">
-                                                Allowed: Letters, numbers, spaces, periods, commas, colons, semicolons, exclamation marks, question marks, hyphens, and bullet points (•). Max 1000 characters.
-                                            </div>
-                                            <div class="text-end small text-muted mt-1">
-                                                <span id="charCount">0</span> / 1000 characters
-                                            </div>
+                                                      placeholder="Enter course description, learning objectives, and prerequisites..."><?= old('description') ?></textarea>
+                                            <div class="form-text">Optional: Provide detailed course information</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="d-flex gap-2">                                <button type="submit" class="btn btn-success">
+
+                            <!-- Status Section -->
+                            <div class="mb-4">
+                                <h6 class="text-success fw-bold mb-3">
+                                    <i class="fas fa-toggle-on me-2"></i>Status
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" <?= old('is_active', 1) ? 'checked' : '' ?>>
+                                            <label class="form-check-label fw-semibold" for="is_active">
+                                                Active (Available for enrollment)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success">
                                     💾 Create Course
                                 </button>
                                 <a href="<?= base_url('admin/manage_courses') ?>" class="btn btn-outline-secondary">
@@ -277,7 +281,9 @@
                 </div>
             </div>
         </div>
-        <?php endif; ?>        <!-- Edit Course Form (shown when editing) -->
+        <?php endif; ?>
+
+        <!-- Edit Course Form (shown when editing) -->
         <?php if ($showEditForm && $editCourse): ?>
         <div class="row mb-4">
             <div class="col-12">
@@ -297,80 +303,20 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="edit_title" class="form-label fw-semibold">Course Title</label>
-                                            <input type="text" class="form-control" id="edit_title" name="title" 
-                                                   value="<?= old('title', $editCourse['title']) ?>" required 
-                                                   pattern="[a-zA-Z\s\-\.]+"
-                                                   minlength="3" maxlength="200"
-                                                   title="Course title can only contain letters, spaces, hyphens, and periods">
-                                            <div class="form-text">Enter the full course title (letters, spaces, hyphens, periods only)</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="edit_course_code" class="form-label fw-semibold">Course Code</label>
+                                            <label for="edit_course_code" class="form-label fw-semibold">Course Code <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="edit_course_code" name="course_code" 
                                                    value="<?= old('course_code', $editCourse['course_code']) ?>" required 
-                                                   pattern="[A-Z]+\-?[0-9]+"
-                                                   minlength="3" maxlength="20" 
-                                                   placeholder="e.g., CS101, MATH201"
-                                                   title="Course code must start with letters followed by numbers (e.g., CS101, CS-101)">
-                                            <div class="form-text">Letters followed by numbers, with optional hyphen (e.g., CS101, CS-101, MATH201)</div>
+                                                   maxlength="20">
+                                            <div class="form-text">Unique course identifier</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="edit_category" class="form-label fw-semibold">Category</label>
-                                            <input type="text" class="form-control" id="edit_category" name="category" 
-                                                   value="<?= old('category', $editCourse['category']) ?>" 
-                                                   pattern="[a-zA-Z\s\-\.]+"
-                                                   maxlength="100" 
-                                                   placeholder="e.g., Computer Science, Mathematics"
-                                                   title="Category can only contain letters, spaces, hyphens, and periods">
-                                            <div class="form-text">Letters, spaces, hyphens, periods only (max 100 characters)</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="edit_academic_year" class="form-label fw-semibold">Academic Year <span class="text-muted">(Optional)</span></label>
-                                            <input type="text" class="form-control" id="edit_academic_year" name="academic_year" 
-                                                   value="<?= old('academic_year', $editCourse['academic_year']) ?>" 
-                                                   pattern="[0-9]{4}\-[0-9]{4}"
-                                                   maxlength="20" 
-                                                   placeholder="e.g., 2024-2025, 2025-2026"
-                                                   title="Academic year must be in format YYYY-YYYY (e.g., 2024-2025)">
-                                            <div class="form-text">Format: YYYY-YYYY (e.g., 2024-2025, 2025-2026)</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Instructor Assignment Section -->
-                            <div class="mb-4">
-                                <h6 class="text-warning fw-bold mb-3">
-                                    <i class="fas fa-chalkboard-teacher me-2"></i>Instructors (Optional)
-                                </h6>
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="mb-3">
-                                            <label for="edit_instructor_ids" class="form-label fw-semibold">Instructors <span class="text-muted">(Optional)</span></label>
-                                            <select class="form-select" id="edit_instructor_ids" name="instructor_ids[]" multiple>
-                                                <?php 
-                                                $currentInstructorIds = json_decode($editCourse['instructor_ids'] ?? '[]', true);
-                                                if (!is_array($currentInstructorIds)) {
-                                                    $currentInstructorIds = [];
-                                                }
-                                                $selectedInstructors = old('instructor_ids') ? (array)old('instructor_ids') : $currentInstructorIds;
-                                                ?>
-                                                <?php foreach ($teachers as $teacher): ?>
-                                                    <option value="<?= $teacher['id'] ?>" <?= in_array($teacher['id'], $selectedInstructors) ? 'selected' : '' ?>>
-                                                        <?= esc($teacher['name']) ?> (<?= esc($teacher['email']) ?>)
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <div class="form-text">
-                                                Hold Ctrl/Cmd to select multiple instructors. Course can have multiple instructors assigned.
-                                            </div>
+                                            <label for="edit_title" class="form-label fw-semibold">Course Title <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="edit_title" name="title" 
+                                                   value="<?= old('title', $editCourse['title']) ?>" required 
+                                                   maxlength="255">
+                                            <div class="form-text">Full course title</div>
                                         </div>
                                     </div>
                                 </div>
@@ -382,69 +328,79 @@
                                     <i class="fas fa-cogs me-2"></i>Course Details
                                 </h6>
                                 <div class="row">
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="edit_credits" class="form-label fw-semibold">Credits</label>
+                                            <label for="edit_credits" class="form-label fw-semibold">Credits <span class="text-danger">*</span></label>
                                             <input type="number" class="form-control" id="edit_credits" name="credits" 
-                                                   value="<?= old('credits', $editCourse['credits']) ?>" 
-                                                   min="1" max="9">
-                                            <div class="form-text">Credit hours (1-9, default: 3)</div>
+                                                   value="<?= old('credits', $editCourse['credits']) ?>" required
+                                                   min="1" max="12">
+                                            <div class="form-text">Credit units</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="edit_duration_weeks" class="form-label fw-semibold">Duration (weeks)</label>
-                                            <input type="number" class="form-control" id="edit_duration_weeks" name="duration_weeks" 
-                                                   value="<?= old('duration_weeks', $editCourse['duration_weeks']) ?>" 
-                                                   min="1" max="99">
-                                            <div class="form-text">Course length (1-99, default: 16)</div>
+                                            <label for="edit_lecture_hours" class="form-label fw-semibold">Lecture Hours</label>
+                                            <input type="number" class="form-control" id="edit_lecture_hours" name="lecture_hours" 
+                                                   value="<?= old('lecture_hours', $editCourse['lecture_hours']) ?>" 
+                                                   min="0" max="10" step="0.5">
+                                            <div class="form-text">Hours per week</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="edit_max_students" class="form-label fw-semibold">Max Students</label>
-                                            <input type="number" class="form-control" id="edit_max_students" name="max_students" 
-                                                   value="<?= old('max_students', $editCourse['max_students']) ?>" 
-                                                   min="1" max="999">
-                                            <div class="form-text">Maximum enrollment (1-999, default: 30)</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-3">
-                                            <label for="edit_status" class="form-label fw-semibold">Status</label>
-                                            <select class="form-select" id="edit_status" name="status" required>
-                                                <option value="draft" <?= old('status', $editCourse['status']) === 'draft' ? 'selected' : '' ?>>📝 Draft</option>
-                                                <option value="active" <?= old('status', $editCourse['status']) === 'active' ? 'selected' : '' ?>>✅ Active</option>
-                                                <option value="completed" <?= old('status', $editCourse['status']) === 'completed' ? 'selected' : '' ?>>🎯 Completed</option>
-                                                <option value="cancelled" <?= old('status', $editCourse['status']) === 'cancelled' ? 'selected' : '' ?>>❌ Cancelled</option>
-                                            </select>
+                                            <label for="edit_lab_hours" class="form-label fw-semibold">Lab Hours</label>
+                                            <input type="number" class="form-control" id="edit_lab_hours" name="lab_hours" 
+                                                   value="<?= old('lab_hours', $editCourse['lab_hours']) ?>" 
+                                                   min="0" max="10" step="0.5">
+                                            <div class="form-text">Hours per week</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Schedule Section -->
+                            <!-- Classification Section -->
                             <div class="mb-4">
                                 <h6 class="text-warning fw-bold mb-3">
-                                    <i class="fas fa-calendar-alt me-2"></i>Schedule
+                                    <i class="fas fa-layer-group me-2"></i>Classification
                                 </h6>
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="edit_start_date" class="form-label fw-semibold">Start Date</label>
-                                            <input type="date" class="form-control" id="edit_start_date" name="start_date" 
-                                                   value="<?= old('start_date', $editCourse['start_date']) ?>"
-                                                   min="<?= date('Y-m-d') ?>">
-                                            <div class="form-text">Course start date (must be today or later)</div>
+                                            <label for="edit_department_id" class="form-label fw-semibold">Department</label>
+                                            <select class="form-select" id="edit_department_id" name="department_id">
+                                                <option value="">-- Select Department --</option>
+                                                <?php foreach ($departments as $dept): ?>
+                                                    <option value="<?= $dept['id'] ?>" <?= old('department_id', $editCourse['department_id']) == $dept['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($dept['department_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="edit_end_date" class="form-label fw-semibold">End Date</label>
-                                            <input type="date" class="form-control" id="edit_end_date" name="end_date" 
-                                                   value="<?= old('end_date', $editCourse['end_date']) ?>"
-                                                   min="<?= date('Y-m-d') ?>">
-                                            <div class="form-text">Course end date (max 220 class days from start)</div>
+                                            <label for="edit_category_id" class="form-label fw-semibold">Category</label>
+                                            <select class="form-select" id="edit_category_id" name="category_id">
+                                                <option value="">-- Select Category --</option>
+                                                <?php foreach ($categories as $cat): ?>
+                                                    <option value="<?= $cat['id'] ?>" <?= old('category_id', $editCourse['category_id']) == $cat['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($cat['category_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="edit_year_level_id" class="form-label fw-semibold">Year Level</label>
+                                            <select class="form-select" id="edit_year_level_id" name="year_level_id">
+                                                <option value="">-- Select Year Level --</option>
+                                                <?php foreach ($yearLevels as $year): ?>
+                                                    <option value="<?= $year['id'] ?>" <?= old('year_level_id', $editCourse['year_level_id']) == $year['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($year['year_level_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -453,31 +409,41 @@
                             <!-- Description Section -->
                             <div class="mb-4">
                                 <h6 class="text-warning fw-bold mb-3">
-                                    <i class="fas fa-align-left me-2"></i>Description (Optional)
+                                    <i class="fas fa-align-left me-2"></i>Description
                                 </h6>
                                 <div class="row">
                                     <div class="col-12">
                                         <div class="mb-3">
-                                            <label for="edit_description" class="form-label fw-semibold">Description <span class="text-muted">(Optional)</span></label>
+                                            <label for="edit_description" class="form-label fw-semibold">Description</label>
                                             <textarea class="form-control" 
                                                       id="edit_description" 
                                                       name="description" 
-                                                      rows="4" 
-                                                      maxlength="1000"
-                                                      placeholder="Enter course description (letters, numbers, spaces, and basic punctuation only)..."><?= old('description', $editCourse['description']) ?></textarea>
-                                            <div class="form-text">
-                                                Allowed: Letters, numbers, spaces, periods, commas, colons, semicolons, exclamation marks, question marks, hyphens, and bullet points (•). Max 1000 characters.
-                                            </div>
-                                            <div class="text-end small text-muted mt-1">
-                                                <span id="editCharCount">0</span> / 1000 characters
-                                            </div>
+                                                      rows="4"><?= old('description', $editCourse['description']) ?></textarea>
+                                            <div class="form-text">Provide detailed course information</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Section -->
+                            <div class="mb-4">
+                                <h6 class="text-warning fw-bold mb-3">
+                                    <i class="fas fa-toggle-on me-2"></i>Status
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active" value="1" <?= old('is_active', $editCourse['is_active']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label fw-semibold" for="edit_is_active">
+                                                Active (Available for enrollment)
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-warning">
+                                <button type="submit" class="btn btn-warning text-dark">
                                     💾 Update Course
                                 </button>
                                 <a href="<?= base_url('admin/manage_courses') ?>" class="btn btn-outline-secondary">
@@ -495,824 +461,69 @@
         <div class="row">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-header bg-white border-0 pb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="mb-0 fw-bold text-dark">📋 All Courses</h5>
-                                <small class="text-muted">Manage and monitor all courses in the system</small>
-                            </div>
-                            <div class="text-muted small">
-                                Total: <?= count($courses) ?> courses
-                            </div>
-                        </div>
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0 fw-bold">📋 Course List</h5>
                     </div>
-                    <div class="card-body pt-0">
-                        <?php if (!empty($courses)): ?>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">                                    <thead class="table-light">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Course Code</th>
+                                        <th>Title</th>
+                                        <th>Credits</th>
+                                        <th>Department</th>
+                                        <th>Category</th>
+                                        <th>Year Level</th>
+                                        <th>Status</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($courses)): ?>
                                         <tr>
-                                            <th>Course</th>
-                                            <th class="text-center">Academic Year</th>
-                                            <th>Instructor</th>
-                                            <th class="text-center">Status</th>
-                                            <th class="text-center">Credits</th>
-                                            <th class="text-center">Duration</th>
-                                            <th class="text-center">Max Students</th>
-                                            <th class="text-center">Created</th>
-                                            <th class="text-center">Actions</th>
+                                            <td colspan="8" class="text-center text-muted py-4">
+                                                No courses found. Create your first course to get started!
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
+                                    <?php else: ?>
                                         <?php foreach ($courses as $course): ?>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="me-3">
-                                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
-                                                             style="width: 40px; height: 40px; font-size: 1.2rem;">
-                                                            📚
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div class="fw-bold text-dark"><?= esc($course['title']) ?></div>
-                                                        <small class="text-muted"><?= esc($course['course_code']) ?></small>
-                                                        <?php if ($course['category']): ?>
-                                                            <br><small class="text-info"><?= esc($course['category']) ?></small>
-                                                        <?php endif; ?>                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <?php if ($course['academic_year']): ?>
-                                                    <span class="badge bg-secondary rounded-pill">
-                                                        📅 <?= esc($course['academic_year']) ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <small class="text-muted">—</small>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-muted">
-                                                <?php if (!empty($course['instructor_name']) && $course['instructor_name'] !== 'No instructor assigned'): ?>
-                                                    <div class="d-flex flex-wrap gap-1">
-                                                        <?php 
-                                                        $instructors = explode(', ', $course['instructor_name']);
-                                                        foreach ($instructors as $instructor): 
-                                                        ?>
-                                                            <span class="badge bg-primary rounded-pill">
-                                                                👨‍🏫 <?= esc(trim($instructor)) ?>
-                                                            </span>
-                                                        <?php endforeach; ?>
-                                                    </div>
-                                                <?php else: ?>
-                                                    <div class="d-flex align-items-center text-muted">
-                                                        <i class="fas fa-user-slash me-1"></i>
-                                                        <span>Not Assigned</span>
+                                            <tr>
+                                                <td><strong><?= esc($course['course_code']) ?></strong></td>
+                                                <td><?= esc($course['title']) ?></td>
+                                                <td><?= esc($course['credits']) ?></td>
+                                                <td><?= esc($course['department_name'] ?? 'N/A') ?></td>
+                                                <td><?= esc($course['category_name'] ?? 'N/A') ?></td>
+                                                <td><?= esc($course['year_level_name'] ?? 'N/A') ?></td>
+                                                <td>
+                                                    <?php if ($course['is_active']): ?>
+                                                        <span class="badge bg-success">✅ Active</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary">⭕ Inactive</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="btn-group btn-group-sm" role="group">
                                                         <a href="<?= base_url('admin/manage_courses?action=edit&id=' . $course['id']) ?>" 
-                                                           class="btn btn-outline-primary btn-sm ms-2" 
-                                                           title="Assign Instructors">
-                                                            <i class="fas fa-plus me-1"></i>Assign
+                                                           class="btn btn-outline-warning" title="Edit">
+                                                            ✏️
+                                                        </a>
+                                                        <a href="<?= base_url('admin/manage_courses?action=delete&id=' . $course['id']) ?>" 
+                                                           class="btn btn-outline-danger" title="Delete"
+                                                           onclick="return confirm('Are you sure you want to delete this course?')">
+                                                            🗑️
                                                         </a>
                                                     </div>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center">
-                                                <?php
-                                                $statusStyles = [
-                                                    'draft' => ['color' => 'warning', 'icon' => '📝'],
-                                                    'active' => ['color' => 'success', 'icon' => '✅'],
-                                                    'completed' => ['color' => 'secondary', 'icon' => '🎯'],
-                                                    'cancelled' => ['color' => 'danger', 'icon' => '❌']
-                                                ];
-                                                $style = $statusStyles[$course['status']] ?? ['color' => 'secondary', 'icon' => '❓'];
-                                                ?>
-                                                <span class="badge bg-<?= $style['color'] ?> rounded-pill px-3 py-2">
-                                                    <?= $style['icon'] ?> <?= ucfirst($course['status']) ?>
-                                                </span>
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="badge bg-info rounded-pill"><?= $course['credits'] ?></span>
-                                            </td>
-                                            <td class="text-center">
-                                                <small class="text-muted"><?= $course['duration_weeks'] ?> weeks</small>
-                                            </td>
-                                            <td class="text-center">
-                                                <small class="text-muted"><?= $course['max_students'] ?></small>
-                                            </td>
-                                            <td class="text-center">
-                                                <small class="text-muted">
-                                                    <?= date('M j, Y', strtotime($course['created_at'])) ?>
-                                                </small>
-                                            </td>                                            <td class="text-center">
-                                                <div class="btn-group btn-group-sm" role="group">
-                                                    <!-- Upload Materials Button -->
-                                                    <a href="<?= base_url('admin/course/' . $course['id'] . '/upload') ?>" 
-                                                       class="btn btn-outline-success btn-sm me-1" 
-                                                       title="Upload Course Materials">
-                                                        📁
-                                                    </a>
-                                                    
-                                                    <!-- Edit Button -->
-                                                    <a href="<?= base_url('admin/manage_courses?action=edit&id=' . $course['id']) ?>" 
-                                                       class="btn btn-outline-warning btn-sm me-1" 
-                                                       title="Edit Course">
-                                                        ✏️
-                                                    </a>
-                                                    
-                                                    <!-- Delete Button -->
-                                                    <a href="<?= base_url('admin/manage_courses?action=delete&id=' . $course['id']) ?>" 
-                                                       class="btn btn-outline-danger btn-sm"
-                                                       onclick="return confirm('Are you sure you want to delete this course?\n\nCourse: <?= esc($course['title']) ?>\nCode: <?= esc($course['course_code']) ?>\n\nThis action cannot be undone and will affect all enrolled students!')"
-                                                       title="Delete Course">
-                                                        🗑️
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                </td>
+                                            </tr>
                                         <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php else: ?>
-                            <div class="text-center py-5 text-muted">
-                                <div class="mb-3">
-                                    <i class="fas fa-book-open text-muted" style="font-size: 3rem;"></i>
-                                </div>
-                                <h6 class="text-muted">No courses found</h6>
-                                <p class="text-muted small mb-0">Create your first course using the button above.</p>
-                            </div>
-                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- JavaScript for Enhanced Validation -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Course title validation - only letters, spaces, hyphens, periods
-    const titleFields = document.querySelectorAll('input[name="title"]');
-    titleFields.forEach(function(field) {
-        field.addEventListener('input', function(e) {
-            const value = e.target.value;
-            const titlePattern = /^[a-zA-Z\s\-\.]+$/;
-            
-            // Remove invalid characters as user types
-            const sanitized = value.replace(/[^a-zA-Z\s\-\.]/g, '');
-            if (sanitized !== value) {
-                e.target.value = sanitized;
-            }
-            
-            // Visual feedback
-            if (sanitized.length >= 3 && sanitized.length <= 200 && titlePattern.test(sanitized)) {
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-                hideCustomError(e.target);
-            } else if (sanitized.length > 0) {
-                e.target.classList.remove('is-valid');
-                e.target.classList.add('is-invalid');
-                if (!titlePattern.test(sanitized)) {
-                    showCustomError(e.target, 'Only letters, spaces, hyphens, and periods are allowed');
-                }
-            } else {
-                e.target.classList.remove('is-valid', 'is-invalid');
-                hideCustomError(e.target);
-            }
-        });
-    });
-      // Course code validation - letters followed by optional hyphen and numbers
-    const codeFields = document.querySelectorAll('input[name="course_code"]');
-    codeFields.forEach(function(field) {
-        field.addEventListener('input', function(e) {
-            const value = e.target.value;
-            const codePattern = /^[A-Z]+\-?[0-9]+$/;
-            
-            // Convert to uppercase and remove invalid characters (allow hyphen between letters and numbers)
-            let sanitized = value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
-            
-            // Ensure proper format: letters, optional hyphen, numbers
-            const match = sanitized.match(/^([A-Z]*)([\-]?)([0-9]*)(.*)$/);
-            if (match) {
-                let letters = match[1];
-                let hyphen = match[2];
-                let numbers = match[3];
-                let extra = match[4];
-                
-                // If there are extra characters after numbers, remove them
-                if (extra) {
-                    sanitized = letters + hyphen + numbers;
-                }
-                
-                // Ensure only one hyphen and it's in the right place
-                const hyphenCount = (sanitized.match(/\-/g) || []).length;
-                if (hyphenCount > 1) {
-                    // Keep only first hyphen
-                    const parts = sanitized.split('-');
-                    sanitized = parts[0] + '-' + parts.slice(1).join('');
-                }
-            }
-            
-            e.target.value = sanitized;
-            
-            // Visual feedback
-            if (sanitized.length >= 3 && sanitized.length <= 20 && codePattern.test(sanitized)) {
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-                hideCustomError(e.target);
-            } else if (sanitized.length > 0) {
-                e.target.classList.remove('is-valid');
-                e.target.classList.add('is-invalid');
-                if (!codePattern.test(sanitized)) {
-                    showCustomError(e.target, 'Must start with letters followed by numbers (e.g., CS101, CS-101)');
-                }
-            } else {
-                e.target.classList.remove('is-valid', 'is-invalid');
-                hideCustomError(e.target);
-            }
-        });
-    });
-    
-    // Academic Year validation - YYYY-YYYY format
-    const academicYearFields = document.querySelectorAll('input[name="academic_year"]');
-    academicYearFields.forEach(function(field) {
-        field.addEventListener('input', function(e) {
-            const value = e.target.value;
-            const yearPattern = /^[0-9]{4}\-[0-9]{4}$/;
-            
-            // Remove invalid characters (only allow digits and hyphen)
-            const sanitized = value.replace(/[^0-9\-]/g, '');
-            if (sanitized !== value) {
-                e.target.value = sanitized;
-            }
-            
-            // Visual feedback
-            if (sanitized.length === 0) {
-                // Optional field - no error if empty
-                e.target.classList.remove('is-valid', 'is-invalid');
-                hideCustomError(e.target);
-            } else if (yearPattern.test(sanitized)) {
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-                hideCustomError(e.target);
-            } else {
-                e.target.classList.remove('is-valid');
-                e.target.classList.add('is-invalid');
-                showCustomError(e.target, 'Format must be YYYY-YYYY (e.g., 2024-2025, 2025-2026)');
-            }
-        });
-    });
-    
-    // Category validation - only letters, spaces, hyphens, periods
-    const categoryFields = document.querySelectorAll('input[name="category"]');
-    categoryFields.forEach(function(field) {
-        field.addEventListener('input', function(e) {
-            const value = e.target.value;
-            const categoryPattern = /^[a-zA-Z\s\-\.]*$/;
-            
-            // Remove invalid characters as user types
-            const sanitized = value.replace(/[^a-zA-Z\s\-\.]/g, '');
-            if (sanitized !== value) {
-                e.target.value = sanitized;
-            }
-            
-            // Visual feedback
-            if (sanitized.length <= 100 && categoryPattern.test(sanitized)) {
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-                hideCustomError(e.target);
-            } else if (sanitized.length > 0) {
-                e.target.classList.remove('is-valid');
-                e.target.classList.add('is-invalid');
-                if (!categoryPattern.test(sanitized)) {
-                    showCustomError(e.target, 'Only letters, spaces, hyphens, and periods are allowed');
-                } else if (sanitized.length > 100) {
-                    showCustomError(e.target, 'Category cannot exceed 100 characters');
-                }
-            } else {
-                e.target.classList.remove('is-valid', 'is-invalid');
-                hideCustomError(e.target);
-            }
-        });
-    });    // Description validation - letters, numbers, spaces, hyphens, and limited punctuation
-    const descriptionFields = document.querySelectorAll('textarea[name="description"]');
-    descriptionFields.forEach(function(field) {
-        // Find associated character counter (could be #charCount or #editCharCount)
-        const charCounter = field.closest('form')?.querySelector('#charCount, #editCharCount');
-        
-        // Initialize character count on page load
-        if (charCounter) {
-            charCounter.textContent = field.value.length;
-        }
-        
-        field.addEventListener('input', function(e) {
-            const value = e.target.value;
-            // Allow letters, numbers, spaces, hyphens, periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points
-            const descriptionPattern = /^[a-zA-Z0-9\s\.\,\:\;\!\?\n\r•\-]*$/;
-            
-            // Remove invalid characters (excluding hyphens now)
-            const sanitized = value.replace(/[^a-zA-Z0-9\s\.\,\:\;\!\?\n\r•\-]/g, '');
-            if (sanitized !== value) {
-                e.target.value = sanitized;
-            }
-            
-            // Update character counter
-            if (charCounter) {
-                charCounter.textContent = sanitized.length;
-            }
-            
-            // Visual feedback
-            if (descriptionPattern.test(sanitized)) {
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-                hideCustomError(e.target);            } else if (sanitized.length > 0) {
-                e.target.classList.remove('is-valid');
-                e.target.classList.add('is-invalid');
-                showCustomError(e.target, 'Only letters, numbers, spaces, hyphens, and basic punctuation allowed (periods, commas, colons, semicolons, exclamation marks, question marks, and bullet points •)');
-            } else {
-                e.target.classList.remove('is-valid', 'is-invalid');
-                hideCustomError(e.target);
-            }
-        });
-    });      // Instructor validation (optional field)
-    const instructorFields = document.querySelectorAll('select[name="instructor_id"]');
-    instructorFields.forEach(function(field) {
-        field.addEventListener('change', function(e) {
-            const value = e.target.value;
-            
-            // Visual feedback - always valid since field is optional
-            if (value) {
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-            } else {
-                // Remove any validation classes when no instructor is selected (which is valid)
-                e.target.classList.remove('is-valid', 'is-invalid');
-            }
-        });
-    });
-    
-    // ===================================================================
-    // AUTO-CALCULATION: Academic Year → Start Date
-    // ===================================================================
-    academicYearFields.forEach(function(field) {
-        field.addEventListener('change', function(e) {
-            const value = e.target.value;
-            const yearPattern = /^([0-9]{4})\-([0-9]{4})$/;
-            const match = value.match(yearPattern);
-            
-            if (match) {
-                const startYear = match[1];
-                // Academic year starts August 1st
-                const suggestedStartDate = startYear + '-08-01';
-                
-                // Find the corresponding start date field
-                const startDateField = field.closest('form')?.querySelector('input[name="start_date"]');
-                if (startDateField && !startDateField.value) {
-                    // Only auto-fill if start date is empty
-                    startDateField.value = suggestedStartDate;
-                    startDateField.classList.add('is-valid');
-                    
-                    // Show a helpful message
-                    const helpText = startDateField.nextElementSibling;
-                    if (helpText && helpText.classList.contains('form-text')) {
-                        const originalText = helpText.textContent;
-                        helpText.innerHTML = '<span class="text-success"><i class="fas fa-magic me-1"></i>Auto-filled: August 1, ' + startYear + '</span>';
-                        setTimeout(function() {
-                            helpText.textContent = originalText;
-                        }, 3000);
-                    }
-                    
-                    // Trigger end date calculation
-                    startDateField.dispatchEvent(new Event('change'));
-                }
-            }
-        });
-    });
-    
-    // ===================================================================
-    // AUTO-CALCULATION: Start Date + Duration → End Date
-    // ===================================================================
-    const durationFields = document.querySelectorAll('input[name="duration_weeks"]');
-    
-    function calculateEndDate(startDateField, durationField, endDateField) {
-        if (!startDateField.value || !durationField.value) {
-            return;
-        }
-        
-        const startDate = new Date(startDateField.value);
-        const durationWeeks = parseInt(durationField.value);
-        
-        if (isNaN(startDate.getTime()) || isNaN(durationWeeks) || durationWeeks <= 0) {
-            return;
-        }
-        
-        // Calculate end date by counting only weekdays (Monday-Friday)
-        let endDate = new Date(startDate);
-        let classDay = 0;
-        const targetClassDays = Math.min(durationWeeks * 5, 220); // 5 days per week, max 220 class days
-        
-        while (classDay < targetClassDays) {
-            endDate.setDate(endDate.getDate() + 1);
-            const dayOfWeek = endDate.getDay();
-            // Count only weekdays (Monday=1 to Friday=5)
-            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                classDay++;
-            }
-        }
-        
-        // Format date as YYYY-MM-DD
-        const year = endDate.getFullYear();
-        const month = String(endDate.getMonth() + 1).padStart(2, '0');
-        const day = String(endDate.getDate()).padStart(2, '0');
-        const formattedEndDate = `${year}-${month}-${day}`;
-        
-        // Only auto-fill if end date is empty or user wants auto-calculation
-        if (!endDateField.value || endDateField.dataset.autoCalculate === 'true') {
-            endDateField.value = formattedEndDate;
-            endDateField.dataset.autoCalculate = 'true'; // Mark as auto-calculated
-            endDateField.classList.add('is-valid');
-            
-            // Show helpful message
-            const helpText = endDateField.nextElementSibling;
-            if (helpText && helpText.classList.contains('form-text')) {
-                const originalText = helpText.textContent;
-                const endDateFormatted = new Date(formattedEndDate).toLocaleDateString('en-US', { 
-                    year: 'numeric', month: 'long', day: 'numeric' 
-                });
-                helpText.innerHTML = '<span class="text-success"><i class="fas fa-magic me-1"></i>Auto-calculated: ' + endDateFormatted + ' (' + classDay + ' class days)</span>';
-                setTimeout(function() {
-                    helpText.textContent = originalText;
-                }, 4000);
-            }
-        }
-    }
-    
-    // Listen for changes on start date and duration fields
-    const startDateFields = document.querySelectorAll('input[name="start_date"]');
-    const endDateFields = document.querySelectorAll('input[name="end_date"]');
-    
-    startDateFields.forEach(function(startField, index) {
-        const endField = endDateFields[index];
-        const durationField = startField.closest('form')?.querySelector('input[name="duration_weeks"]');
-        
-        if (durationField && endField) {
-            // Calculate when start date changes
-            startField.addEventListener('change', function() {
-                calculateEndDate(startField, durationField, endField);
-            });
-            
-            // Calculate when duration changes
-            durationField.addEventListener('change', function() {
-                calculateEndDate(startField, durationField, endField);
-            });
-            
-            // Allow manual override of end date
-            endField.addEventListener('focus', function() {
-                endField.dataset.autoCalculate = 'false';
-            });
-        }
-    });
-
-    // Date validation - ensure end date is after start date AND dates align with academic year
-    // Also validates: start date >= today, academic year >= current year, max 220 class days
-    
-    
-    function validateDates() {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time for date comparison
-        const currentYear = today.getFullYear();
-        
-        startDateFields.forEach(function(startField, index) {
-            const endField = endDateFields[index];
-            const academicYearField = startField.closest('form')?.querySelector('input[name="academic_year"]');
-            
-            // VALIDATION 1: Academic year must be current year or future
-            if (academicYearField && academicYearField.value) {
-                const yearPattern = /^([0-9]{4})\-([0-9]{4})$/;
-                const match = academicYearField.value.match(yearPattern);
-                
-                if (match) {
-                    const startYear = parseInt(match[1]);
-                    const endYear = parseInt(match[2]);
-                    
-                    // Check if academic year is in the past
-                    if (startYear < currentYear) {
-                        academicYearField.classList.add('is-invalid');
-                        academicYearField.classList.remove('is-valid');
-                        showCustomError(academicYearField, `Academic year cannot be in the past. Use ${currentYear}-${currentYear + 1} or later.`);
-                        return;
-                    }
-                    
-                    // Check if years are consecutive
-                    if (endYear != startYear + 1) {
-                        academicYearField.classList.add('is-invalid');
-                        academicYearField.classList.remove('is-valid');
-                        showCustomError(academicYearField, `Academic year must be consecutive (e.g., ${startYear}-${startYear + 1}).`);
-                        return;
-                    }
-                }
-            }
-            
-            // VALIDATION 2: Start date must be today or later
-            if (startField.value) {
-                const startDate = new Date(startField.value);
-                startDate.setHours(0, 0, 0, 0);
-                
-                if (startDate < today) {
-                    startField.classList.add('is-invalid');
-                    startField.classList.remove('is-valid');
-                    showCustomError(startField, 'Start date cannot be in the past. Select today or a future date.');
-                    return;
-                }
-            }
-            
-            // VALIDATION 3: Validate end date after start date with 220 class days maximum
-            if (startField && endField && startField.value && endField.value) {
-                const startDate = new Date(startField.value);
-                const endDate = new Date(endField.value);
-                
-                if (endDate <= startDate) {
-                    endField.classList.add('is-invalid');
-                    endField.classList.remove('is-valid');
-                    showCustomError(endField, 'End date must be after start date.');
-                    return;
-                }
-                
-                // Calculate 220 class days (weekdays only) from start date
-                let classDay = 0;
-                let currentDate = new Date(startDate);
-                
-                while (classDay < 220) {
-                    currentDate.setDate(currentDate.getDate() + 1);
-                    const dayOfWeek = currentDate.getDay(); // 0 (Sunday) to 6 (Saturday)
-                    
-                    // Count only weekdays (Monday-Friday)
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                        classDay++;
-                    }
-                }
-                
-                if (endDate > currentDate) {
-                    const daysDiff = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
-                    const maxEndDate = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-                    endField.classList.add('is-invalid');
-                    endField.classList.remove('is-valid');
-                    showCustomError(endField, `End date exceeds 220 class days. Maximum: ${maxEndDate} (Your range: ${daysDiff} days).`);
-                    return;
-                } else {
-                    endField.classList.remove('is-invalid');
-                    endField.classList.add('is-valid');
-                    hideCustomError(endField);
-                }
-            }
-            
-            // VALIDATION 4: Validate dates against academic year if specified
-            if (academicYearField && academicYearField.value) {
-                const yearPattern = /^([0-9]{4})\-([0-9]{4})$/;
-                const match = academicYearField.value.match(yearPattern);
-                
-                if (match) {
-                    const startYear = parseInt(match[1]);
-                    const endYear = parseInt(match[2]);
-                    
-                    const academicYearStart = new Date(startYear, 7, 1); // August 1 of start year
-                    const academicYearEnd = new Date(endYear, 5, 30); // June 30 of end year
-                    
-                    // Validate start date within academic year
-                    if (startField.value) {
-                        const startDate = new Date(startField.value);
-                        if (startDate < academicYearStart || startDate > academicYearEnd) {
-                            startField.classList.add('is-invalid');
-                            startField.classList.remove('is-valid');
-                            showCustomError(startField, `Start date must be within ${startYear}-${endYear} academic year (Aug 1, ${startYear} - Jun 30, ${endYear}).`);
-                            return;
-                        } else {
-                            startField.classList.remove('is-invalid');
-                            startField.classList.add('is-valid');
-                            hideCustomError(startField);
-                        }
-                    }
-                    
-                    // Validate end date within academic year
-                    if (endField.value) {
-                        const endDate = new Date(endField.value);
-                        if (endDate < academicYearStart || endDate > academicYearEnd) {
-                            endField.classList.add('is-invalid');
-                            endField.classList.remove('is-valid');
-                            showCustomError(endField, `End date must be within ${startYear}-${endYear} academic year (before Jun 30, ${endYear}).`);
-                            return;
-                        } else if (!endField.classList.contains('is-invalid')) {
-                            // Keep valid state if no other errors
-                            hideCustomError(endField);
-                        }
-                    }
-                }
-            }
-        });
-    }
-    
-    startDateFields.forEach(function(field) {
-        field.addEventListener('change', validateDates);
-    });
-    
-    endDateFields.forEach(function(field) {
-        field.addEventListener('change', validateDates);
-    });
-    
-    // Also validate dates when academic year changes
-    academicYearFields.forEach(function(field) {
-        field.addEventListener('change', validateDates);
-    });
-    
-    // Helper functions for custom error messages
-    function showCustomError(field, message) {
-        hideCustomError(field); // Remove any existing error
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'invalid-feedback d-block';
-        errorDiv.textContent = message;
-        errorDiv.setAttribute('data-custom-error', 'true');
-        field.parentNode.appendChild(errorDiv);
-    }
-    
-    function hideCustomError(field) {
-        const existingError = field.parentNode.querySelector('[data-custom-error="true"]');
-        if (existingError) {
-            existingError.remove();
-        }
-    }
-
-    // Enhance multiple select dropdowns for instructor assignment
-    const multiSelects = document.querySelectorAll('select[multiple]');
-    multiSelects.forEach(function(select) {
-        // Add styling and helper text
-        select.style.minHeight = '120px';
-        
-        // Add change event to show selected count
-        select.addEventListener('change', function() {
-            const selectedCount = this.selectedOptions.length;
-            const helpText = this.parentNode.querySelector('.form-text');
-            if (helpText) {
-                if (selectedCount > 0) {
-                    helpText.innerHTML = `<i class="fas fa-check-circle text-success me-1"></i>${selectedCount} instructor(s) selected. Hold Ctrl/Cmd to select multiple instructors.`;
-                    helpText.className = 'form-text text-success';
-                } else {
-                    helpText.innerHTML = 'Hold Ctrl/Cmd to select multiple instructors. Course can have multiple instructors assigned.';
-                    helpText.className = 'form-text';
-                }
-            }
-        });
-        
-        // Trigger initial change event
-        select.dispatchEvent(new Event('change'));
-    });
-});
-</script>
-
-<!-- Custom CSS for Multi-Select Enhancement -->
-<style>
-/* Enhanced Multi-Select Styling */
-select[multiple] {
-    background-image: none !important;
-    padding: 8px 12px !important;
-    border-radius: 0.375rem;
-    min-height: 120px;
-}
-
-select[multiple] option {
-    padding: 6px 10px;
-    margin: 1px 0;
-    border-radius: 4px;
-    line-height: 1.4;
-}
-
-select[multiple] option:checked {
-    background: linear-gradient(135deg, #007bff, #0056b3) !important;
-    color: white !important;
-    font-weight: 500;
-}
-
-select[multiple] option:hover {
-    background: #f8f9fa !important;
-    color: #212529 !important;
-}
-
-/* Instructor Badge Styling */
-.badge.bg-primary {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.025em;
-}
-
-/* Enhanced Button Styling */
-.btn-outline-primary.btn-sm {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.65rem;
-    border-width: 1.5px;
-    transition: all 0.2s ease;
-}
-
-.btn-outline-primary.btn-sm:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,123,255,0.25);
-}
-
-/* Form Enhancement */
-.validation-warning {
-    display: block;
-    margin-top: 0.25rem;
-    font-size: 0.875rem;
-}
-
-/* Table Enhancement */
-.table td {
-    vertical-align: middle;
-    padding: 0.75rem 0.5rem;
-}
-
-/* Badge Container */
-.d-flex.flex-wrap.gap-1 {
-    gap: 0.35rem !important;
-    align-items: center;
-}
-
-/* Multi-select focus state */
-select[multiple]:focus {
-    border-color: #86b7fe;
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-/* Success state for form text */
-.form-text.text-success {
-    font-weight: 500;
-}
-
-/* Enhanced course card icon */
-.bg-primary.rounded-circle {
-    background: linear-gradient(135deg, #007bff, #0056b3) !important;
-    box-shadow: 0 2px 8px rgba(0,123,255,0.25);
-}
-
-/* Responsive enhancements */
-@media (max-width: 768px) {
-    .badge.bg-primary {
-        font-size: 0.7rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    .d-flex.flex-wrap.gap-1 {
-        gap: 0.25rem !important;
-    }
-    
-    select[multiple] {
-        min-height: 100px;
-    }
-}
-
-/* Form Section Headers */
-.card-body h6.text-success {
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid #e9ecef;
-    margin-bottom: 1.25rem !important;
-}
-
-.card-body h6.text-success i {
-    font-size: 1.1rem;
-    opacity: 0.9;
-}
-
-/* Form Section Spacing */
-.card-body > form > .mb-4 {
-    background: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    border-left: 4px solid #28a745;
-    margin-bottom: 1.5rem !important;
-}
-
-.card-body > form > .mb-4:last-of-type {
-    margin-bottom: 1rem !important;
-}
-
-/* Enhanced Form Labels */
-.form-label.fw-semibold {
-    color: #495057;
-    margin-bottom: 0.5rem;
-    font-size: 0.95rem;
-}
-
-/* Form Input Focus States */
-.form-control:focus,
-.form-select:focus {
-    border-color: #28a745;
-    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.15);
-}
-
-/* Action Buttons Spacing */
-.card-body > form > .d-flex.gap-2 {
-    padding-top: 1rem;
-    border-top: 2px solid #e9ecef;
-    margin-top: 1.5rem;
-}
-</style>
-

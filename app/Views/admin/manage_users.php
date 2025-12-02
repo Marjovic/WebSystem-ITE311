@@ -34,7 +34,7 @@
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-danger text-center p-4 rounded-3 h-100">
                     <div class="display-4 mb-2">👑</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => $u['role'] === 'admin')) ?></div>
+                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => strtolower($u['role_name'] ?? '') === 'admin')) ?></div>
                     <div class="fw-semibold">Admins</div>
                     <small class="opacity-75">System administrators</small>
                 </div>
@@ -42,14 +42,14 @@
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-info text-center p-4 rounded-3 h-100">
                     <div class="display-4 mb-2">👨‍🏫</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => $u['role'] === 'teacher')) ?></div>
+                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => in_array(strtolower($u['role_name'] ?? ''), ['teacher', 'instructor']))) ?></div>
                     <div class="fw-semibold">Teachers</div>
                     <small class="opacity-75">Creating content</small>
                 </div>
             </div>            <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-warning text-center p-4 rounded-3 h-100">
                     <div class="display-4 mb-2">🎓</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => $u['role'] === 'student')) ?></div>
+                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => strtolower($u['role_name'] ?? '') === 'student')) ?></div>
                     <div class="fw-semibold">Students</div>
                     <small class="opacity-75">Learning actively</small>
                 </div>
@@ -77,27 +77,45 @@
                     <div class="card-header bg-success text-white border-0">
                         <h5 class="mb-0">➕ Create New User</h5>
                     </div>
-                    <div class="card-body">
-                        <form method="post" action="<?= base_url('admin/manage_users?action=create') ?>">
-                            <div class="row">                                
-                                <div class="col-md-6">
+                    <div class="card-body">                        <form method="post" action="<?= base_url('admin/manage_users?action=create') ?>">
+                            <div class="row">
+                                <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="name" class="form-label fw-semibold">Full Name</label>
-                                        <input type="text" class="form-control" id="name" name="name" 
-                                               value="<?= old('name') ?>" required 
-                                               pattern="[A-Za-zñÑ\s]+" 
-                                               title="Name can only contain letters (including ñ/Ñ) and spaces"
-                                               minlength="3" maxlength="100">
-                                        <div class="form-text">Enter full name (letters including ñ/Ñ and spaces only, 3-100 characters)</div>
+                                        <label for="first_name" class="form-label fw-semibold">First Name</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" 
+                                               value="<?= old('first_name') ?>" required 
+                                               pattern="[A-Za-zñÑ\s\-\.]+" 
+                                               title="First name can only contain letters, spaces, hyphens, and periods"
+                                               minlength="2" maxlength="100">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="middle_name" class="form-label fw-semibold">Middle Name <small class="text-muted">(optional)</small></label>
+                                        <input type="text" class="form-control" id="middle_name" name="middle_name" 
+                                               value="<?= old('middle_name') ?>" 
+                                               pattern="[A-Za-zñÑ\s\-\.]+" 
+                                               title="Middle name can only contain letters, spaces, hyphens, and periods"
+                                               maxlength="100">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="last_name" class="form-label fw-semibold">Last Name</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" 
+                                               value="<?= old('last_name') ?>" required 
+                                               pattern="[A-Za-zñÑ\s\-\.]+" 
+                                               title="Last name can only contain letters, spaces, hyphens, and periods"
+                                               minlength="2" maxlength="100">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="email" class="form-label fw-semibold">Email Address</label>
                                         <input type="email" class="form-control" id="email" name="email" value="<?= old('email') ?>" 
-                                        required pattern="/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/">
+                                        required>
                                     </div>
-                                </div>                                
+                                </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="password" class="form-label fw-semibold">Password</label>
@@ -115,16 +133,16 @@
                                             <option value="student" <?= old('role') === 'student' ? 'selected' : '' ?>>Student</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div class="col-md-6" id="year_level_container" style="display: none;">
+                                </div>                                <div class="col-md-6" id="year_level_container" style="display: none;">
                                     <div class="mb-3">
-                                        <label for="year_level" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="year_level" name="year_level">
+                                        <label for="year_level_id" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="year_level_id" name="year_level_id">
                                             <option value="">Select Year Level</option>
-                                            <option value="1st Year" <?= old('year_level') === '1st Year' ? 'selected' : '' ?>>1st Year</option>
-                                            <option value="2nd Year" <?= old('year_level') === '2nd Year' ? 'selected' : '' ?>>2nd Year</option>
-                                            <option value="3rd Year" <?= old('year_level') === '3rd Year' ? 'selected' : '' ?>>3rd Year</option>
-                                            <option value="4th Year" <?= old('year_level') === '4th Year' ? 'selected' : '' ?>>4th Year</option>
+                                            <?php foreach ($yearLevels as $level): ?>
+                                                <option value="<?= $level['id'] ?>" <?= old('year_level_id') == $level['id'] ? 'selected' : '' ?>>
+                                                    <?= esc($level['year_level_name']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
                                         </select>
                                         <div class="form-text">Required for student accounts</div>
                                     </div>
@@ -149,30 +167,51 @@
         <?php if ($showEditForm && $editUser): ?>
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-3 border-warning">
-                    <div class="card-header bg-warning text-dark border-0">
-                        <h5 class="mb-0">✏️ Edit User: <?= esc($editUser['name']) ?></h5>
+                <div class="card border-0 shadow-sm rounded-3 border-warning">                    <div class="card-header bg-warning text-dark border-0">
+                        <?php 
+                        $editUserFullName = trim(($editUser['first_name'] ?? '') . ' ' . ($editUser['middle_name'] ?? '') . ' ' . ($editUser['last_name'] ?? ''));
+                        ?>
+                        <h5 class="mb-0">✏️ Edit User: <?= esc($editUserFullName) ?></h5>
                     </div>
-                    <div class="card-body">
-                        <form method="post" action="<?= base_url('admin/manage_users?action=edit&id=' . $editUser['id']) ?>">
-                            <div class="row">                                <div class="col-md-6">
+                    <div class="card-body">                        <form method="post" action="<?= base_url('admin/manage_users?action=edit&id=' . $editUser['id']) ?>">
+                            <div class="row">
+                                <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="edit_name" class="form-label fw-semibold">Full Name</label>
-                                        <input type="text" class="form-control" id="edit_name" name="name" 
-                                               value="<?= old('name', $editUser['name']) ?>" required 
-                                               pattern="[A-Za-zñÑ\s]+" 
-                                               title="Name can only contain letters (including ñ/Ñ) and spaces"
-                                               minlength="3" maxlength="100">
-                                        <div class="form-text">Enter full name (letters including ñ/Ñ and spaces only, 3-100 characters)</div>
+                                        <label for="edit_first_name" class="form-label fw-semibold">First Name</label>
+                                        <input type="text" class="form-control" id="edit_first_name" name="first_name" 
+                                               value="<?= old('first_name', $editUser['first_name'] ?? '') ?>" required 
+                                               pattern="[A-Za-zñÑ\s\-\.]+" 
+                                               title="First name can only contain letters, spaces, hyphens, and periods"
+                                               minlength="2" maxlength="100">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="edit_middle_name" class="form-label fw-semibold">Middle Name <small class="text-muted">(optional)</small></label>
+                                        <input type="text" class="form-control" id="edit_middle_name" name="middle_name" 
+                                               value="<?= old('middle_name', $editUser['middle_name'] ?? '') ?>" 
+                                               pattern="[A-Za-zñÑ\s\-\.]+" 
+                                               title="Middle name can only contain letters, spaces, hyphens, and periods"
+                                               maxlength="100">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="edit_last_name" class="form-label fw-semibold">Last Name</label>
+                                        <input type="text" class="form-control" id="edit_last_name" name="last_name" 
+                                               value="<?= old('last_name', $editUser['last_name'] ?? '') ?>" required 
+                                               pattern="[A-Za-zñÑ\s\-\.]+" 
+                                               title="Last name can only contain letters, spaces, hyphens, and periods"
+                                               minlength="2" maxlength="100">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="edit_email" class="form-label fw-semibold">Email Address</label>
                                         <input type="email" class="form-control" id="edit_email" name="email" value="<?= old('email', $editUser['email']) ?>" 
-                                        required pattern="[/^[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/]">
+                                        required>
                                     </div>
-                                </div>                                
+                                </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="edit_password" class="form-label fw-semibold">Password <small class="text-muted">(leave blank to keep current)</small></label>
@@ -180,25 +219,25 @@
                                                minlength="6">
                                         <div class="form-text">Password must be at least 6 characters long (if changing)</div>
                                     </div>
-                                </div>                                <div class="col-md-6">
-                                    <div class="mb-3">
+                                </div>                                <div class="col-md-6">                                    <div class="mb-3">
                                         <label for="edit_role" class="form-label fw-semibold">Role</label>
                                         <select class="form-select" id="edit_role" name="role" required>
-                                            <option value="admin" <?= old('role', $editUser['role']) === 'admin' ? 'selected' : '' ?>>Admin</option>
-                                            <option value="teacher" <?= old('role', $editUser['role']) === 'teacher' ? 'selected' : '' ?>>Teacher</option>
-                                            <option value="student" <?= old('role', $editUser['role']) === 'student' ? 'selected' : '' ?>>Student</option>
+                                            <option value="admin" <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'admin' ? 'selected' : '' ?>>Admin</option>
+                                            <option value="teacher" <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'teacher' ? 'selected' : '' ?>>Teacher</option>
+                                            <option value="student" <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'student' ? 'selected' : '' ?>>Student</option>
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-6" id="edit_year_level_container" style="display: <?= old('role', $editUser['role']) === 'student' ? 'block' : 'none' ?>;">
+                                <div class="col-md-6" id="edit_year_level_container" style="display: <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'student' ? 'block' : 'none' ?>;">
                                     <div class="mb-3">
                                         <label for="edit_year_level" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="edit_year_level" name="year_level">
+                                        <select class="form-select" id="edit_year_level" name="year_level_id">
                                             <option value="">Select Year Level</option>
-                                            <option value="1st Year" <?= old('year_level', $editUser['year_level'] ?? '') === '1st Year' ? 'selected' : '' ?>>1st Year</option>
-                                            <option value="2nd Year" <?= old('year_level', $editUser['year_level'] ?? '') === '2nd Year' ? 'selected' : '' ?>>2nd Year</option>
-                                            <option value="3rd Year" <?= old('year_level', $editUser['year_level'] ?? '') === '3rd Year' ? 'selected' : '' ?>>3rd Year</option>
-                                            <option value="4th Year" <?= old('year_level', $editUser['year_level'] ?? '') === '4th Year' ? 'selected' : '' ?>>4th Year</option>
+                                            <?php foreach ($yearLevels as $level): ?>
+                                                <option value="<?= $level['id'] ?>" <?= old('year_level_id', $roleSpecificData['year_level_id'] ?? '') == $level['id'] ? 'selected' : '' ?>>
+                                                    <?= esc($level['year_level_name']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
                                         </select>
                                         <div class="form-text">Required for student accounts</div>
                                     </div>
@@ -259,32 +298,36 @@
                                         <tr class="border-bottom">
                                             <td class="text-center">
                                                 <span class="badge bg-secondary rounded-pill px-2 py-1"><?= $user['id'] ?></span>
-                                            </td>
-                                            <td>
+                                            </td>                                            <td>
                                                 <div class="d-flex align-items-center">
+                                                    <?php 
+                                                    $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['middle_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                                                    $initial = strtoupper(substr($user['first_name'] ?? 'U', 0, 1));
+                                                    ?>
                                                     <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                                        <?= strtoupper(substr($user['name'], 0, 1)) ?>
+                                                        <?= $initial ?>
                                                     </div>
                                                     <div>
-                                                        <strong class="text-dark"><?= esc($user['name']) ?></strong>
+                                                        <strong class="text-dark"><?= esc($fullName) ?></strong>
                                                         <?php if ($user['id'] == $currentAdminID): ?>
                                                             <span class="badge bg-info ms-2 small">You</span>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="text-muted"><?= esc($user['email']) ?></td>
-                                            <td class="text-center">
+                                            <td class="text-muted"><?= esc($user['email']) ?></td>                                            <td class="text-center">
                                                 <?php
                                                 $roleStyles = [
                                                     'admin' => ['color' => 'danger', 'icon' => '👑'],
                                                     'teacher' => ['color' => 'primary', 'icon' => '👨‍🏫'],
+                                                    'instructor' => ['color' => 'primary', 'icon' => '👨‍🏫'],
                                                     'student' => ['color' => 'success', 'icon' => '🎓']
                                                 ];
-                                                $style = $roleStyles[$user['role']];
+                                                $userRole = strtolower($user['role_name'] ?? 'student');
+                                                $style = $roleStyles[$userRole] ?? ['color' => 'secondary', 'icon' => '👤'];
                                                 ?>
                                                 <span class="badge bg-<?= $style['color'] ?> rounded-pill px-3 py-2">
-                                                    <?= $style['icon'] ?> <?= ucfirst($user['role']) ?>
+                                                    <?= $style['icon'] ?> <?= esc($user['role_name'] ?? 'User') ?>
                                                 </span>
                                             </td>
                                             <td class="text-center">
@@ -293,11 +336,10 @@
                                                 </small>
                                             </td>
                                             <td class="text-center">
-                                                <div class="btn-group btn-group-sm" role="group">                                                    
-                                                    <?php 
+                                                <div class="btn-group btn-group-sm" role="group">                                                      <?php 
                                                     // Check if current admin can edit this user
                                                     $canEdit = ($user['id'] != $currentAdminID);
-                                                    $canDelete = ($user['role'] !== 'admin' && $user['id'] != $currentAdminID);
+                                                    $canDelete = (strtolower($user['role_name'] ?? '') !== 'admin' && $user['id'] != $currentAdminID);
                                                     ?>
                                                     
                                                     <!-- Edit Button -->                                                    
@@ -356,11 +398,10 @@
 
 <!-- JavaScript for Enhanced Validation -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Show/Hide year_level field based on role selection - CREATE FORM
+document.addEventListener('DOMContentLoaded', function() {    // Show/Hide year_level field based on role selection - CREATE FORM
     const roleSelect = document.getElementById('role');
     const yearLevelContainer = document.getElementById('year_level_container');
-    const yearLevelSelect = document.getElementById('year_level');
+    const yearLevelSelect = document.getElementById('year_level_id');
     
     if (roleSelect && yearLevelContainer) {
         roleSelect.addEventListener('change', function() {
@@ -384,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show/Hide year_level field based on role selection - EDIT FORM
     const editRoleSelect = document.getElementById('edit_role');
     const editYearLevelContainer = document.getElementById('edit_year_level_container');
-    const editYearLevelSelect = document.getElementById('edit_year_level');
+    const editYearLevelSelect = document.getElementById('edit_year_level_id');
     
     if (editRoleSelect && editYearLevelContainer) {
         editRoleSelect.addEventListener('change', function() {

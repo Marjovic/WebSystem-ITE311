@@ -3,78 +3,62 @@
 namespace App\Database\Seeds;
 
 use CodeIgniter\Database\Seeder;
+use App\Models\UserModel;
+use App\Models\RoleModel;
 
 class UserSeeder extends Seeder
 {
     public function run()
     {
-        // Admin user
-        $this->db->table(tableName: 'users')->insert(set: [
-            'name'        => 'Marjovic Prato Alejado',
-            'email'       => 'marjovic_alejado@lms.com',
-            'password'    => password_hash(password: 'admin123', algo: PASSWORD_DEFAULT),
-            'role'        => 'admin',
-            'created_at'  => date(format: 'Y-m-d H:i:s'),
-            'updated_at'  => date(format: 'Y-m-d H:i:s'),
-        ]);
+        $userModel = new UserModel();
+        $roleModel = new RoleModel();
 
-        // Teacher users 
-        $teachers = [
-            [
-                'name'        => 'Kristoff Jet Alejado Rivera',
-                'email'       => 'kristoff.rivera@lms.com',
-                'password'    => password_hash(password: 'teacher123', algo: PASSWORD_DEFAULT),
-                'role'        => 'teacher',
-                'created_at'  => date(format: 'Y-m-d H:i:s'),
-                'updated_at'  => date(format: 'Y-m-d H:i:s'),
-            ],
-            [
-                'name'        => 'Cyryll Joy Alejado Macalanda',
-                'email'       => 'cyryll.macalanda@lms.com',
-                'password'    => password_hash(password: 'teacher123', algo: PASSWORD_DEFAULT),
-                'role'        => 'teacher',
-                'created_at'  => date(format: 'Y-m-d H:i:s'),
-                'updated_at'  => date(format: 'Y-m-d H:i:s'),
-            ],
-        ];
-
-        foreach ($teachers as $teacher) {
-            $this->db->table(tableName: 'users')->insert(set: $teacher);
+        // Check if admin user already exists
+        $existingAdmin = $userModel->where('email', 'marjovicalejado1232@gmail.com')->first();
+        if ($existingAdmin) {
+            echo "Admin user already exists. Skipping UserSeeder.\n";
+            return;
         }
 
-        // Student users
-        $students = [
-            [
-                'name'        => 'Victor Tabaniera Alejado',
-                'email'       => 'victor.alejado@student.lms.com',
-                'password'    => password_hash(password: 'student123', algo: PASSWORD_DEFAULT),
-                'role'        => 'student',
-                'year_level'  => '3rd year',
-                'created_at'  => date(format: 'Y-m-d H:i:s'),
-                'updated_at'  => date(format: 'Y-m-d H:i:s'),
-            ],
-            [
-                'name'        => 'Virginia Prato Alejado',
-                'email'       => 'virginia.alejado@student.lms.com',
-                'password'    => password_hash(password: 'student123', algo: PASSWORD_DEFAULT),
-                'role'        => 'student',
-                'year_level'  => '2nd year',
-                'created_at'  => date(format: 'Y-m-d H:i:s'),
-                'updated_at'  => date(format: 'Y-m-d H:i:s'),
-            ],
-            [
-                'name'        => 'Mary Joy Prato Alejado',
-                'email'       => 'maryjoy.alejado@student.lms.com',
-                'password'    => password_hash(password: 'student123', algo: PASSWORD_DEFAULT),
-                'role'        => 'student',
-                'year_level'  => '1st year',
-                'created_at'  => date(format: 'Y-m-d H:i:s'),
-                'updated_at'  => date(format: 'Y-m-d H:i:s'),
-            ],
+        // Get Admin role ID
+        $adminRole = $roleModel->where('role_name', 'Admin')->first();
+        if (!$adminRole) {
+            echo "Admin role not found. Please run RoleSeeder first.\n";
+            return;
+        }
+
+        // Create admin user
+        $adminData = [
+            'user_code'         => 'ADM-' . date('Ymd') . '-0001',
+            'first_name'        => 'Marjovic',
+            'middle_name'       => 'Prato',
+            'last_name'         => 'Alejado',
+            'suffix'            => null,
+            'email'             => 'marjovicalejado1232@gmail.com',
+            'password'          => 'admin123', // Will be hashed by UserModel
+            'role_id'           => $adminRole['id'],
+            'is_active'         => 1,
+            'email_verified_at' => date('Y-m-d H:i:s'), // Pre-verified
+            'last_login'        => null
         ];
 
-        foreach ($students as $student) {
-            $this->db->table(tableName: 'users')->insert(set: $student);
+        try {
+            if ($userModel->insert($adminData)) {
+                echo "✓ Admin user created successfully!\n";
+                echo "  Email: marjovicalejado1232@gmail.com\n";
+                echo "  Password: admin123\n";
+                echo "  Name: Marjovic Prato Alejado\n";
+                echo "  Status: Email verified\n";
+            } else {
+                $errors = $userModel->errors();
+                echo "✗ Failed to create admin user\n";
+                print_r($errors);
+            }
+        } catch (\Exception $e) {
+            echo "✗ Error creating admin user: " . $e->getMessage() . "\n";
         }
+
+        echo "\n====================\n";
+        echo "Admin user seeded!\n\n";
     }
 }

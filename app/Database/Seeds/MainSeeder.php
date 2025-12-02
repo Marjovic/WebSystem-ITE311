@@ -42,6 +42,8 @@ class MainSeeder extends Seeder
         
         echo "Seeding Grading Periods...\n";
         $this->call('GradingPeriodSeeder');
+
+        $this->call('UserSeeder');
         
         echo "\n✅ All seeders completed successfully!\n";
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";

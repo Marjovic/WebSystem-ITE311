@@ -12,227 +12,163 @@ class CourseOfferingModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = [
+    
+    protected $allowedFields = [
         'course_id',
         'term_id',
         'section',
         'max_students',
         'current_enrollment',
+        'room',
         'status',
         'start_date',
         'end_date'
     ];
 
-    protected bool $allowEmptyInserts = false;
-    protected bool $updateOnlyChanged = true;
-
-    // Dates
     protected $useTimestamps = true;
-    protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
-    // Validation
     protected $validationRules = [
-        'course_id'     => 'required|integer',
-        'term_id'       => 'required|integer',
-        'section'       => 'permit_empty|string|max_length[20]',
-        'max_students'  => 'required|integer',
-        'status'        => 'required|in_list[draft,open,closed,cancelled,completed]',
-        'start_date'    => 'permit_empty|valid_date',
-        'end_date'      => 'permit_empty|valid_date'
+        'course_id'    => 'required|integer',
+        'term_id'      => 'required|integer',
+        'max_students' => 'required|integer|greater_than[0]',
+        'status'       => 'required|in_list[draft,open,closed,cancelled,completed]',
     ];
-
-    protected $validationMessages = [
-        'course_id' => [
-            'required' => 'Course is required'
-        ],
-        'term_id' => [
-            'required' => 'Term is required'
-        ]
-    ];
-
-    // Callbacks
-    protected $allowCallbacks = true;
 
     /**
-     * Get offering with complete details
+     * Get offering with full details
      */
     public function getOfferingWithDetails($offeringId)
     {
         return $this->select('
                 course_offerings.*,
-                c.course_code,
-                c.title as course_title,
-                c.credits,
-                t.term_name,
-                GROUP_CONCAT(DISTINCT u.name SEPARATOR ", ") as instructors,
-                GROUP_CONCAT(
-                    DISTINCT CONCAT(
-                        cs.day_of_week, " ", 
-                        TIME_FORMAT(cs.start_time, "%h:%i %p"), "-",
-                        TIME_FORMAT(cs.end_time, "%h:%i %p")
-                    ) 
-                    ORDER BY 
-                        FIELD(cs.day_of_week, "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
-                    SEPARATOR ", "
-                ) as schedule,
-                GROUP_CONCAT(DISTINCT cs.room SEPARATOR ", ") as rooms
+                courses.course_code,
+                courses.title as course_title,
+                courses.credits,
+                courses.description as course_description,
+                terms.term_name,
+                academic_years.year_name as academic_year,
+                semesters.semester_name,
+                departments.department_name
             ')
-            ->join('courses c', 'c.id = course_offerings.course_id')
-            ->join('terms t', 't.id = course_offerings.term_id')
-            ->join('course_instructors ci', 'ci.course_offering_id = course_offerings.id', 'left')
-            ->join('users u', 'u.id = ci.instructor_id', 'left')
-            ->join('course_schedules cs', 'cs.course_offering_id = course_offerings.id', 'left')
-            ->groupBy('course_offerings.id')
-            ->find($offeringId);
+            ->join('courses', 'courses.id = course_offerings.course_id')
+            ->join('terms', 'terms.id = course_offerings.term_id')
+            ->join('academic_years', 'academic_years.id = terms.academic_year_id')
+            ->join('semesters', 'semesters.id = terms.semester_id')
+            ->join('departments', 'departments.id = courses.department_id', 'left')
+            ->where('course_offerings.id', $offeringId)
+            ->first();
     }
 
     /**
-     * Get all offerings for a term with details
-     */
-    public function getOfferingsByTerm($termId)
-    {
-        return $this->select('
-                course_offerings.*,
-                c.course_code,
-                c.title as course_title,
-                c.credits,
-                GROUP_CONCAT(DISTINCT u.name SEPARATOR ", ") as instructors
-            ')
-            ->join('courses c', 'c.id = course_offerings.course_id')
-            ->join('course_instructors ci', 'ci.course_offering_id = course_offerings.id', 'left')
-            ->join('users u', 'u.id = ci.instructor_id', 'left')
-            ->where('course_offerings.term_id', $termId)
-            ->groupBy('course_offerings.id')
-            ->findAll();
-    }
-
-    /**
-     * Get available offerings (open and not full)
+     * Get available offerings for enrollment
      */
     public function getAvailableOfferings($termId)
     {
         return $this->select('
                 course_offerings.*,
-                c.course_code,
-                c.title as course_title,
-                GROUP_CONCAT(DISTINCT u.name SEPARATOR ", ") as instructors
+                courses.course_code,
+                courses.title as course_title,
+                courses.credits,
+                courses.description,
+                departments.department_name,
+                (course_offerings.max_students - course_offerings.current_enrollment) as available_slots
             ')
-            ->join('courses c', 'c.id = course_offerings.course_id')
-            ->join('course_instructors ci', 'ci.course_offering_id = course_offerings.id', 'left')
-            ->join('users u', 'u.id = ci.instructor_id', 'left')
+            ->join('courses', 'courses.id = course_offerings.course_id')
+            ->join('departments', 'departments.id = courses.department_id', 'left')
             ->where('course_offerings.term_id', $termId)
             ->where('course_offerings.status', 'open')
-            ->where('course_offerings.current_enrollment <', 'course_offerings.max_students', false)
-            ->groupBy('course_offerings.id')
+            ->having('available_slots >', 0)
+            ->orderBy('courses.course_code', 'ASC')
             ->findAll();
     }
 
     /**
-     * Get offerings taught by an instructor
+     * Get offerings by term with enrollment count
      */
-    public function getOfferingsByInstructor($instructorId, $termId = null)
+    public function getOfferingsByTerm($termId)
     {
-        $builder = $this->select('
+        return $this->select('
                 course_offerings.*,
-                c.course_code,
-                c.title as course_title,
-                t.term_name
+                courses.course_code,
+                courses.title as course_title,
+                courses.credits,
+                departments.department_name,
+                (SELECT COUNT(*) FROM enrollments WHERE course_offering_id = course_offerings.id AND enrollment_status = "enrolled") as enrolled_count
             ')
-            ->join('courses c', 'c.id = course_offerings.course_id')
-            ->join('terms t', 't.id = course_offerings.term_id')
-            ->join('course_instructors ci', 'ci.course_offering_id = course_offerings.id')
-            ->where('ci.instructor_id', $instructorId);
-        
-        if ($termId) {
-            $builder->where('course_offerings.term_id', $termId);
-        }
-        
-        return $builder->findAll();
+            ->join('courses', 'courses.id = course_offerings.course_id')
+            ->join('departments', 'departments.id = courses.department_id', 'left')
+            ->where('course_offerings.term_id', $termId)
+            ->orderBy('courses.course_code', 'ASC')
+            ->findAll();
     }
 
     /**
-     * Get student's enrolled offerings for a term
+     * Check if offering has available slots
      */
-    public function getStudentOfferings($studentId, $termId)
+    public function hasAvailableSlots($offeringId)
+    {
+        $offering = $this->find($offeringId);
+        if (!$offering) {
+            return false;
+        }
+        return $offering['current_enrollment'] < $offering['max_students'];
+    }
+
+    /**
+     * Increment enrollment count
+     */
+    public function incrementEnrollment($offeringId)
+    {
+        return $this->set('current_enrollment', 'current_enrollment + 1', false)
+                    ->where('id', $offeringId)
+                    ->update();
+    }
+
+    /**
+     * Decrement enrollment count
+     */
+    public function decrementEnrollment($offeringId)
+    {
+        return $this->set('current_enrollment', 'current_enrollment - 1', false)
+                    ->where('id', $offeringId)
+                    ->where('current_enrollment >', 0)
+                    ->update();
+    }
+
+    /**
+     * Get instructor(s) for an offering
+     */
+    public function getOfferingInstructors($offeringId)
     {
         $db = \Config\Database::connect();
-        
-        return $db->table('course_offerings co')
-                  ->select('
-                      co.*,
-                      c.course_code,
-                      c.title as course_title,
-                      c.credits,
-                      e.enrollment_status,
-                      e.final_grade,
-                      GROUP_CONCAT(DISTINCT u.name SEPARATOR ", ") as instructors
-                  ')
-                  ->join('courses c', 'c.id = co.course_id')
-                  ->join('enrollments e', 'e.course_offering_id = co.id')
-                  ->join('course_instructors ci', 'ci.course_offering_id = co.id', 'left')
-                  ->join('users u', 'u.id = ci.instructor_id', 'left')
-                  ->where('e.student_id', $studentId)
-                  ->where('co.term_id', $termId)
-                  ->groupBy('co.id')
-                  ->get()
-                  ->getResultArray();
+        return $db->table('course_instructors')
+            ->select('
+                course_instructors.*,
+                instructors.employee_id,
+                users.first_name,
+                users.middle_name,
+                users.last_name,
+                users.email
+            ')
+            ->join('instructors', 'instructors.id = course_instructors.instructor_id')
+            ->join('users', 'users.id = instructors.user_id')
+            ->where('course_instructors.course_offering_id', $offeringId)
+            ->get()
+            ->getResultArray();
     }
 
     /**
-     * Check if offering is full
+     * Get schedules for an offering
      */
-    public function isFull($offeringId)
+    public function getOfferingSchedules($offeringId)
     {
-        $offering = $this->find($offeringId);
-        return $offering && $offering['current_enrollment'] >= $offering['max_students'];
-    }
-
-    /**
-     * Get enrollment statistics
-     */
-    public function getEnrollmentStats($offeringId)
-    {
-        $offering = $this->find($offeringId);
-        
-        if (!$offering) {
-            return null;
-        }
-        
-        $available = $offering['max_students'] - $offering['current_enrollment'];
-        $percentage = ($offering['current_enrollment'] / $offering['max_students']) * 100;
-        
-        return [
-            'max_students'        => $offering['max_students'],
-            'current_enrollment'  => $offering['current_enrollment'],
-            'available_slots'     => $available,
-            'enrollment_percentage' => round($percentage, 2),
-            'is_full'             => $available <= 0
-        ];
-    }
-
-    /**
-     * Update offering status
-     */
-    public function updateStatus($offeringId, $status)
-    {
-        return $this->update($offeringId, ['status' => $status]);
-    }
-
-    /**
-     * Close enrollment (set status to closed)
-     */
-    public function closeEnrollment($offeringId)
-    {
-        return $this->updateStatus($offeringId, 'closed');
-    }
-
-    /**
-     * Open enrollment (set status to open)
-     */
-    public function openEnrollment($offeringId)
-    {
-        return $this->updateStatus($offeringId, 'open');
+        $db = \Config\Database::connect();
+        return $db->table('course_schedules')
+            ->where('course_offering_id', $offeringId)
+            ->orderBy('day_of_week', 'ASC')
+            ->get()
+            ->getResultArray();
     }
 }

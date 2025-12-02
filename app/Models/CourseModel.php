@@ -11,7 +11,7 @@ class CourseModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
+    protected $protectFields    = true;    
     protected $allowedFields    = [
         'course_code',
         'title',
@@ -22,7 +22,6 @@ class CourseModel extends Model
         'department_id',
         'category_id',
         'year_level_id',
-        'semester_id',
         'is_active'
     ];
 
@@ -33,9 +32,7 @@ class CourseModel extends Model
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
-
-    // Validation
+    protected $updatedField  = 'updated_at';    // Validation
     protected $validationRules = [
         'course_code'   => 'required|string|max_length[20]|is_unique[courses.course_code,id,{id}]',
         'title'         => 'required|string|max_length[255]',
@@ -46,7 +43,6 @@ class CourseModel extends Model
         'department_id' => 'permit_empty|integer',
         'category_id'   => 'permit_empty|integer',
         'year_level_id' => 'permit_empty|integer',
-        'semester_id'   => 'permit_empty|integer',
         'is_active'     => 'permit_empty|in_list[0,1]'
     ];
 
@@ -61,9 +57,7 @@ class CourseModel extends Model
     ];
 
     // Callbacks
-    protected $allowCallbacks = true;
-
-    /**
+    protected $allowCallbacks = true;    /**
      * Get course with all details
      */
     public function getCourseWithDetails($courseId)
@@ -72,17 +66,13 @@ class CourseModel extends Model
                 courses.*,
                 departments.department_name,
                 categories.category_name,
-                year_levels.year_level_name,
-                semesters.semester_name
+                year_levels.year_level_name
             ')
             ->join('departments', 'departments.id = courses.department_id', 'left')
             ->join('categories', 'categories.id = courses.category_id', 'left')
             ->join('year_levels', 'year_levels.id = courses.year_level_id', 'left')
-            ->join('semesters', 'semesters.id = courses.semester_id', 'left')
             ->find($courseId);
-    }
-
-    /**
+    }/**
      * Get all courses with details
      */
     public function getAllCoursesWithDetails()
@@ -91,14 +81,11 @@ class CourseModel extends Model
                 courses.*,
                 departments.department_name,
                 categories.category_name,
-                year_levels.year_level_name,
-                semesters.semester_name
+                year_levels.year_level_name
             ')
             ->join('departments', 'departments.id = courses.department_id', 'left')
             ->join('categories', 'categories.id = courses.category_id', 'left')
             ->join('year_levels', 'year_levels.id = courses.year_level_id', 'left')
-            ->join('semesters', 'semesters.id = courses.semester_id', 'left')
-            ->where('courses.is_active', 1)
             ->findAll();
     }
 
@@ -110,15 +97,12 @@ class CourseModel extends Model
         return $this->where('department_id', $departmentId)
                     ->where('is_active', 1)
                     ->findAll();
-    }
-
-    /**
-     * Get courses by year level and semester
+    }    /**
+     * Get courses by year level
      */
-    public function getCoursesByYearAndSemester($yearLevelId, $semesterId)
+    public function getCoursesByYearLevel($yearLevelId)
     {
         return $this->where('year_level_id', $yearLevelId)
-                    ->where('semester_id', $semesterId)
                     ->where('is_active', 1)
                     ->findAll();
     }

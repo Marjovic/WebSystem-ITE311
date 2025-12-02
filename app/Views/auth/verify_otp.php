@@ -8,17 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     
     <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .otp-card {
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
         .otp-input {
             font-size: 24px;
             letter-spacing: 10px;
@@ -26,32 +15,31 @@
             font-weight: bold;
             font-family: 'Courier New', monospace;
         }
-        .otp-icon {
-            font-size: 60px;
-            color: #667eea;
-        }
         .countdown {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #dc3545;
         }
+        .security-notice {
+            font-size: 0.875rem;
+        }
     </style>
 </head>
-<body>
+<body class="bg-light">
 
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-6 col-lg-5">
-                <div class="card otp-card">
-                    <div class="card-body p-5">
-                        <!-- OTP Icon -->
-                        <div class="text-center mb-4">
-                            <div class="otp-icon">🔐</div>
-                            <h3 class="mt-3 mb-2">Enter OTP Code</h3>
-                            <p class="text-muted">We've sent a 6-digit code to<br><strong><?= esc($email) ?></strong></p>
-                        </div>
-
-                        <!-- Display Flash Messages -->
+                <div class="card mt-5 shadow">
+                    <div class="card-header bg-dark text-white text-center">
+                        <h4 class="mb-0">🔐 Verify OTP - MGOD LMS</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Email Info -->
+                        <div class="alert alert-info text-center mb-4">
+                            <p class="mb-0">We've sent a 6-digit code to:</p>
+                            <strong><?= esc($email) ?></strong>
+                        </div>                        <!-- Display Flash Messages -->
                         <?php if (session()->getFlashdata('success')): ?>
                             <div class="alert alert-success alert-dismissible fade show">
                                 <?= session()->getFlashdata('success') ?>
@@ -65,13 +53,12 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         <?php endif; ?>
-
                         <!-- OTP Form -->
                         <form method="POST" action="<?= base_url('verify-otp') ?>" id="otpForm">
                             <?= csrf_field() ?>
                             
-                            <div class="mb-4">
-                                <label for="otp_code" class="form-label text-center d-block">OTP Code</label>
+                            <div class="mb-3">
+                                <label for="otp_code" class="form-label">Enter OTP Code *</label>
                                 <input type="text" 
                                        class="form-control otp-input" 
                                        id="otp_code" 
@@ -82,46 +69,46 @@
                                        autocomplete="off"
                                        placeholder="000000"
                                        autofocus>
-                                <div class="form-text text-center">Enter the 6-digit code from your email</div>
+                                <div class="form-text">Enter the 6-digit code from your email</div>
                             </div>
 
                             <!-- Countdown Timer -->
-                            <div class="text-center mb-3">
-                                <p class="mb-0 text-muted">Code expires in: <span class="countdown" id="countdown">10:00</span></p>
+                            <div class="alert alert-warning text-center mb-3">
+                                <small class="mb-0">⏱️ Code expires in: <span class="countdown" id="countdown">10:00</span></small>
                             </div>
 
                             <div class="d-grid mb-3">
-                                <button type="submit" class="btn btn-primary btn-lg">Verify OTP</button>
+                                <button type="submit" class="btn btn-dark btn-lg">Verify OTP</button>
                             </div>
                         </form>
 
                         <!-- Resend OTP -->
-                        <div class="text-center">
+                        <div class="text-center mb-3">
                             <p class="mb-2 text-muted">Didn't receive the code?</p>
-                            <form method="POST" action="<?= base_url('resend-otp') ?>" id="resendForm">
+                            <form method="POST" action="<?= base_url('resend-otp') ?>" id="resendForm" class="d-inline">
                                 <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-link" id="resendBtn">Resend OTP</button>
+                                <button type="submit" class="btn btn-sm btn-outline-dark" id="resendBtn">
+                                    📨 Resend OTP
+                                </button>
                             </form>
                         </div>
 
-                        <!-- Cancel -->
-                        <div class="text-center mt-3">
+                        <!-- Security Notice -->
+                        <div class="alert alert-warning security-notice mb-3">
+                            <div class="d-flex align-items-start">
+                                <div class="me-2">⚠️</div>
+                                <div>
+                                    <strong>Security Notice:</strong><br>
+                                    <small>Never share your OTP code with anyone. This code is for your security and should only be used once.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Back to Login -->
+                        <div class="text-center">
                             <a href="<?= base_url('login') ?>" class="text-decoration-none text-muted">
                                 ← Back to Login
                             </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Security Notice -->
-                <div class="card mt-3 bg-warning bg-opacity-10 border-warning">
-                    <div class="card-body p-3">
-                        <div class="d-flex align-items-start">
-                            <div class="me-2">⚠️</div>
-                            <div>
-                                <strong>Security Notice:</strong><br>
-                                <small>Never share your OTP code with anyone. This code is for your security and should only be used once.</small>
-                            </div>
                         </div>
                     </div>
                 </div>

@@ -372,15 +372,16 @@ class User extends BaseController
                 $this->session->setFlashdata('error', 'Failed to update user: ' . $e->getMessage());
                 return redirect()->back()->withInput();
             }
-        }
-
-        // Get year levels for dropdown
+        }        // Get year levels for dropdown
         $yearLevels = $this->yearLevelModel->orderBy('year_level_order')->findAll();
 
         // Get role-specific data
-        $roleSpecificData = null;
         $roleName = $this->getRoleName($userToEdit['role_id']);
         
+        // Add role_name to userToEdit for the view
+        $userToEdit['role_name'] = ucfirst($roleName);
+        
+        $roleSpecificData = null;
         if ($roleName === 'student') {
             $roleSpecificData = $this->studentModel->where('user_id', $userID)->first();
         } elseif ($roleName === 'instructor') {
@@ -477,9 +478,7 @@ class User extends BaseController
         $users = $this->getUsersWithRoles();
 
         // Get year levels for dropdown
-        $yearLevels = $this->yearLevelModel->orderBy('year_level_order')->findAll();
-
-        $data = [
+        $yearLevels = $this->yearLevelModel->orderBy('year_level_order')->findAll();        $data = [
             'user' => [
                 'userID' => $this->session->get('userID'),
                 'name'   => $this->session->get('name'),
@@ -491,22 +490,21 @@ class User extends BaseController
             'yearLevels'     => $yearLevels,
             'currentAdminID' => $currentAdminID,
             'editUser'       => null,
-            'showCreateForm' => $this->request->getGet('create') === 'true',
+            'showCreateForm' => $this->request->getGet('action') === 'create',
             'showEditForm'   => false
         ];
           
         return view('admin/manage_users', $data);
-    }
-
-    /**
+    }    /**
      * Get all users with their role names
      */
     private function getUsersWithRoles()
     {
         return $this->userModel
-            ->select('users.*, roles.role_name, year_levels.year_level_name')
+            ->select('users.*, roles.role_name, year_levels.year_level_name, students.section, students.student_id_number')
             ->join('roles', 'roles.id = users.role_id')
-            ->join('year_levels', 'year_levels.id = users.year_level_id', 'left')
+            ->join('students', 'students.user_id = users.id', 'left')
+            ->join('year_levels', 'year_levels.id = students.year_level_id', 'left')
             ->orderBy('users.created_at', 'DESC')
             ->findAll();
     }

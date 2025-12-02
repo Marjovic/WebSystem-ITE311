@@ -35,8 +35,8 @@ $routes->get(from: '/student/dashboard', to: 'Auth::dashboard');
 // Admin management routes
 $routes->get(from: '/admin/manage_users', to: 'User::manageUsers');
 $routes->post(from: '/admin/manage_users', to: 'User::manageUsers');
-$routes->get(from: '/admin/manage_courses', to: 'Auth::manageCourses');
-$routes->post(from: '/admin/manage_courses', to: 'Auth::manageCourses');
+$routes->get(from: '/admin/manage_courses', to: 'Course::manageCourses');
+$routes->post(from: '/admin/manage_courses', to: 'Course::manageCourses');
 
 // Course enrollment routes
 $routes->post(from: '/course/enroll', to: 'Course::enroll');

@@ -388,13 +388,18 @@ class Auth extends BaseController
                 'role'   => $this->session->get(key: 'role')   // User's role
             ]
         ];        // Step 6: Get role-specific data and determine view based on user type
-        switch ($userRole) {              
-            case 'admin':
+        switch ($userRole) {                case 'admin':
                 // Admin gets system statistics and user management data using UserModel
                 $totalUsers = $this->userModel->countAll();
-                $totalAdmins = $this->userModel->where('role', 'admin')->countAllResults(false);
-                $totalTeachers = $this->userModel->where('role', 'teacher')->countAllResults(false);
-                $totalStudents = $this->userModel->where('role', 'student')->countAllResults(false);
+                
+                // Get role IDs for counting
+                $adminRole = $this->roleModel->where('role_name', 'Admin')->first();
+                $teacherRole = $this->roleModel->where('role_name', 'Teacher')->first();
+                $studentRole = $this->roleModel->where('role_name', 'Student')->first();
+                
+                $totalAdmins = $adminRole ? $this->userModel->where('role_id', $adminRole['id'])->countAllResults(false) : 0;
+                $totalTeachers = $teacherRole ? $this->userModel->where('role_id', $teacherRole['id'])->countAllResults(false) : 0;
+                $totalStudents = $studentRole ? $this->userModel->where('role_id', $studentRole['id'])->countAllResults(false) : 0;
                   // Get course statistics for admin using CourseModel
                 $totalCourses = $this->courseModel->countAll();
                 $activeCourses = $this->courseModel->where('is_active', 1)->countAllResults(false);
@@ -403,23 +408,25 @@ class Auth extends BaseController
                 
                 // Get recent users with more detailed information for activity feed using UserModel
                 $recentUsers = $this->userModel
-                    ->select('id, name, email, role, created_at, updated_at')
-                    ->orderBy('created_at', 'DESC')
+                    ->select('users.id, users.first_name, users.last_name, users.email, users.created_at, users.updated_at, roles.role_name')
+                    ->join('roles', 'roles.id = users.role_id', 'left')
+                    ->orderBy('users.created_at', 'DESC')
                     ->limit(10)
-                    ->findAll();
-
-                // Prepare recent activities for display
+                    ->findAll();                // Prepare recent activities for display
                 $recentActivities = [];
                 foreach ($recentUsers as $user) {
                     // Add user registration activity
+                    $userName = esc($user['first_name'] . ' ' . $user['last_name']);
+                    $roleName = $user['role_name'] ?? 'User';
+                    
                     $recentActivities[] = [
                         'type' => 'user_registration',
                         'icon' => '👤',
                         'title' => 'New User Registration',
-                        'description' => esc($user['name']) . ' (' . ucfirst($user['role']) . ') joined the system',
+                        'description' => $userName . ' (' . ucfirst($roleName) . ') joined the system',
                         'time' => $user['created_at'],
-                        'user_name' => esc($user['name']),
-                        'user_role' => $user['role']
+                        'user_name' => $userName,
+                        'user_role' => $roleName
                     ];
                 }
                   // Add admin-managed activities from session to recent activities

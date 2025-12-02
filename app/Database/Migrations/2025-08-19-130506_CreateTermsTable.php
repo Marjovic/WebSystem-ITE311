@@ -26,7 +26,7 @@ class CreateTermsTable extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
-            ],
+            ],            
             'term_name' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
@@ -34,11 +34,11 @@ class CreateTermsTable extends Migration
             ],
             'start_date' => [
                 'type' => 'DATE',
-                'null' => false,
+                'null' => true,
             ],
             'end_date' => [
                 'type' => 'DATE',
-                'null' => false,
+                'null' => true,
             ],
             'enrollment_start' => [
                 'type' => 'DATE',

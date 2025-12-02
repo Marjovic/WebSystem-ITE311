@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateOtpVerificationsTable extends Migration
+class CreateEmailVerificationsTable extends Migration
 {
     public function up()
     {
@@ -26,58 +26,35 @@ class CreateOtpVerificationsTable extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => 150,
                 'null'       => false,
-                'comment'    => 'Email address where OTP was sent',
+                'comment'    => 'Email address to verify',
             ],
-            'otp_code' => [
+            'verification_token' => [
                 'type'       => 'VARCHAR',
-                'constraint' => 10,
+                'constraint' => 64,
                 'null'       => false,
-                'comment'    => 'The OTP code (6 digits)',
-            ],
-            'otp_type' => [
-                'type'       => 'ENUM',
-                'constraint' => ['login', 'registration', 'password_reset', '2fa', 'email_verification'],
-                'default'    => 'login',
-                'comment'    => 'Purpose of the OTP',
+                'comment'    => 'Unique token for email verification',
             ],
             'expires_at' => [
                 'type'    => 'DATETIME',
                 'null'    => false,
-                'comment' => 'When the OTP expires (typically 5-10 minutes)',
+                'comment' => 'When the verification link expires (typically 24 hours)',
             ],
             'verified_at' => [
                 'type'    => 'DATETIME',
                 'null'    => true,
-                'comment' => 'When the OTP was successfully verified',
+                'comment' => 'When the email was successfully verified',
             ],
-            'attempts' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 0,
-                'comment'    => 'Number of verification attempts',
-            ],
-            'max_attempts' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 3,
-                'comment'    => 'Maximum allowed attempts before OTP is invalidated',
-            ],            'is_used' => [
+            'is_used' => [
                 'type'       => 'TINYINT',
                 'constraint' => 1,
                 'default'    => 0,
-                'comment'    => 'Whether OTP has been used (prevents reuse)',
+                'comment'    => 'Whether verification token has been used',
             ],
             'ip_address' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 45,
                 'null'       => true,
-                'comment'    => 'IP address from which OTP was requested',
-            ],
-            'user_agent' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-                'null'       => true,
-                'comment'    => 'User agent string from browser',
+                'comment'    => 'IP address when verification was requested',
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -95,18 +72,18 @@ class CreateOtpVerificationsTable extends Migration
         // Indexes for performance
         $this->forge->addKey('user_id');
         $this->forge->addKey('email');
-        $this->forge->addKey('otp_code');
+        $this->forge->addKey('verification_token');
         $this->forge->addKey('expires_at');
-        $this->forge->addKey(['otp_code', 'email', 'is_used']); // Composite index for verification
+        $this->forge->addKey(['verification_token', 'is_used']); // Composite index for verification
         
         // Foreign key
         $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
         
-        $this->forge->createTable('otp_verifications');
+        $this->forge->createTable('email_verifications');
     }
 
     public function down()
     {
-        $this->forge->dropTable('otp_verifications');
+        $this->forge->dropTable('email_verifications');
     }
 }

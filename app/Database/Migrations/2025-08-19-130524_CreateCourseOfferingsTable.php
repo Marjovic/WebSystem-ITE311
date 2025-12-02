@@ -42,6 +42,11 @@ class CreateCourseOfferingsTable extends Migration
                 'constraint' => 4,
                 'default'    => 0,
             ],
+            'room' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 50,
+                'null'       => true,
+            ],
             'status' => [
                 'type'       => 'ENUM',
                 'constraint' => ['draft', 'open', 'closed', 'cancelled', 'completed'],

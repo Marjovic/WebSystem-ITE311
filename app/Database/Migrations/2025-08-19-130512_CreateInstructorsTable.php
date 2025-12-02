@@ -20,37 +20,37 @@ class CreateInstructorsTable extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
-                'comment'    => 'References users table',
+                
             ],
             'employee_id' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 50,
                 'null'       => false,
-                'comment'    => 'Unique employee/teacher ID number',
+                
             ],
             'department_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
-                'comment'    => 'Primary department assignment',
+                
             ],
             'hire_date' => [
                 'type'    => 'DATE',
                 'null'    => true,
-                'comment' => 'Date when teacher was hired',
+                
             ],
             'employment_status' => [
                 'type'       => 'ENUM',
                 'constraint' => ['full_time', 'part_time', 'contract', 'probationary', 'retired', 'resigned'],
                 'default'    => 'full_time',
-                'comment'    => 'Current employment status',
+                
             ],
             'specialization' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
-                'comment'    => 'Teacher\'s area of specialization/expertise',
+               
             ],
 
             'created_at' => [

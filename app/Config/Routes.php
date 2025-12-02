@@ -14,6 +14,16 @@ $routes->post(from: '/register', to: 'Auth::register');
 $routes->get(from: '/login', to: 'Auth::login');
 $routes->post(from: '/login', to: 'Auth::login');
 $routes->get(from: '/logout', to: 'Auth::logout');
+
+// Email verification routes
+$routes->get('/verify-email/(:any)', 'Auth::verifyEmail/$1');
+$routes->post('/resend-verification', 'Auth::resendVerification');
+
+// OTP verification routes (2FA)
+$routes->get('/verify-otp', 'Auth::verifyOtp');
+$routes->post('/verify-otp', 'Auth::verifyOtp');
+$routes->post('/resend-otp', 'Auth::resendOtp');
+
 $routes->get(from: '/dashboard', to: 'Auth::dashboard');
 $routes->post(from: '/dashboard', to: 'Auth::dashboard');
 
@@ -23,8 +33,8 @@ $routes->get(from: '/teacher/dashboard', to: 'Auth::dashboard');
 $routes->get(from: '/student/dashboard', to: 'Auth::dashboard');
 
 // Admin management routes
-$routes->get(from: '/admin/manage_users', to: 'Auth::manageUsers');
-$routes->post(from: '/admin/manage_users', to: 'Auth::manageUsers');
+$routes->get(from: '/admin/manage_users', to: 'User::manageUsers');
+$routes->post(from: '/admin/manage_users', to: 'User::manageUsers');
 $routes->get(from: '/admin/manage_courses', to: 'Auth::manageCourses');
 $routes->post(from: '/admin/manage_courses', to: 'Auth::manageCourses');
 

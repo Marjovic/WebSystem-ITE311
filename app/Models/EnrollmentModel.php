@@ -124,12 +124,10 @@ class EnrollmentModel extends Model
         if (!$offering) {
             log_message('error', "Course offering ID {$data['course_offering_id']} not found");
             return false;
-        }
-
-        // Check if course offering has available slots
-        if (isset($offering['max_enrollment']) && $offering['max_enrollment'] > 0) {
+        }        // Check if course offering has available slots
+        if (isset($offering['max_students']) && $offering['max_students'] > 0) {
             $currentEnrollment = $offering['current_enrollment'] ?? 0;
-            if ($currentEnrollment >= $offering['max_enrollment']) {
+            if ($currentEnrollment >= $offering['max_students']) {
                 log_message('warning', "Course offering {$data['course_offering_id']} is full");
                 return false;
             }
@@ -179,13 +177,12 @@ class EnrollmentModel extends Model
 
         try {
             $db = \Config\Database::connect();
-            
-            $enrollments = $db->table('enrollments e')
+              $enrollments = $db->table('enrollments e')
                 ->select('
                     e.*,
                     co.id as offering_id,
                     co.section,
-                    co.max_enrollment,
+                    co.max_students,
                     co.current_enrollment,
                     co.room,
                     co.start_date,
@@ -195,7 +192,7 @@ class EnrollmentModel extends Model
                     c.title as course_title,
                     c.description as course_description,
                     c.credits,
-                    c.units,
+                    c.credits as units,
                     t.term_name,
                     t.start_date as term_start_date,
                     t.end_date as term_end_date,

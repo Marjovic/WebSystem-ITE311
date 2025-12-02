@@ -20,20 +20,20 @@ class CreateStudentsTable extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
-                'comment'    => 'References users table',
+                
             ],
             'student_id_number' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 50,
                 'null'       => false,
-                'comment'    => 'Unique student ID number (e.g., 2025-00001)',
+                
             ],
             'department_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
-                'comment'    => 'Student department/program',
+                
             ],
             'year_level_id' => [
                 'type'       => 'INT',
@@ -46,43 +46,43 @@ class CreateStudentsTable extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => 50,
                 'null'       => true,
-                'comment'    => 'Student section (e.g., Section A, Section B)',
+                
             ],
             'enrollment_date' => [
                 'type'    => 'DATE',
                 'null'    => true,
-                'comment' => 'Date when student enrolled',
+                
             ],
             'enrollment_status' => [
                 'type'       => 'ENUM',
                 'constraint' => ['enrolled', 'graduated', 'dropped', 'on_leave', 'suspended'],
                 'default'    => 'enrolled',
-                'comment'    => 'Current enrollment status',
+                
             ],
             'guardian_name' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
-                'comment'    => 'Parent/Guardian full name',
+                
             ],
             'guardian_contact' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 20,
                 'null'       => true,
-                'comment'    => 'Parent/Guardian contact number',
+                
             ],
             'scholarship_status' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
                 'null'       => true,
-                'comment'    => 'Scholarship type if applicable',
+                
             ],
             'total_units' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'null'       => true,
                 'default'    => 0,
-                'comment'    => 'Total units completed',
+                
             ],
             'created_at' => [
                 'type' => 'DATETIME',

@@ -31,15 +31,13 @@ class TermModel extends Model
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
-
-    // Validation
+    protected $updatedField  = 'updated_at';    // Validation
     protected $validationRules = [
         'academic_year_id' => 'required|integer',
         'semester_id'      => 'required|integer',
         'term_name'        => 'required|string|max_length[100]',
-        'start_date'       => 'required|valid_date',
-        'end_date'         => 'required|valid_date',
+        'start_date'       => 'permit_empty|valid_date',
+        'end_date'         => 'permit_empty|valid_date',
         'enrollment_start' => 'permit_empty|valid_date',
         'enrollment_end'   => 'permit_empty|valid_date',
         'is_current'       => 'permit_empty|in_list[0,1]',

@@ -20,30 +20,26 @@ class CreateOtpVerificationsTable extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
-                'comment'    => 'References users table',
             ],
             'email' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 150,
                 'null'       => false,
-                'comment'    => 'Email address where OTP was sent',
             ],
             'otp_code' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 10,
                 'null'       => false,
-                'comment'    => 'The OTP code (6 digits)',
             ],
             'otp_type' => [
                 'type'       => 'ENUM',
                 'constraint' => ['login', 'registration', 'password_reset', '2fa', 'email_verification'],
                 'default'    => 'login',
-                'comment'    => 'Purpose of the OTP',
+                
             ],
             'expires_at' => [
                 'type'    => 'DATETIME',
                 'null'    => false,
-                'comment' => 'When the OTP expires (typically 5-10 minutes)',
             ],
             'verified_at' => [
                 'type'    => 'DATETIME',
@@ -54,30 +50,30 @@ class CreateOtpVerificationsTable extends Migration
                 'type'       => 'INT',
                 'constraint' => 11,
                 'default'    => 0,
-                'comment'    => 'Number of verification attempts',
             ],
             'max_attempts' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'default'    => 3,
-                'comment'    => 'Maximum allowed attempts before OTP is invalidated',
-            ],            'is_used' => [
+            
+            ],            
+            'is_used' => [
                 'type'       => 'TINYINT',
                 'constraint' => 1,
                 'default'    => 0,
-                'comment'    => 'Whether OTP has been used (prevents reuse)',
+              
             ],
             'ip_address' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 45,
                 'null'       => true,
-                'comment'    => 'IP address from which OTP was requested',
+                
             ],
             'user_agent' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
-                'comment'    => 'User agent string from browser',
+                
             ],
             'created_at' => [
                 'type' => 'DATETIME',

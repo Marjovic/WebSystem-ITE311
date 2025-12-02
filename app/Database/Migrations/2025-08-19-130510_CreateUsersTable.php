@@ -39,7 +39,7 @@ class CreateUsersTable extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => 20,
                 'null'       => true,
-                'comment'    => 'Name suffix (Jr., Sr., III, etc.)',
+                
             ],
             'email' => [
                 'type'       => 'VARCHAR',
@@ -69,7 +69,7 @@ class CreateUsersTable extends Migration
             'email_verified_at' => [
                 'type'    => 'DATETIME',
                 'null'    => true,
-                'comment' => 'Email verification timestamp',
+                
             ],
             'created_at' => [
                 'type' => 'DATETIME',

@@ -20,41 +20,36 @@ class CreateEmailVerificationsTable extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
-                'comment'    => 'References users table',
             ],
             'email' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 150,
                 'null'       => false,
-                'comment'    => 'Email address to verify',
             ],
             'verification_token' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 64,
                 'null'       => false,
-                'comment'    => 'Unique token for email verification',
+                
             ],
             'expires_at' => [
                 'type'    => 'DATETIME',
                 'null'    => false,
-                'comment' => 'When the verification link expires (typically 24 hours)',
+               
             ],
             'verified_at' => [
                 'type'    => 'DATETIME',
-                'null'    => true,
-                'comment' => 'When the email was successfully verified',
+                'null'    => true, 
             ],
             'is_used' => [
                 'type'       => 'TINYINT',
                 'constraint' => 1,
-                'default'    => 0,
-                'comment'    => 'Whether verification token has been used',
+                'default'    => 0, 
             ],
             'ip_address' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 45,
                 'null'       => true,
-                'comment'    => 'IP address when verification was requested',
             ],
             'created_at' => [
                 'type' => 'DATETIME',

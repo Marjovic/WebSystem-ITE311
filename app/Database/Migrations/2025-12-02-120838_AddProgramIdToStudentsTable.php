@@ -15,7 +15,6 @@ class AddProgramIdToStudentsTable extends Migration
                 'unsigned'   => true,
                 'null'       => true,
                 'after'      => 'year_level_id',
-                'comment'    => 'References programs table',
             ],
         ];
 

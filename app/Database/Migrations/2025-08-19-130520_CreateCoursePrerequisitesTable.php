@@ -29,7 +29,7 @@ class CreateCoursePrerequisitesTable extends Migration
             ],
             'prerequisite_type' => [
                 'type'       => 'ENUM',
-                'constraint' => ['required', 'recommended', 'corequisite'],
+                'constraint' => ['required', 'corequisite'],
                 'default'    => 'required',
             ],
             'minimum_grade' => [

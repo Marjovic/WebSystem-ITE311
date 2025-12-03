@@ -22,12 +22,26 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Flash Messages -->
+        </div>        
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <strong>✅ Success!</strong> <?= session()->getFlashdata('success') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('warning')): ?>
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <strong>⚠️ Warning!</strong><br>
+                <?= session()->getFlashdata('warning') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('info')): ?>
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <strong>ℹ️ Info:</strong><br>
+                <?= session()->getFlashdata('info') ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
@@ -117,9 +131,19 @@
                         <form method="post" action="<?= base_url('admin/manage_courses_schedule?action=create') ?>">
                             <?= csrf_field() ?>
                             <input type="hidden" name="course_offering_id" value="<?= $selectedOfferingId ?>">
-                            
-                            <div class="row">
-                                <div class="col-md-3">
+                              <div class="row">
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="session_type" class="form-label fw-semibold">Session Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="session_type" name="session_type" required>
+                                            <option value="">-- Select --</option>
+                                            <option value="lecture" <?= old('session_type') == 'lecture' ? 'selected' : '' ?>>Lecture</option>
+                                            <option value="lab" <?= old('session_type') == 'lab' ? 'selected' : '' ?>>Lab</option>
+                                        </select>
+                                        <small class="text-muted">Lecture or Lab</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
                                     <div class="mb-3">
                                         <label for="day_of_week" class="form-label fw-semibold">Day of Week <span class="text-danger">*</span></label>
                                         <select class="form-select" id="day_of_week" name="day_of_week" required>
@@ -143,7 +167,7 @@
                                         <small class="text-muted">Class starts</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="mb-3">
                                         <label for="end_time" class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
                                         <input type="time" class="form-control" id="end_time" name="end_time" 
@@ -188,9 +212,18 @@
                     <div class="card-body">
                         <form method="post" action="<?= base_url('admin/manage_courses_schedule?action=edit&id=' . $editSchedule['id']) ?>">
                             <?= csrf_field() ?>
-                            
-                            <div class="row">
-                                <div class="col-md-3">
+                              <div class="row">
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="session_type" class="form-label fw-semibold">Session Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="session_type" name="session_type" required>
+                                            <option value="">-- Select --</option>
+                                            <option value="lecture" <?= old('session_type', $editSchedule['session_type']) == 'lecture' ? 'selected' : '' ?>>Lecture</option>
+                                            <option value="lab" <?= old('session_type', $editSchedule['session_type']) == 'lab' ? 'selected' : '' ?>>Lab</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
                                     <div class="mb-3">
                                         <label for="day_of_week" class="form-label fw-semibold">Day of Week <span class="text-danger">*</span></label>
                                         <select class="form-select" id="day_of_week" name="day_of_week" required>
@@ -212,7 +245,7 @@
                                                value="<?= old('start_time', $editSchedule['start_time']) ?>" required>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="mb-3">
                                         <label for="end_time" class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
                                         <input type="time" class="form-control" id="end_time" name="end_time" 
@@ -261,10 +294,10 @@
                     </div>
                     <div class="card-body pt-0">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover align-middle mb-0">                                <thead class="table-light">
                                     <tr>
                                         <th class="fw-semibold border-0 text-center">ID</th>
+                                        <th class="fw-semibold border-0">Type</th>
                                         <th class="fw-semibold border-0">Day</th>
                                         <th class="fw-semibold border-0">Start Time</th>
                                         <th class="fw-semibold border-0">End Time</th>
@@ -287,6 +320,13 @@
                                         <tr class="border-bottom">
                                             <td class="text-center">
                                                 <span class="badge bg-light text-dark">#<?= $schedule['id'] ?></span>
+                                            </td>
+                                            <td>
+                                                <?php if (isset($schedule['session_type']) && $schedule['session_type'] === 'lab'): ?>
+                                                    <span class="badge bg-primary">🔬 Lab</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning text-dark">📚 Lecture</span>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <strong><?= esc($schedule['day_of_week']) ?></strong>
@@ -328,7 +368,7 @@
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="7" class="text-center py-5 text-muted">
+                                            <td colspan="8" class="text-center py-5 text-muted">
                                                 <div class="display-1 mb-3">🕐</div>
                                                 <h5>No schedules found</h5>
                                                 <p class="mb-0">
@@ -343,42 +383,6 @@
                                     <?php endif; ?>
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Information Guide Section -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-3 bg-light">
-                    <div class="card-header bg-info text-white border-0">
-                        <h5 class="mb-0">ℹ️ Course Schedule Management Guide</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="fw-bold text-info">📅 Schedule Fields:</h6>
-                                <ul class="small">
-                                    <li><strong>Day of Week:</strong> The day when the class meets</li>
-                                    <li><strong>Start Time:</strong> When the class session begins</li>
-                                    <li><strong>End Time:</strong> When the class session ends (must be after start time)</li>
-                                    <li><strong>Room:</strong> Optional classroom or location identifier</li>
-                                    <li class="text-muted mt-2">📌 You can add multiple schedules per course offering</li>
-                                    <li class="text-muted">📌 Example: Monday 8:00 AM - 10:00 AM, Wednesday 8:00 AM - 10:00 AM</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="fw-bold text-info">💡 Best Practices:</h6>
-                                <ul class="small">
-                                    <li>Ensure class schedules don't overlap for the same instructor</li>
-                                    <li>Consider break times between consecutive classes</li>
-                                    <li>Standard class duration is typically 1.5 to 3 hours</li>
-                                    <li>Room assignments help avoid scheduling conflicts</li>
-                                    <li>Review the complete weekly schedule before finalizing</li>
-                                </ul>
-                            </div>
                         </div>
                     </div>
                 </div>

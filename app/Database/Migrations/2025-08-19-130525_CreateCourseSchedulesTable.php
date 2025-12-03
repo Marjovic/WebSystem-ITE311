@@ -21,6 +21,12 @@ class CreateCourseSchedulesTable extends Migration
                 'unsigned'   => true,
                 'null'       => false,
             ],
+            'session_type' => [
+                'type'       => 'ENUM',
+                'constraint' => ['lecture', 'lab'],
+                'default'    => 'lecture',
+                'null'       => false,
+            ],
             'day_of_week' => [
                 'type'       => 'ENUM',
                 'constraint' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],

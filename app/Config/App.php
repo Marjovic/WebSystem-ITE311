@@ -5,7 +5,16 @@ namespace Config;
 use CodeIgniter\Config\BaseConfig;
 
 class App extends BaseConfig
-{
+{    
+    public function __construct()
+    {  
+        parent::__construct();
+        
+        if (isset($_SERVER['HTTP_HOST'])) {
+            $this->baseURL = 'http://' . $_SERVER['HTTP_HOST'] . '/ITE311-ALEJADO/';
+     }
+    }
+    
     /**
      * --------------------------------------------------------------------------
      * Base Site URL
@@ -29,7 +38,9 @@ class App extends BaseConfig
      *
      * @var list<string>
      */
-    public array $allowedHostnames = [];    /**
+    public array $allowedHostnames = [ ];
+    
+    /**
      * --------------------------------------------------------------------------
      * Index File
      * --------------------------------------------------------------------------

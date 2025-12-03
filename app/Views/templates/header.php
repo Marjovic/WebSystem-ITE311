@@ -96,10 +96,9 @@
                                         </a>
                                     </li>
                                 </ul>
-                            </li>
-                              <!-- Courses Dropdown -->
+                            </li>                              <!-- Courses Dropdown -->
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_courses') !== false || strpos($currentUri, 'admin/manage_prerequisite') !== false || strpos($currentUri, 'admin/manage_offerings') !== false || strpos($currentUri, 'admin/manage_courses_offer') !== false || strpos($currentUri, 'admin/manage_courses_schedule') !== false || strpos($currentUri, 'admin/assign_teacher') !== false) ? 'active' : '' ?>" 
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_courses') !== false || strpos($currentUri, 'admin/manage_prerequisite') !== false || strpos($currentUri, 'admin/manage_offerings') !== false || strpos($currentUri, 'admin/manage_course_instructors') !== false) ? 'active' : '' ?>" 
                                    href="#" 
                                    id="coursesDropdown" 
                                    role="button" 
@@ -109,7 +108,7 @@
                                 </a>
                                 <ul class="dropdown-menu shadow" aria-labelledby="coursesDropdown">
                                     <li>
-                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_courses') !== false) ? 'active fw-bold' : '' ?>" 
+                                        <a class="dropdown-item <?= ($currentUri === 'admin/manage_courses' || (strpos($currentUri, 'admin/manage_courses') !== false && strpos($currentUri, 'schedule') === false && strpos($currentUri, 'instructor') === false)) ? 'active fw-bold' : '' ?>" 
                                            href="<?= base_url('admin/manage_courses') ?>">
                                             <i class="fas fa-book me-2"></i>Manage Courses
                                         </a>
@@ -134,8 +133,8 @@
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/assign_teacher') !== false) ? 'active fw-bold' : '' ?>" 
-                                           href="<?= base_url('admin/assign_teacher') ?>">
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_course_instructors') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_course_instructors') ?>">
                                             <i class="fas fa-chalkboard-teacher me-2"></i>Assign Teacher to Courses
                                         </a>
                                     </li>

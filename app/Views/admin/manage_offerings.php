@@ -455,28 +455,8 @@
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
-                            </div>                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Info Section -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm bg-light rounded-3">
-                    <div class="card-body">
-                        <h6 class="fw-bold mb-3">ℹ️ Course Offering Management Guide:</h6>
-                        <ul class="mb-0 small">
-                            <li><strong>Draft:</strong> Offering is being prepared and not visible to students</li>
-                            <li><strong>Open:</strong> Students can enroll in this offering</li>
-                            <li><strong>Closed:</strong> Enrollment is closed, but class is ongoing</li>
-                            <li><strong>Cancelled:</strong> Offering was cancelled and won't proceed</li>
-                            <li><strong>Completed:</strong> Class has finished for this term</li>
-                            <li><strong>Toggle Status:</strong> Cycles through draft → open → closed → completed</li>
-                            <li><strong>Deletion:</strong> Offerings with enrolled students cannot be deleted</li>
-                            <li><strong>Dates:</strong> Start and end dates must be today or in the future (past dates are not allowed)</li>
-                        </ul>
+                            </div>                        
+                            <?php endif; ?>
                     </div>
                 </div>
             </div>

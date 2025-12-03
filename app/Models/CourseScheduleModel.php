@@ -11,26 +11,25 @@ class CourseScheduleModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
+    protected $protectFields    = true;    
     protected $allowedFields    = [
         'course_offering_id',
+        'session_type',
         'day_of_week',
         'start_time',
         'end_time',
         'room'
-    ];
-
-    protected bool $allowEmptyInserts = false;
+    ];protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
 
     // Dates
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-
-    // Validation
+    protected $updatedField  = '';  
     protected $validationRules = [
         'course_offering_id' => 'required|integer',
+        'session_type'       => 'required|in_list[lecture,lab]',
         'day_of_week'        => 'required|in_list[Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday]',
         'start_time'         => 'required',
         'end_time'           => 'required',
@@ -40,6 +39,10 @@ class CourseScheduleModel extends Model
     protected $validationMessages = [
         'course_offering_id' => [
             'required' => 'Course offering is required'
+        ],
+        'session_type' => [
+            'required' => 'Session type is required',
+            'in_list'  => 'Session type must be either lecture or lab'
         ],
         'day_of_week' => [
             'required' => 'Day of week is required'

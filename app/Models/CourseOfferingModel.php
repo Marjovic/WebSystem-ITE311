@@ -82,9 +82,7 @@ class CourseOfferingModel extends Model
             ->having('available_slots >', 0)
             ->orderBy('courses.course_code', 'ASC')
             ->findAll();
-    }
-
-    /**
+    }    /**
      * Get offerings by term with enrollment count
      */
     public function getOfferingsByTerm($termId)
@@ -94,10 +92,12 @@ class CourseOfferingModel extends Model
                 courses.course_code,
                 courses.title as course_title,
                 courses.credits,
+                terms.term_name,
                 departments.department_name,
                 (SELECT COUNT(*) FROM enrollments WHERE course_offering_id = course_offerings.id AND enrollment_status = "enrolled") as enrolled_count
             ')
             ->join('courses', 'courses.id = course_offerings.course_id')
+            ->join('terms', 'terms.id = course_offerings.term_id')
             ->join('departments', 'departments.id = courses.department_id', 'left')
             ->where('course_offerings.term_id', $termId)
             ->orderBy('courses.course_code', 'ASC')

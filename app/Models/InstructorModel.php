@@ -30,20 +30,17 @@ class InstructorModel extends Model
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
-    protected $deletedField  = 'deleted_at';
-
-    // Validation
+    protected $deletedField  = 'deleted_at';    // Validation
     protected $validationRules = [
         'user_id'            => 'required|integer|is_unique[instructors.user_id,id,{id}]',
-        'employee_id'        => 'required|string|max_length[50]|is_unique[instructors.employee_id,id,{id}]',
+        'employee_id'        => 'permit_empty|string|max_length[50]|is_unique[instructors.employee_id,id,{id}]',
         'department_id'      => 'permit_empty|integer',
         'hire_date'          => 'permit_empty|valid_date',
         'employment_status'  => 'permit_empty|in_list[full_time,part_time,contract,probationary,retired,resigned]',
         'specialization'     => 'permit_empty|string|max_length[255]'
-    ];
-
-    protected $validationMessages = [
+    ];    protected $validationMessages = [
         'user_id' => [
+            'required'  => 'User ID is required',
             'is_unique' => 'This user is already registered as an instructor'
         ],
         'employee_id' => [
@@ -138,6 +135,31 @@ class InstructorModel extends Model
             ')
             ->join('users', 'users.id = instructors.user_id')
             ->join('departments', 'departments.id = instructors.department_id', 'left')
+            ->orderBy('users.last_name', 'ASC')
+            ->findAll();
+    }
+
+    /**
+     * Get all instructors with user information
+     * Alias for getAllInstructorsComplete() for consistency
+     * @return array
+     */
+    public function getInstructorsWithUser()
+    {
+        return $this->select('
+                instructors.*,
+                users.first_name,
+                users.middle_name,
+                users.last_name,
+                users.suffix,
+                users.email,
+                users.is_active,
+                departments.department_name,
+                departments.department_code
+            ')
+            ->join('users', 'users.id = instructors.user_id')
+            ->join('departments', 'departments.id = instructors.department_id', 'left')
+            ->where('users.is_active', 1)
             ->orderBy('users.last_name', 'ASC')
             ->findAll();
     }

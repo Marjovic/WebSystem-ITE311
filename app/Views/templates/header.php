@@ -23,7 +23,8 @@
         }
     </style>
 </head>
-<body class="bg-light">    <?php 
+<body class="bg-light">    
+    <?php 
     $session = \Config\Services::session();
     $userRole = $session->get('role');
     $isLoggedIn = $session->get('isLoggedIn');
@@ -63,27 +64,149 @@
                         </li>
                         
                         <?php if ($userRole === 'admin'): ?>
-                            <!-- Admin Navigation -->                              
-                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_users') !== false) ? 'active' : '' ?>" href="<?= base_url('admin/manage_users') ?>">
-                                    👥 Manage Users
+                            <!-- Admin Navigation -->
+                            
+                            <!-- Users Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_users') !== false || strpos($currentUri, 'admin/manage_departments') !== false || strpos($currentUri, 'admin/manage_terms') !== false) ? 'active' : '' ?>" 
+                                   href="#" 
+                                   id="usersDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
+                                    👥 Users
                                 </a>
-                            </li>                            
-                            <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_courses') !== false) ? 'active' : '' ?>" href="<?= base_url('admin/manage_courses') ?>">
-                                    📚 Manage Courses
-                                </a>
+                                <ul class="dropdown-menu shadow" aria-labelledby="usersDropdown">
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_users') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_users') ?>">
+                                            <i class="fas fa-users me-2"></i>Manage Users
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_departments') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_departments') ?>">
+                                            <i class="fas fa-building me-2"></i>Manage Departments
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_terms') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_terms') ?>">
+                                            <i class="fas fa-calendar-alt me-2"></i>Manage Terms
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
-                                    📊 Reports
+                              <!-- Courses Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_courses') !== false || strpos($currentUri, 'admin/manage_prerequisite') !== false || strpos($currentUri, 'admin/manage_offerings') !== false || strpos($currentUri, 'admin/manage_courses_offer') !== false || strpos($currentUri, 'admin/manage_courses_schedule') !== false || strpos($currentUri, 'admin/assign_teacher') !== false) ? 'active' : '' ?>" 
+                                   href="#" 
+                                   id="coursesDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
+                                    📚 Courses
                                 </a>
+                                <ul class="dropdown-menu shadow" aria-labelledby="coursesDropdown">
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_courses') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_courses') ?>">
+                                            <i class="fas fa-book me-2"></i>Manage Courses
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_prerequisites') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_prerequisites') ?>">
+                                            <i class="fas fa-link me-2"></i>Manage Courses Prerequisite
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_offerings') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_offerings') ?>">
+                                            <i class="fas fa-calendar-check me-2"></i>Manage Course Offerings
+                                        </a>
+                                    </li>                    
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_courses_schedule') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_courses_schedule') ?>">
+                                            <i class="fas fa-calendar me-2"></i>Manage Courses Schedule
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/assign_teacher') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/assign_teacher') ?>">
+                                            <i class="fas fa-chalkboard-teacher me-2"></i>Assign Teacher to Courses
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
-                                    ⚙️ Settings
+                            
+                            <!-- Enrollments Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_programs') !== false || strpos($currentUri, 'admin/manage_curriculum') !== false || strpos($currentUri, 'admin/manage_enrollments') !== false) ? 'active' : '' ?>" 
+                                   href="#" 
+                                   id="enrollmentsDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
+                                    🎓 Enrollments
                                 </a>
-                            </li>                        <?php elseif ($userRole === 'teacher'): ?>
+                                <ul class="dropdown-menu shadow" aria-labelledby="enrollmentsDropdown">
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_programs') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_programs') ?>">
+                                            <i class="fas fa-graduation-cap me-2"></i>Manage Programs
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_curriculum') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_curriculum') ?>">
+                                            <i class="fas fa-file-alt me-2"></i>Manage Programs Curriculum
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_enrollments') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_enrollments') ?>">
+                                            <i class="fas fa-user-check me-2"></i>Manage Enrollments
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            
+                            <!-- Assignments Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_assignment_types') !== false || strpos($currentUri, 'admin/manage_grading_periods') !== false || strpos($currentUri, 'admin/manage_grading_components') !== false) ? 'active' : '' ?>" 
+                                   href="#" 
+                                   id="assignmentsDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
+                                    📋 Assignments
+                                </a>
+                                <ul class="dropdown-menu shadow" aria-labelledby="assignmentsDropdown">
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_assignment_types') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_assignment_types') ?>">
+                                            <i class="fas fa-tasks me-2"></i>Manage Assignment Types
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_grading_periods') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_grading_periods') ?>">
+                                            <i class="fas fa-clock me-2"></i>Manage Grading Periods
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_grading_components') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_grading_components') ?>">
+                                            <i class="fas fa-chart-bar me-2"></i>Manage Grading Components
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        <?php elseif ($userRole === 'teacher'): ?>
                             <!-- Teacher Navigation -->
                             <li class="nav-item">
                                 <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'teacher/courses') !== false) ? 'active' : '' ?>" href="<?= base_url('teacher/courses') ?>">
@@ -104,7 +227,8 @@
                                 <a class="nav-link px-3 fw-bold" href="#">
                                     👥 Students
                                 </a>
-                            </li>                        <?php elseif ($userRole === 'student'): ?>
+                            </li>                        
+                            <?php elseif ($userRole === 'student'): ?>
                             <!-- Student Navigation -->
                             <li class="nav-item">
                                 <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'student/courses') !== false) ? 'active' : '' ?>" href="<?= base_url('student/courses') ?>">
@@ -139,7 +263,8 @@
                             <a class="nav-link px-3 fw-bold" href="<?= base_url('contact') ?>">📞 Contact</a>
                         </li>
                     <?php endif; ?>
-                </ul>                <ul class="navbar-nav">
+                </ul>                
+                <ul class="navbar-nav">
                     <?php if ($isLoggedIn): ?>
                         <!-- Notifications Dropdown with jQuery/Bootstrap Integration -->
                         <li class="nav-item dropdown me-3">
@@ -203,43 +328,6 @@
             </div>
         </div>
     </nav>
-
-    <!-- Main content container starts here -->
-    <div class="container-fluid p-0">
-        <!-- Flash Messages -->
-        <?php if (session()->getFlashdata('success')): ?>
-            <div class="container mt-4">
-                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3">
-                    <i class="bi bi-check-circle-fill me-2"></i>
-                    <?= session()->getFlashdata('success') ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <?php if (session()->getFlashdata('error')): ?>
-            <div class="container mt-4">
-                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <?= session()->getFlashdata('error') ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <?php if (session()->getFlashdata('errors')): ?>
-            <div class="container mt-4">
-                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <strong>Please fix the following errors:</strong>
-                    <ul class="mb-0 mt-2">
-                        <?php foreach (session()->getFlashdata('errors') as $error): ?>
-                            <li><?= esc($error) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            </div>            <?php endif; ?>
     </div>    
     <!-- Include jQuery before Bootstrap -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" 

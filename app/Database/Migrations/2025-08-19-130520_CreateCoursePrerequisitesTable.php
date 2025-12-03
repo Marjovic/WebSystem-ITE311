@@ -26,15 +26,15 @@ class CreateCoursePrerequisitesTable extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
-            ],
-            'prerequisite_type' => [
+            ],            'prerequisite_type' => [
                 'type'       => 'ENUM',
-                'constraint' => ['required', 'corequisite'],
+                'constraint' => ['required', 'recommended', 'corequisite'],
                 'default'    => 'required',
             ],
             'minimum_grade' => [
-                'type'       => 'DECIMAL',
-                'constraint' => '4,2',
+                'type'       => 'TINYINT',
+                'constraint' => 3,
+                'unsigned'   => true,
                 'null'       => true,
             ],
             'created_at' => [

@@ -356,12 +356,14 @@
                                                             🔒
                                                         </button>
                                                     <?php endif; ?>
-                                                    
-                                                    <!-- Delete Button -->
-                                                    <?php if ($canDelete): ?>                                                       
+                                                      <!-- Delete Button -->
+                                                    <?php if ($canDelete): ?>
+                                                        <?php 
+                                                        $deleteUserName = trim(($user['first_name'] ?? '') . ' ' . ($user['middle_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                                                        ?>
                                                          <a href="<?= base_url('admin/manage_users?action=delete&id=' . $user['id']) ?>" 
                                                            class="btn btn-outline-danger btn-sm" 
-                                                           onclick="return confirm('Are you sure you want to delete this user?\n\nUser: <?= esc($user['name']) ?>\nEmail: <?= esc($user['email']) ?>\n\nThis action cannot be undone!')"
+                                                           onclick="return confirm('Are you sure you want to delete this user?\n\nUser: <?= esc($deleteUserName) ?>\nEmail: <?= esc($user['email']) ?>\n\nThis action cannot be undone!')"
                                                            title="Delete User">
                                                             🗑️
                                                         </a>

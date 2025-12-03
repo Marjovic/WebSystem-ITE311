@@ -139,6 +139,20 @@ class Course extends BaseController
                     'is_active' => $this->request->getPost('is_active', FILTER_VALIDATE_BOOLEAN) ? 1 : 0
                 ];
 
+                // Set validation rules with current course ID for update
+                $this->courseModel->setValidationRules([
+                    'course_code'   => "required|string|max_length[20]|is_unique[courses.course_code,id,{$courseID}]",
+                    'title'         => 'required|string|max_length[255]',
+                    'description'   => 'permit_empty|string',
+                    'credits'       => 'required|integer',
+                    'lecture_hours' => 'permit_empty|decimal',
+                    'lab_hours'     => 'permit_empty|decimal',
+                    'department_id' => 'permit_empty|integer',
+                    'category_id'   => 'permit_empty|integer',
+                    'year_level_id' => 'permit_empty|integer',
+                    'is_active'     => 'permit_empty|in_list[0,1]'
+                ]);
+
                 // Use CourseModel to update with validation
                 if ($this->courseModel->update($courseID, $updateData)) {
                     $this->session->setFlashdata('success', 'Course updated successfully!');
@@ -148,7 +162,7 @@ class Course extends BaseController
                     $this->session->setFlashdata('error', 'Failed to update course. Please check the errors below.');
                     return redirect()->to(base_url('admin/manage_courses?action=edit&id=' . $courseID))->withInput();
                 }
-            }            // Show edit form
+            }// Show edit form
             $data = [
                 'user' => [
                     'role'   => $this->session->get('role')

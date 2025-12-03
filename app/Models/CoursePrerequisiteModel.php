@@ -26,14 +26,12 @@ class CoursePrerequisiteModel extends Model
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
-
-    // Validation
+    protected $updatedField  = 'updated_at';    // Validation
     protected $validationRules = [
         'course_id'              => 'required|integer',
         'prerequisite_course_id' => 'required|integer|differs[course_id]',
         'prerequisite_type'      => 'required|in_list[required,recommended,corequisite]',
-        'minimum_grade'          => 'permit_empty|decimal'
+        'minimum_grade'          => 'permit_empty|integer|greater_than_equal_to[75]|less_than_equal_to[100]'
     ];
 
     protected $validationMessages = [
@@ -43,6 +41,10 @@ class CoursePrerequisiteModel extends Model
         'prerequisite_course_id' => [
             'required' => 'Prerequisite course is required',
             'differs'  => 'A course cannot be its own prerequisite'
+        ],
+        'minimum_grade' => [
+            'greater_than_equal_to' => 'Minimum grade must be at least 75 (passing score)',
+            'less_than_equal_to'    => 'Minimum grade cannot exceed 100'
         ]
     ];
 

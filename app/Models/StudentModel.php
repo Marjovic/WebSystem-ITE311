@@ -35,12 +35,10 @@ class StudentModel extends Model
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
-    protected $deletedField  = 'deleted_at';
-
-    // Validation
+    protected $deletedField  = 'deleted_at';    // Validation
     protected $validationRules = [
         'user_id'            => 'required|integer|is_unique[students.user_id,id,{id}]',
-        'student_id_number'  => 'required|string|max_length[50]|is_unique[students.student_id_number,id,{id}]',
+        'student_id_number'  => 'permit_empty|string|max_length[50]|is_unique[students.student_id_number,id,{id}]',
         'department_id'      => 'permit_empty|integer',
         'year_level_id'      => 'permit_empty|integer',
         'section'            => 'permit_empty|string|max_length[50]',
@@ -50,15 +48,12 @@ class StudentModel extends Model
         'guardian_contact'   => 'permit_empty|string|max_length[20]',
         'scholarship_status' => 'permit_empty|string|max_length[100]',
         'total_units'        => 'permit_empty|integer'
-    ];
-
-    protected $validationMessages = [
+    ];    protected $validationMessages = [
         'user_id' => [
             'required'  => 'User ID is required',
             'is_unique' => 'This user is already registered as a student'
         ],
         'student_id_number' => [
-            'required'  => 'Student ID number is required',
             'is_unique' => 'This student ID number already exists'
         ],
         'enrollment_status' => [

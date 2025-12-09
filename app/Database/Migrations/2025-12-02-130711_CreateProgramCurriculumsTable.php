@@ -77,11 +77,11 @@ class CreateProgramCurriculomsTable extends Migration
         $this->forge->addForeignKey('year_level_id', 'year_levels', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('semester_id', 'semesters', 'id', 'CASCADE', 'CASCADE');
         
-        $this->forge->createTable('program_curriculoms');
+        $this->forge->createTable('program_curriculums');
     }
 
     public function down()
     {
-        $this->forge->dropTable('program_curriculoms');
+        $this->forge->dropTable('program_curriculums');
     }
 }

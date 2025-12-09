@@ -49,6 +49,10 @@ $routes->get(from: '/admin/manage_courses_schedule', to: 'CourseSchedules::manag
 $routes->post(from: '/admin/manage_courses_schedule', to: 'CourseSchedules::manageSchedules');
 $routes->get(from: '/admin/manage_course_instructors', to: 'CourseInstructors::manageInstructors');
 $routes->post(from: '/admin/manage_course_instructors', to: 'CourseInstructors::manageInstructors');
+$routes->get(from: '/admin/manage_programs', to: 'Program::managePrograms');
+$routes->post(from: '/admin/manage_programs', to: 'Program::managePrograms');
+$routes->get(from: '/admin/manage_curriculum', to: 'Program::manageCurriculum');
+$routes->post(from: '/admin/manage_curriculum', to: 'Program::manageCurriculum');
 
 // Course enrollment routes
 $routes->post(from: '/course/enroll', to: 'Course::enroll');

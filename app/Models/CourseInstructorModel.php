@@ -126,6 +126,9 @@ class CourseInstructorModel extends Model
      */
     public function assignInstructor($offeringId, $instructorId, $isPrimary = false)
     {
+        // Convert boolean to integer for database
+        $isPrimaryValue = $isPrimary ? 1 : 0;
+        
         // Check if already assigned
         $exists = $this->where('course_offering_id', $offeringId)
                        ->where('instructor_id', $instructorId)
@@ -134,24 +137,36 @@ class CourseInstructorModel extends Model
         if ($exists) {
             // Update existing assignment
             return $this->update($exists['id'], [
-                'is_primary'    => $isPrimary,
+                'is_primary'    => $isPrimaryValue,
                 'assigned_date' => date('Y-m-d')
             ]);
         }
         
-        // If setting as primary, remove primary flag from others
+        // Get database instance
+        $db = \Config\Database::connect();
+        
+        // Start transaction for atomic operation
+        $db->transStart();
+        
+        // If setting as primary, remove primary flag from others first
         if ($isPrimary) {
-            $this->where('course_offering_id', $offeringId)
-                 ->set('is_primary', 0)
-                 ->update();
+            $db->table('course_instructors')
+               ->where('course_offering_id', $offeringId)
+               ->update(['is_primary' => 0]);
         }
         
-        return $this->insert([
+        // Insert new assignment
+        $result = $this->insert([
             'course_offering_id' => $offeringId,
             'instructor_id'      => $instructorId,
-            'is_primary'         => $isPrimary,
+            'is_primary'         => $isPrimaryValue,
             'assigned_date'      => date('Y-m-d')
         ]);
+        
+        $db->transComplete();
+        
+        // Return true if transaction was successful
+        return $db->transStatus() !== false && $result !== false;
     }
 
     /**

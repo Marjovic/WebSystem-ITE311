@@ -15,17 +15,17 @@ class RoleSeeder extends Seeder
         // Roles data for the system
         $roles = [
             [
-                'role_name'   => 'Admin',
+                'role_name'   => 'admin',
                 'description' => 'System Administrator - Full access to all features and settings',
                 'is_active'   => 1
             ],
             [
-                'role_name'   => 'Instructor',
+                'role_name'   => 'teacher',
                 'description' => 'Teacher/Instructor - Can manage courses, students, and assignments',
                 'is_active'   => 1
             ],
             [
-                'role_name'   => 'Student',
+                'role_name'   => 'student',
                 'description' => 'Student - Can enroll in courses and access learning materials',
                 'is_active'   => 1
             ]

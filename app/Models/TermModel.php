@@ -54,16 +54,14 @@ class TermModel extends Model
     public function getCurrentTerm()
     {
         return $this->where('is_current', 1)->first();
-    }
-
-    /**
+    }    /**
      * Get term with academic year and semester details
      */
     public function getTermWithDetails($termId)
     {
-        return $this->select('terms.*, academic_years.year_name, semesters.semester_name')
-                    ->join('academic_years', 'academic_years.id = terms.academic_year_id')
-                    ->join('semesters', 'semesters.id = terms.semester_id')
+        return $this->select('terms.*, academic_years.year_name, academic_years.year_code, semesters.semester_name')
+                    ->join('academic_years', 'academic_years.id = terms.academic_year_id', 'left')
+                    ->join('semesters', 'semesters.id = terms.semester_id', 'left')
                     ->find($termId);
     }
 
@@ -90,17 +88,18 @@ class TermModel extends Model
         
         $now = date('Y-m-d');
         return ($now >= $term['enrollment_start'] && $now <= $term['enrollment_end']);
-    }
-
-    /**
+    }    /**
      * Set term as current
      */
     public function setAsCurrent($termId)
     {
         $this->db->transStart();
         
-        // Set all to not current
-        $this->set('is_current', 0)->update();
+        // Set all to not current using query builder
+        $this->db->table($this->table)
+                 ->set('is_current', 0)
+                 ->where('is_current', 1)
+                 ->update();
         
         // Set specified term as current
         $this->update($termId, ['is_current' => 1]);

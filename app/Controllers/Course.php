@@ -219,4 +219,153 @@ class Course extends BaseController
         return view('admin/manage_courses', $data);
     }
 
+    /**
+     * Enroll student in a course offering (AJAX endpoint)
+     */
+    public function enroll()
+    {
+        // Check if request is AJAX
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request method'
+            ]);
+        }
+        
+        // Check if user is logged in and is a student
+        if ($this->session->get('isLoggedIn') !== true || $this->session->get('role') !== 'student') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'You must be logged in as a student to enroll in courses.',
+                'error_code' => 'NOT_AUTHORIZED'
+            ]);
+        }
+        
+        $userID = $this->session->get('userID');
+        
+        // Get student record
+        $studentModel = new \App\Models\StudentModel();
+        $student = $studentModel->where('user_id', $userID)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Student record not found. Please contact administrator.',
+                'error_code' => 'STUDENT_NOT_FOUND'
+            ]);
+        }
+        
+        $studentId = $student['id'];
+        $courseOfferingId = $this->request->getPost('course_id'); // Note: This is actually course_offering_id from the view
+        
+        // Validate course offering ID
+        if (!$courseOfferingId) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Course offering ID is required.',
+                'error_code' => 'MISSING_COURSE_ID'
+            ]);
+        }
+        
+        // Check if course offering exists and is open
+        $courseOffering = $this->courseOfferingModel->find($courseOfferingId);
+        
+        if (!$courseOffering) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Course offering not found.',
+                'error_code' => 'OFFERING_NOT_FOUND'
+            ]);
+        }
+        
+        if ($courseOffering['status'] !== 'open') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'This course offering is not currently accepting enrollments.',
+                'error_code' => 'OFFERING_CLOSED'
+            ]);
+        }
+        
+        // Check if student is already enrolled
+        $existingEnrollment = $this->enrollmentModel
+            ->where('student_id', $studentId)
+            ->where('course_offering_id', $courseOfferingId)
+            ->first();
+        
+        if ($existingEnrollment) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'You are already enrolled in this course offering.',
+                'error_code' => 'ALREADY_ENROLLED'
+            ]);
+        }
+        
+        // Check if course offering has available slots
+        if (!$this->courseOfferingModel->hasAvailableSlots($courseOfferingId)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'This course offering is full. No available slots.',
+                'error_code' => 'OFFERING_FULL'
+            ]);
+        }
+        
+        // Create enrollment
+        $enrollmentData = [
+            'student_id' => $studentId,
+            'course_offering_id' => $courseOfferingId,
+            'enrollment_date' => date('Y-m-d'),
+            'enrollment_status' => 'enrolled',
+            'enrollment_type' => 'regular',
+            'year_level_id' => $student['year_level_id'],
+            'payment_status' => 'unpaid',
+            'enrolled_by' => $userID
+        ];
+        
+        $db = \Config\Database::connect();
+        $db->transStart();
+        
+        try {
+            // Insert enrollment
+            if (!$this->enrollmentModel->insert($enrollmentData)) {
+                throw new \Exception('Failed to create enrollment record');
+            }
+            
+            // Increment enrollment count in course offering
+            if (!$this->courseOfferingModel->incrementEnrollment($courseOfferingId)) {
+                throw new \Exception('Failed to update enrollment count');
+            }
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaction failed');
+            }
+            
+            // Get course details for response
+            $offeringDetails = $this->courseOfferingModel->getOfferingWithDetails($courseOfferingId);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Successfully enrolled in ' . $offeringDetails['course_code'] . ' - ' . $offeringDetails['course_title'],
+                'data' => [
+                    'course_code' => $offeringDetails['course_code'],
+                    'course_title' => $offeringDetails['course_title'],
+                    'section' => $offeringDetails['section'],
+                    'term' => $offeringDetails['term_name']
+                ],
+                'csrf_hash' => csrf_hash() // Return new CSRF token
+            ]);
+            
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Enrollment error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while processing your enrollment. Please try again.',
+                'error_code' => 'ENROLLMENT_ERROR'
+            ]);
+        }
+    }
+
 }

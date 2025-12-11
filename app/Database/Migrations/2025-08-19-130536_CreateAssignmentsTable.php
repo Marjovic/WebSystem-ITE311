@@ -52,7 +52,7 @@ class CreateAssignmentsTable extends Migration
                 'type' => 'TEXT',
                 'null' => true,
             ],
-            'max_points' => [
+            'max_score' => [
                 'type'       => 'DECIMAL',
                 'constraint' => '6,2',
                 'default'    => 100.00,
@@ -86,6 +86,10 @@ class CreateAssignmentsTable extends Migration
                 'type'       => 'DECIMAL',
                 'constraint' => '5,2',
                 'default'    => 0.00,
+            ],
+            'is_active' => [
+                'type'    => 'BOOLEAN',
+                'default' => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',

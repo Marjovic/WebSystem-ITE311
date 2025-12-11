@@ -81,21 +81,19 @@ class Term extends BaseController
 
         // Display term management interface
         return $this->displayTermManagement();
-    }
-
-    /**
+    }    /**
      * Create a new term
      */    private function createTerm()
     {
-        // Validation rules
+        // Validation rules - dates must be within Academic Year range
         $rules = [
             'academic_year_id' => 'required|integer',
             'semester_id'      => 'required|integer',
             'term_name'        => 'required|min_length[3]|max_length[100]',
-            'start_date'       => 'permit_empty|valid_date|check_future_date[start_date]|check_date_order[end_date]',
-            'end_date'         => 'permit_empty|valid_date|check_future_date[end_date]',
-            'enrollment_start' => 'permit_empty|valid_date|check_future_date[enrollment_start]|check_date_order[enrollment_end]',
-            'enrollment_end'   => 'permit_empty|valid_date|check_future_date[enrollment_end]'
+            'start_date'       => 'permit_empty|valid_date|check_within_academic_year[academic_year_id]|check_date_order[end_date]',
+            'end_date'         => 'permit_empty|valid_date|check_within_academic_year[academic_year_id]',
+            'enrollment_start' => 'permit_empty|valid_date|check_enrollment_not_past|check_within_academic_year[academic_year_id]|check_date_order[enrollment_end]',
+            'enrollment_end'   => 'permit_empty|valid_date|check_enrollment_not_past|check_within_academic_year[academic_year_id]'
         ];
 
         $messages = [
@@ -113,18 +111,20 @@ class Term extends BaseController
                 'max_length' => 'Term name must not exceed 100 characters.'
             ],
             'start_date' => [
-                'check_future_date' => 'Term start date must be today or a future date.',
-                'check_date_order'  => 'Term start date cannot be after end date.'
+                'check_within_academic_year' => 'Term start date must be within the selected Academic Year.',
+                'check_date_order'           => 'Term start date cannot be after end date.'
             ],
             'end_date' => [
-                'check_future_date' => 'Term end date must be today or a future date.'
+                'check_within_academic_year' => 'Term end date must be within the selected Academic Year.'
             ],
             'enrollment_start' => [
-                'check_future_date' => 'Enrollment start date must be today or a future date.',
-                'check_date_order'  => 'Enrollment start date cannot be after enrollment end date.'
+                'check_enrollment_not_past'  => 'Enrollment start date cannot be in the past.',
+                'check_within_academic_year' => 'Enrollment start date must be within the selected Academic Year.',
+                'check_date_order'           => 'Enrollment start date cannot be after enrollment end date.'
             ],
             'enrollment_end' => [
-                'check_future_date' => 'Enrollment end date must be today or a future date.'
+                'check_enrollment_not_past'  => 'Enrollment end date cannot be in the past.',
+                'check_within_academic_year' => 'Enrollment end date must be within the selected Academic Year.'
             ]
         ];
 
@@ -163,22 +163,21 @@ class Term extends BaseController
      */
     private function editTerm($termID)
     {
-        $termToEdit = $this->termModel->find($termID);
-
-        if (!$termToEdit) {
+        $termToEdit = $this->termModel->find($termID);        if (!$termToEdit) {
             $this->session->setFlashdata('error', 'Term not found.');
             return redirect()->to(base_url('admin/manage_terms'));
         }        // Handle POST request (update)
         if ($this->request->getMethod() === 'POST') {
-            // Validation rules
+            // Validation rules - dates must be within Academic Year range
+            // For editing, we allow term dates in the past but enrollment dates must not be in the past
             $rules = [
                 'academic_year_id' => 'required|integer',
                 'semester_id'      => 'required|integer',
                 'term_name'        => 'required|min_length[3]|max_length[100]',
-                'start_date'       => 'permit_empty|valid_date|check_future_date[start_date]|check_date_order[end_date]',
-                'end_date'         => 'permit_empty|valid_date|check_future_date[end_date]',
-                'enrollment_start' => 'permit_empty|valid_date|check_future_date[enrollment_start]|check_date_order[enrollment_end]',
-                'enrollment_end'   => 'permit_empty|valid_date|check_future_date[enrollment_end]'
+                'start_date'       => 'permit_empty|valid_date|check_within_academic_year[academic_year_id]|check_date_order[end_date]',
+                'end_date'         => 'permit_empty|valid_date|check_within_academic_year[academic_year_id]',
+                'enrollment_start' => 'permit_empty|valid_date|check_enrollment_not_past|check_within_academic_year[academic_year_id]|check_date_order[enrollment_end]',
+                'enrollment_end'   => 'permit_empty|valid_date|check_enrollment_not_past|check_within_academic_year[academic_year_id]'
             ];
 
             $messages = [
@@ -196,18 +195,20 @@ class Term extends BaseController
                     'max_length' => 'Term name must not exceed 100 characters.'
                 ],
                 'start_date' => [
-                    'check_future_date' => 'Term start date must be today or a future date.',
-                    'check_date_order'  => 'Term start date cannot be after end date.'
+                    'check_within_academic_year' => 'Term start date must be within the selected Academic Year.',
+                    'check_date_order'           => 'Term start date cannot be after end date.'
                 ],
                 'end_date' => [
-                    'check_future_date' => 'Term end date must be today or a future date.'
+                    'check_within_academic_year' => 'Term end date must be within the selected Academic Year.'
                 ],
                 'enrollment_start' => [
-                    'check_future_date' => 'Enrollment start date must be today or a future date.',
-                    'check_date_order'  => 'Enrollment start date cannot be after enrollment end date.'
+                    'check_enrollment_not_past'  => 'Enrollment start date cannot be in the past.',
+                    'check_within_academic_year' => 'Enrollment start date must be within the selected Academic Year.',
+                    'check_date_order'           => 'Enrollment start date cannot be after enrollment end date.'
                 ],
                 'enrollment_end' => [
-                    'check_future_date' => 'Enrollment end date must be today or a future date.'
+                    'check_enrollment_not_past'  => 'Enrollment end date cannot be in the past.',
+                    'check_within_academic_year' => 'Enrollment end date must be within the selected Academic Year.'
                 ]
             ];
 

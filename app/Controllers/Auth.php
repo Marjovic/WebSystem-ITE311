@@ -4,10 +4,12 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\StudentModel;
+use App\Models\InstructorModel;
 use App\Models\YearLevelModel;
 use App\Models\CourseModel;
 use App\Models\CourseInstructorModel;
 use App\Models\EnrollmentModel;
+use App\Models\TermModel;
 use App\Models\NotificationModel;
 use App\Models\RoleModel;
 use App\Models\EmailVerificationModel;
@@ -19,14 +21,15 @@ class Auth extends BaseController
 {    // These are class properties (variables that belong to this class)
     protected $session;             // This stores user session data (remembers who is logged in)
     protected $validation;          // This checks if form data is correct (validates user input)
-    protected $db;                  // This connects to the database (where user data is stored)
-      // Models for database operations
-    protected $userModel;           // UserModel for all user database operations
+    protected $db;                  // This connects to the database (where user data is stored)    // Models for database operations    protected $userModel;           // UserModel for all user database operations
     protected $studentModel;        // StudentModel for student-specific data
+    protected $instructorModel;     // InstructorModel for instructor-specific data
     protected $yearLevelModel;      // YearLevelModel for year level operations
     protected $courseModel;         // CourseModel for course operations
     protected $courseInstructorModel; // CourseInstructorModel for instructor assignments
-    protected $enrollmentModel;     // EnrollmentModel for student enrollments    protected $notificationModel;   // NotificationModel for user notifications
+    protected $enrollmentModel;     // EnrollmentModel for student enrollments
+    protected $termModel;           // TermModel for academic term operations
+    protected $notificationModel;   // NotificationModel for user notifications
     protected $roleModel;           // RoleModel for role management
     protected $emailVerificationModel; // EmailVerificationModel for email verification
     protected $otpModel;            // OtpModel for OTP/2FA authentication
@@ -45,13 +48,16 @@ class Auth extends BaseController
         
         // Connect to database - this lets us save and find user accounts
         // Database is where all user information is permanently stored
-        $this->db = \Config\Database::connect();          // Initialize all models for database operations
+        $this->db = \Config\Database::connect();        // Initialize all models for database operations
         $this->userModel = new UserModel();
         $this->studentModel = new StudentModel();
+        $this->instructorModel = new InstructorModel();
         $this->yearLevelModel = new YearLevelModel();
         $this->courseModel = new CourseModel();
         $this->courseInstructorModel = new CourseInstructorModel();
-        $this->enrollmentModel = new EnrollmentModel();        $this->notificationModel = new NotificationModel();
+        $this->enrollmentModel = new EnrollmentModel();
+        $this->termModel = new TermModel();
+        $this->notificationModel = new NotificationModel();
         $this->roleModel = new RoleModel();
         $this->emailVerificationModel = new EmailVerificationModel();
         $this->otpModel = new OtpModel();
@@ -460,64 +466,62 @@ class Auth extends BaseController
                     'recentUsers' => $recentUsers,
                     'recentActivities' => $recentActivities
                 ]);
-                return view('auth/dashboard', $dashboardData);            case 'teacher':
-                // Teacher gets course and student data using CourseModel
-                $teacherID = $this->session->get('userID');
+                return view('auth/dashboard', $dashboardData);                  case 'teacher':
+                // Teacher gets course and student data using proper relational queries
+                $teacherUserID = $this->session->get('userID');
                 
-                try {                    // Get all courses using CourseModel and filter by teacher manually
-                    $allCourses = $this->courseModel
-                        ->select('id, title, instructor_ids, is_active')
-                        ->findAll();
+                try {
+                    // Get the instructor record for this user
+                    $instructor = $this->instructorModel->where('user_id', $teacherUserID)->first();
                     
-                    // Count courses where teacher is in instructor_ids
-                    $teacherCourses = 0;
-                    $activeCourses = 0;
-                    
-                    foreach ($allCourses as $course) {
-                        $instructorIds = json_decode($course['instructor_ids'], true);
-                        if (is_array($instructorIds) && in_array($teacherID, $instructorIds)) {
-                            $teacherCourses++;
-                            if ($course['is_active'] == 1) {
-                                $activeCourses++;
-                            }
-                        }
-                    }
-                      // Debug log
-                    log_message('debug', "Teacher Dashboard - Teacher ID: {$teacherID}, Courses Count: {$teacherCourses}, Active: {$activeCourses}");
-                      // Count available courses (active courses where teacher is not assigned)
-                    $availableCoursesCount = 0;
-                    foreach ($allCourses as $course) {
-                        if ($course['is_active'] == 1) {
-                            $instructorIds = json_decode($course['instructor_ids'], true);
-                            // Course is available if no instructors or teacher not in list
-                            if (empty($instructorIds) || !in_array($teacherID, $instructorIds)) {
-                                $availableCoursesCount++;
-                            }
-                        }
+                    if (!$instructor) {
+                        // If no instructor record found, show empty dashboard
+                        log_message('warning', "No instructor record found for user ID: {$teacherUserID}");
+                        $dashboardData = array_merge($baseData, [
+                            'title' => 'Teacher Dashboard - MGOD LMS',
+                            'totalCourses' => 0,
+                            'activeCourses' => 0,
+                            'availableCoursesCount' => 0,
+                            'totalStudents' => 0,
+                            'pendingAssignments' => 0,
+                            'averageGrade' => 0,
+                            'assignment_activities' => []
+                        ]);
+                        return view('auth/dashboard', $dashboardData);
                     }
                     
-                    // Get course IDs where teacher is assigned
-                    $teacherCourseIds = [];
-                    foreach ($allCourses as $course) {
-                        $instructorIds = json_decode($course['instructor_ids'], true);
-                        if (is_array($instructorIds) && in_array($teacherID, $instructorIds)) {
-                            $teacherCourseIds[] = $course['id'];
-                        }
-                    }
-                      // Get total students enrolled in teacher's courses using EnrollmentModel
-                    $totalStudents = 0;
-                    if (!empty($teacherCourseIds)) {
-                        $totalStudents = $this->enrollmentModel
-                            ->select('COUNT(DISTINCT user_id) as total')
-                            ->whereIn('course_id', $teacherCourseIds)
-                            ->get()
-                            ->getRow()
-                            ->total ?? 0;
-                    }
+                    $instructorId = $instructor['id'];
+                    
+                    // Count total course offerings assigned to this instructor
+                    $teacherCourses = $this->courseInstructorModel
+                        ->where('instructor_id', $instructorId)
+                        ->countAllResults(false);
+                    
+                    // Count active course offerings (where course_offerings.status = 'open')
+                    $activeCourses = $this->courseInstructorModel
+                        ->join('course_offerings', 'course_offerings.id = course_instructors.course_offering_id')
+                        ->where('course_instructors.instructor_id', $instructorId)
+                        ->where('course_offerings.status', 'open')
+                        ->countAllResults(false);
+                    
+                    // Count available courses (active courses not yet assigned to this teacher)
+                    $totalActiveCourses = $this->db->table('course_offerings')
+                        ->where('status', 'open')
+                        ->countAllResults();
+                    $availableCoursesCount = max(0, $totalActiveCourses - $activeCourses);
+                    
+                    // Get total students enrolled in teacher's courses
+                    $totalStudents = $this->db->table('course_instructors ci')
+                        ->select('COUNT(DISTINCT e.student_id) as total')
+                        ->join('enrollments e', 'e.course_offering_id = ci.course_offering_id')
+                        ->where('ci.instructor_id', $instructorId)
+                        ->where('e.enrollment_status', 'enrolled')
+                        ->get()
+                        ->getRow()
+                        ->total ?? 0;
                     
                     // Debug log
-                    log_message('debug', "Teacher Dashboard - Total Students: {$totalStudents}");
-                    log_message('debug', "Teacher Dashboard - Data being passed: Courses={$teacherCourses}, Active={$activeCourses}, Students={$totalStudents}");
+                    log_message('debug', "Teacher Dashboard - Instructor ID: {$instructorId}, Courses: {$teacherCourses}, Active: {$activeCourses}, Students: {$totalStudents}");
                     
                     // Get assignment activities from session for recent activity display
                     $assignmentActivities = $this->session->get('assignment_activities') ?? [];
@@ -550,60 +554,148 @@ class Auth extends BaseController
                     ]);
                     
                     return view('auth/dashboard', $dashboardData);
-                }
-                  case 'student':
-                // Student gets enrollment and course data using EnrollmentModel and CourseModel
+                }                case 'student':
+                // Student gets enrollment and course data using EnrollmentModel and CourseOfferingModel
                 $userID = $this->session->get('userID');
                 
-                // Get enrolled courses for this student using EnrollmentModel
-                $enrolledCourses = $this->enrollmentModel->getUserEnrollments($userID);
-                $enrolledCoursesCount = count($enrolledCourses);
-                    // Get available courses that student can enroll in using CourseModel
-                $availableCourses = $this->courseModel
-                    ->select('courses.*')
-                    ->where('courses.is_active', 1)
-                    ->orderBy('courses.created_at', 'DESC')
-                    ->findAll();
-                
-                // Get instructor names for each course using UserModel
-                foreach ($availableCourses as &$course) {
-                    $instructorIds = json_decode($course['instructor_ids'] ?? '[]', true);
-                    if (!empty($instructorIds)) {
-                        $instructorNames = $this->userModel
-                            ->select('name')
-                            ->whereIn('id', $instructorIds)
-                            ->where('role', 'teacher')
-                            ->findAll();
-                        $course['instructor_name'] = implode(', ', array_column($instructorNames, 'name'));
-                    } else {
-                        $course['instructor_name'] = 'No instructor assigned';
+                try {
+                    // Get the student record for this user
+                    $student = $this->studentModel->where('user_id', $userID)->first();
+                    
+                    if (!$student) {
+                        log_message('error', 'Student record not found for user ID: ' . $userID);
+                        // Return empty dashboard if student record doesn't exist
+                        $dashboardData = array_merge($baseData, [
+                            'title' => 'Student Dashboard - MGOD LMS',
+                            'enrolledCourses' => 0,
+                            'enrolledCoursesData' => [],
+                            'availableCoursesData' => [],
+                            'completedAssignments' => 0,
+                            'pendingAssignments' => 0,
+                            'currentTerm' => null,
+                            'studentInfo' => null
+                        ]);
+                        return view('auth/dashboard', $dashboardData);
                     }
+                      $studentId = $student['id'];
+                    
+                    // Initialize CourseOfferingModel
+                    $courseOfferingModel = new \App\Models\CourseOfferingModel();
+                    
+                    // Get enrolled course offerings for this student using EnrollmentModel
+                    try {
+                        log_message('debug', 'Attempting to get enrollments for student ID: ' . $studentId);
+                        $enrolledCourses = $this->enrollmentModel->getStudentEnrollments($studentId);
+                        log_message('debug', 'Successfully retrieved ' . count($enrolledCourses) . ' enrolled courses');
+                        $enrolledCoursesCount = count($enrolledCourses);
+                    } catch (\Exception $e) {
+                        log_message('error', 'Error getting student enrollments: ' . $e->getMessage());
+                        log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+                        $enrolledCourses = [];
+                        $enrolledCoursesCount = 0;
+                    }
+                      // Get current term (to show available course offerings)
+                    $currentTerm = $this->termModel->where('is_current', 1)->first();
+                    
+                    // Log for debugging
+                    log_message('debug', 'Current Term for Student Dashboard: ' . json_encode($currentTerm));
+                    
+                    // If no current term is set, get the most recent active term
+                    if (!$currentTerm) {
+                        $currentTerm = $this->termModel
+                            ->where('is_active', 1)
+                            ->orderBy('start_date', 'DESC')
+                            ->first();
+                        
+                        log_message('debug', 'No current term found. Using most recent active term: ' . json_encode($currentTerm));
+                    }
+                      // Get available course offerings filtered by student's program, department, and year level
+                    $availableOfferings = [];
+                    if ($currentTerm) {
+                        // Get enrolled offering IDs to exclude them
+                        $enrolledOfferingIds = array_column($enrolledCourses, 'course_offering_id');
+                        
+                        // Log student details for debugging
+                        log_message('debug', 'Student Dashboard - Student ID: ' . $studentId);
+                        log_message('debug', 'Student Dashboard - Current Term ID: ' . $currentTerm['id']);
+                        log_message('debug', 'Student Dashboard - Enrolled Offering IDs: ' . json_encode($enrolledOfferingIds));
+                        log_message('debug', 'Student Details: ' . json_encode($student));
+                        
+                        // Use CourseOfferingModel's method to get filtered offerings
+                        $availableOfferings = $courseOfferingModel->getAvailableOfferingsForStudent(
+                            $currentTerm['id'],
+                            $studentId,
+                            $enrolledOfferingIds
+                        );
+                        
+                        log_message('debug', 'Available Offerings Count (filtered by student): ' . count($availableOfferings));
+                        log_message('debug', 'Available Offerings Data: ' . json_encode($availableOfferings));
+                    } else {
+                        log_message('warning', 'No current or active term found for student dashboard');
+                    }
+                    
+                    // Format enrolled course data for display
+                    foreach ($enrolledCourses as &$course) {
+                        $course['progress'] = 0; // Default progress is 0% (no progress yet)
+                    }
+                    
+                    // Count assignments (using AssignmentModel if exists)
+                    $completedAssignments = 0;
+                    $pendingAssignments = 0;
+                    
+                    if (class_exists('\App\Models\AssignmentModel') && class_exists('\App\Models\SubmissionModel')) {
+                        $assignmentModel = new \App\Models\AssignmentModel();
+                        $submissionModel = new \App\Models\SubmissionModel();
+                        
+                        // Get all assignments for student's enrolled courses
+                        foreach ($enrolledCourses as $enrollment) {
+                            $assignments = $assignmentModel->where('course_offering_id', $enrollment['course_offering_id'])
+                                                          ->where('is_active', 1)
+                                                          ->findAll();
+                            
+                            foreach ($assignments as $assignment) {
+                                $submission = $submissionModel->where('assignment_id', $assignment['id'])
+                                                              ->where('student_id', $studentId)
+                                                              ->first();
+                                
+                                if ($submission && in_array($submission['status'], ['submitted', 'graded'])) {
+                                    $completedAssignments++;
+                                } else {
+                                    $pendingAssignments++;
+                                }
+                            }
+                        }
+                    }
+                      $dashboardData = array_merge($baseData, [
+                        'title' => 'Student Dashboard - MGOD LMS',
+                        'enrolledCourses' => $enrolledCoursesCount,
+                        'enrolledCoursesData' => $enrolledCourses,
+                        'availableCoursesData' => $availableOfferings,
+                        'completedAssignments' => $completedAssignments,
+                        'pendingAssignments' => $pendingAssignments,
+                        'currentTerm' => $currentTerm,
+                        'studentInfo' => $student
+                    ]);
+                    
+                    return view('auth/dashboard', $dashboardData);
+                    
+                } catch (\Exception $e) {
+                    log_message('error', 'Student dashboard error: ' . $e->getMessage());
+                    
+                    // Return empty dashboard on error
+                    $dashboardData = array_merge($baseData, [
+                        'title' => 'Student Dashboard - MGOD LMS',
+                        'enrolledCourses' => 0,
+                        'enrolledCoursesData' => [],
+                        'availableCoursesData' => [],
+                        'completedAssignments' => 0,
+                        'pendingAssignments' => 0
+                    ]);
+                    
+                    return view('auth/dashboard', $dashboardData);
                 }
-                
-                // Filter out courses the student is already enrolled in
-                $enrolledCourseIds = array_column($enrolledCourses, 'course_id');
-                $availableCoursesFiltered = array_filter($availableCourses, function($course) use ($enrolledCourseIds) {
-                    return !in_array($course['id'], $enrolledCourseIds);
-                });
-                  // Format course data for display
-                foreach ($enrolledCourses as &$course) {
-                    $course['progress'] = 0; // Default progress is 0% (no progress yet)
-                }
-                
-                foreach ($availableCoursesFiltered as &$course) {
-                    $course['start_date_formatted'] = $course['start_date'] ? date('M j, Y', strtotime($course['start_date'])) : 'TBA';
-                    $course['end_date_formatted'] = $course['end_date'] ? date('M j, Y', strtotime($course['end_date'])) : 'TBA';
-                }
-                
-                $dashboardData = array_merge($baseData, [
-                    'title' => 'Student Dashboard - MGOD LMS',
-                    'enrolledCourses' => $enrolledCoursesCount,
-                    'enrolledCoursesData' => $enrolledCourses,
-                    'availableCoursesData' => array_values($availableCoursesFiltered),
-                    'completedAssignments' => 0, // Placeholder - implement when assignments table exists                'pendingAssignments' => 0    // Placeholder - implement when assignments table exists
-                ]);                return view('auth/dashboard', $dashboardData);
-                
-            default:                
+
+            default:
                 // If role is unknown, show generic dashboard
                 return view('auth/dashboard', $baseData);
         }

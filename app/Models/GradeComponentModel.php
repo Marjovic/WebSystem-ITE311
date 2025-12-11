@@ -11,15 +11,11 @@ class GradeComponentModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
-    protected $allowedFields    = [
+    protected $protectFields    = true;    protected $allowedFields    = [
         'course_offering_id',
         'grading_period_id',
         'assignment_type_id',
-        'component_name',
         'weight_percentage',
-        'max_score',
-        'description',
         'is_active'
     ];
 
@@ -30,23 +26,18 @@ class GradeComponentModel extends Model
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
-
-    // Validation
+    protected $updatedField  = 'updated_at';    // Validation
     protected $validationRules = [
         'course_offering_id' => 'required|integer',
         'grading_period_id'  => 'permit_empty|integer',
-        'assignment_type_id' => 'permit_empty|integer',
-        'component_name'     => 'required|string|max_length[100]',
+        'assignment_type_id' => 'required|integer',
         'weight_percentage'  => 'required|decimal|greater_than[0]|less_than_equal_to[100]',
-        'max_score'          => 'permit_empty|decimal',
-        'description'        => 'permit_empty|string',
         'is_active'          => 'permit_empty|in_list[0,1]'
     ];
 
     protected $validationMessages = [
-        'component_name' => [
-            'required' => 'Component name is required'
+        'assignment_type_id' => [
+            'required' => 'Assignment type is required'
         ],
         'weight_percentage' => [
             'required'             => 'Weight percentage is required',
@@ -60,8 +51,7 @@ class GradeComponentModel extends Model
 
     /**
      * Get all grade components for a course offering
-     */
-    public function getOfferingComponents($offeringId)
+     */    public function getOfferingComponents($offeringId)
     {
         return $this->select('
                 grade_components.*,
@@ -73,19 +63,18 @@ class GradeComponentModel extends Model
             ->where('grade_components.course_offering_id', $offeringId)
             ->where('grade_components.is_active', 1)
             ->orderBy('grading_periods.period_order', 'ASC')
-            ->orderBy('grade_components.component_name', 'ASC')
+            ->orderBy('grade_components.id', 'ASC')
             ->findAll();
     }
 
     /**
      * Get components by grading period
-     */
-    public function getComponentsByPeriod($offeringId, $periodId)
+     */    public function getComponentsByPeriod($offeringId, $periodId)
     {
         return $this->where('course_offering_id', $offeringId)
                     ->where('grading_period_id', $periodId)
                     ->where('is_active', 1)
-                    ->orderBy('component_name', 'ASC')
+                    ->orderBy('id', 'ASC')
                     ->findAll();
     }
 
@@ -142,7 +131,7 @@ class GradeComponentModel extends Model
         
         // Get all assignments for this component
         $assignments = $db->table('assignments')
-                         ->where('grade_component_id', $componentId)
+                         ->where('grading_period_id', $componentId)
                          ->where('is_active', 1)
                          ->get()
                          ->getResultArray();
@@ -191,15 +180,13 @@ class GradeComponentModel extends Model
 
     /**
      * Get grading breakdown for a course offering
-     */
-    public function getGradingBreakdown($offeringId)
+     */    public function getGradingBreakdown($offeringId)
     {
         return $this->select('
                 gp.period_name,
                 gp.weight_percentage as period_weight,
-                gc.component_name,
-                gc.weight_percentage as component_weight,
-                at.type_name
+                at.type_name,
+                gc.weight_percentage as component_weight
             ')
             ->from('grade_components gc')
             ->join('grading_periods gp', 'gp.id = gc.grading_period_id', 'left')
@@ -207,7 +194,7 @@ class GradeComponentModel extends Model
             ->where('gc.course_offering_id', $offeringId)
             ->where('gc.is_active', 1)
             ->orderBy('gp.period_order', 'ASC')
-            ->orderBy('gc.component_name', 'ASC')
+            ->orderBy('gc.id', 'ASC')
             ->get()
             ->getResultArray();
     }

@@ -114,7 +114,19 @@ class CourseInstructors extends BaseController
             $this->session->setFlashdata('success', "Instructor {$instructorName} assigned successfully!");
             return redirect()->to(base_url('admin/manage_course_instructors?offering_id=' . $offeringId));
         } else {
-            $this->session->setFlashdata('error', 'Failed to assign instructor. Please try again.');
+            // Get model errors for debugging
+            $modelErrors = $this->courseInstructorModel->errors();
+            $errorMessage = 'Failed to assign instructor. ';
+            if (!empty($modelErrors)) {
+                $errorMessage .= 'Errors: ' . implode(', ', $modelErrors);
+            } else {
+                $errorMessage .= 'Please check the database logs.';
+            }
+            
+            // Log the error
+            log_message('error', 'CourseInstructor Assignment Failed - Offering: ' . $offeringId . ', Instructor: ' . $instructorId . ', isPrimary: ' . ($isPrimary ? 'Yes' : 'No') . ', Errors: ' . json_encode($modelErrors));
+            
+            $this->session->setFlashdata('error', $errorMessage);
             return redirect()->to(base_url('admin/manage_course_instructors?action=assign&offering_id=' . $offeringId))->withInput();
         }
     }
@@ -184,7 +196,7 @@ class CourseInstructors extends BaseController
             ->getResultArray();
 
         // Get all active instructors
-        $instructors = $this->instructorModel->getInstructorsByStatus('active');
+        $instructors = $this->instructorModel->getActiveInstructors();
 
         // Get assignments and offering details if offering is selected
         $assignments = [];
@@ -227,5 +239,129 @@ class CourseInstructors extends BaseController
         ];
 
         return view('admin/manage_course_instructors', $data);
+    }
+
+    /**
+     * Teacher Courses - Show courses assigned to the logged-in teacher
+     */
+    public function teacherCourses()
+    {
+        // Security check - only teachers can access
+        if ($this->session->get('isLoggedIn') !== true) {
+            $this->session->setFlashdata('error', 'Please login to access this page.');
+            return redirect()->to(base_url('login'));
+        }
+        
+        if ($this->session->get('role') !== 'teacher') {
+            $this->session->setFlashdata('error', 'Access denied. You do not have permission to access this page.');
+            $userRole = $this->session->get('role');
+            return redirect()->to(base_url($userRole . '/dashboard'));
+        }
+
+        // Get the logged-in user's instructor record
+        $userId = $this->session->get('userID');
+        $instructor = $this->instructorModel->where('user_id', $userId)->first();
+
+        if (!$instructor) {
+            $this->session->setFlashdata('error', 'Instructor profile not found. Please contact the administrator.');
+            return redirect()->to(base_url('teacher/dashboard'));
+        }
+
+        // Get all courses assigned to this instructor with full details
+        $assignedCourses = $this->getTeacherAssignedCourses($instructor['id']);
+
+        $data = [
+            'title' => 'My Courses - Teacher Dashboard',
+            'assignedCourses' => $assignedCourses,
+            'instructor' => $instructor
+        ];
+
+        return view('teacher/courses', $data);
+    }    /**
+     * Get all courses assigned to a teacher with full details
+     */    private function getTeacherAssignedCourses($instructorId)
+    {
+        $courses = $this->db->table('course_instructors ci')
+            ->select('
+                ci.id as assignment_id,
+                ci.is_primary,
+                ci.created_at as assigned_date,
+                co.id as offering_id,
+                co.status as offering_status,
+                co.max_students,
+                co.start_date,
+                co.end_date,
+                c.id as course_id,
+                c.course_code,
+                c.title,
+                c.description,
+                c.credits,
+                cat.category_name as category,
+                t.term_name,
+                ay.year_name as academic_year,
+                s.semester_name,
+                (SELECT COUNT(*) FROM enrollments e WHERE e.course_offering_id = co.id AND e.enrollment_status = "enrolled") as enrolled_students
+            ')
+            ->join('course_offerings co', 'co.id = ci.course_offering_id')
+            ->join('courses c', 'c.id = co.course_id')
+            ->join('categories cat', 'cat.id = c.category_id', 'left')
+            ->join('terms t', 't.id = co.term_id')
+            ->join('academic_years ay', 'ay.id = t.academic_year_id')
+            ->join('semesters s', 's.id = t.semester_id')
+            ->where('ci.instructor_id', $instructorId)
+            ->orderBy('ay.year_name', 'DESC')
+            ->orderBy('s.id', 'DESC')
+            ->orderBy('c.course_code', 'ASC')
+            ->get()
+            ->getResultArray();        // Get enrolled students and co-instructors for each course
+        foreach ($courses as &$course) {
+            // Get enrolled students
+            $course['students'] = $this->db->table('enrollments e')
+                ->select('
+                    s.id as student_id,
+                    u.id as user_id,
+                    u.first_name,
+                    u.middle_name,
+                    u.last_name,
+                    u.suffix,
+                    u.email,
+                    e.enrollment_status,
+                    e.enrollment_date,
+                    e.year_level_id,
+                    e.enrollment_type,
+                    CONCAT(u.first_name, " ", COALESCE(u.middle_name, ""), " ", u.last_name) as full_name
+                ')
+                ->join('students s', 's.id = e.student_id')
+                ->join('users u', 'u.id = s.user_id')
+                ->where('e.course_offering_id', $course['offering_id'])
+                ->where('e.enrollment_status', 'enrolled')
+                ->orderBy('u.last_name', 'ASC')
+                ->orderBy('u.first_name', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            // Get co-instructors (other instructors assigned to same course)
+            $course['co_instructors'] = $this->db->table('course_instructors ci')
+                ->select('
+                    i.id as instructor_id,
+                    u.first_name,
+                    u.middle_name,
+                    u.last_name,
+                    u.suffix,
+                    u.email,
+                    ci.is_primary,
+                    CONCAT(u.first_name, " ", COALESCE(u.middle_name, ""), " ", u.last_name) as full_name
+                ')
+                ->join('instructors i', 'i.id = ci.instructor_id')
+                ->join('users u', 'u.id = i.user_id')
+                ->where('ci.course_offering_id', $course['offering_id'])
+                ->where('ci.instructor_id !=', $instructorId)
+                ->orderBy('u.last_name', 'ASC')
+                ->orderBy('u.first_name', 'ASC')
+                ->get()
+                ->getResultArray();
+        }
+
+        return $courses;
     }
 }

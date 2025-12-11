@@ -28,33 +28,61 @@
                     <div class="display-4 mb-2">👥</div>
                     <div class="display-5 fw-bold"><?= count($users) ?></div>
                     <div class="fw-semibold">Total Users</div>
-                    <small class="opacity-75">Active in system</small>
+                    <small class="opacity-75">All registered</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-0 shadow-sm text-white bg-success text-center p-4 rounded-3 h-100">
+                    <div class="display-4 mb-2">✓</div>
+                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => ($u['is_active'] ?? 1) == 1)) ?></div>
+                    <div class="fw-semibold">Active</div>
+                    <small class="opacity-75">Can log in</small>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-danger text-center p-4 rounded-3 h-100">
-                    <div class="display-4 mb-2">👑</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => strtolower($u['role_name'] ?? '') === 'admin')) ?></div>
-                    <div class="fw-semibold">Admins</div>
-                    <small class="opacity-75">System administrators</small>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card border-0 shadow-sm text-white bg-info text-center p-4 rounded-3 h-100">
-                    <div class="display-4 mb-2">👨‍🏫</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => in_array(strtolower($u['role_name'] ?? ''), ['teacher', 'instructor']))) ?></div>
-                    <div class="fw-semibold">Teachers</div>
-                    <small class="opacity-75">Creating content</small>
+                    <div class="display-4 mb-2">🔒</div>
+                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => ($u['is_active'] ?? 1) == 0)) ?></div>
+                    <div class="fw-semibold">Inactive</div>
+                    <small class="opacity-75">Deactivated</small>
                 </div>
             </div>            <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm text-white bg-warning text-center p-4 rounded-3 h-100">
                     <div class="display-4 mb-2">🎓</div>
-                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => strtolower($u['role_name'] ?? '') === 'student')) ?></div>
+                    <div class="display-5 fw-bold"><?= count(array_filter($users, fn($u) => strtolower($u['role_name'] ?? '') === 'student' && ($u['is_active'] ?? 1) == 1)) ?></div>
                     <div class="fw-semibold">Students</div>
-                    <small class="opacity-75">Learning actively</small>
+                    <small class="opacity-75">Active learners</small>
                 </div>
+            </div>        </div>
+
+        <!-- Flash Messages -->
+        <?php if (session()->getFlashdata('success')): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>Success!</strong> <?= session()->getFlashdata('success') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-        </div>        <!-- Action Buttons -->
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Error!</strong> <?= session()->getFlashdata('error') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('errors')): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Validation Errors:</strong>
+                <ul class="mb-0 mt-2">
+                    <?php foreach (session()->getFlashdata('errors') as $error): ?>
+                        <li><?= esc($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <!-- Action Buttons -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3">
@@ -124,16 +152,17 @@
                                         <div class="form-text">Password must be at least 6 characters long</div>
                                     </div>
                                 </div>                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="role" class="form-label fw-semibold">Role</label>
+                                    <div class="mb-3">                                        <label for="role" class="form-label fw-semibold">Role</label>
                                         <select class="form-select" id="role" name="role" required>
                                             <option value="">Select Role</option>
                                             <option value="admin" <?= old('role') === 'admin' ? 'selected' : '' ?>>Admin</option>
-                                            <option value="teacher" <?= old('role') === 'teacher' ? 'selected' : '' ?>>Teacher</option>
+                                            <option value="teacher" <?= old('role') === 'teacher' ? 'selected' : '' ?>>Teacher/Instructor</option>
                                             <option value="student" <?= old('role') === 'student' ? 'selected' : '' ?>>Student</option>
                                         </select>
-                                    </div>
-                                </div>                                <div class="col-md-6" id="year_level_container" style="display: none;">
+                                    </div>                                </div>
+                                
+                                <!-- Student-specific fields -->
+                                <div class="col-md-6" id="year_level_container" style="display: none;">
                                     <div class="mb-3">
                                         <label for="year_level_id" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
                                         <select class="form-select" id="year_level_id" name="year_level_id">
@@ -145,6 +174,66 @@
                                             <?php endforeach; ?>
                                         </select>
                                         <div class="form-text">Required for student accounts</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="department_container" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="department_id" class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="department_id" name="department_id">
+                                            <option value="">Select Department</option>
+                                            <?php if (isset($departments)): ?>
+                                                <?php foreach ($departments as $dept): ?>
+                                                    <option value="<?= $dept['id'] ?>" <?= old('department_id') == $dept['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($dept['department_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <div class="form-text">Required for student accounts</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="program_container" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="program_id" class="form-label fw-semibold">Program <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="program_id" name="program_id">
+                                            <option value="">Select Program</option>
+                                            <?php if (isset($programs)): ?>
+                                                <?php foreach ($programs as $prog): ?>
+                                                    <option value="<?= $prog['id'] ?>" data-department="<?= $prog['department_id'] ?>" <?= old('program_id') == $prog['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($prog['program_name']) ?> (<?= esc($prog['program_code']) ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <div class="form-text">Select department first to see available programs</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Teacher-specific fields -->
+                                <div class="col-md-6" id="teacher_department_container" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="teacher_department_id" class="form-label fw-semibold">Department <small class="text-muted">(optional)</small></label>
+                                        <select class="form-select" id="teacher_department_id" name="department_id">
+                                            <option value="">Select Department</option>
+                                            <?php if (isset($departments)): ?>
+                                                <?php foreach ($departments as $dept): ?>
+                                                    <option value="<?= $dept['id'] ?>" <?= old('department_id') == $dept['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($dept['department_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <div class="form-text">Optional for teacher accounts</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="specialization_container" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="specialization" class="form-label fw-semibold">Specialization <small class="text-muted">(optional)</small></label>
+                                        <input type="text" class="form-control" id="specialization" name="specialization" 
+                                               value="<?= old('specialization') ?>" 
+                                               maxlength="255"
+                                               placeholder="e.g., Computer Science, Mathematics">
+                                        <div class="form-text">Teacher's area of expertise</div>
                                     </div>
                                 </div>
                             </div>
@@ -223,15 +312,16 @@
                                         <label for="edit_role" class="form-label fw-semibold">Role</label>
                                         <select class="form-select" id="edit_role" name="role" required>
                                             <option value="admin" <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'admin' ? 'selected' : '' ?>>Admin</option>
-                                            <option value="teacher" <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'teacher' ? 'selected' : '' ?>>Teacher</option>
+                                            <option value="teacher" <?= in_array(old('role', strtolower($editUser['role_name'] ?? '')), ['instructor', 'teacher']) ? 'selected' : '' ?>>Teacher/Instructor</option>
                                             <option value="student" <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'student' ? 'selected' : '' ?>>Student</option>
                                         </select>
-                                    </div>
-                                </div>
+                                    </div>                                </div>
+                                
+                                <!-- Student-specific fields -->
                                 <div class="col-md-6" id="edit_year_level_container" style="display: <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'student' ? 'block' : 'none' ?>;">
                                     <div class="mb-3">
-                                        <label for="edit_year_level" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="edit_year_level" name="year_level_id">
+                                        <label for="edit_year_level_id" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="edit_year_level_id" name="year_level_id">
                                             <option value="">Select Year Level</option>
                                             <?php foreach ($yearLevels as $level): ?>
                                                 <option value="<?= $level['id'] ?>" <?= old('year_level_id', $roleSpecificData['year_level_id'] ?? '') == $level['id'] ? 'selected' : '' ?>>
@@ -240,6 +330,69 @@
                                             <?php endforeach; ?>
                                         </select>
                                         <div class="form-text">Required for student accounts</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="edit_department_container" style="display: <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'student' ? 'block' : 'none' ?>;">
+                                    <div class="mb-3">
+                                        <label for="edit_department_id" class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="edit_department_id" name="department_id">
+                                            <option value="">Select Department</option>
+                                            <?php if (isset($departments)): ?>
+                                                <?php foreach ($departments as $dept): ?>
+                                                    <option value="<?= $dept['id'] ?>" <?= old('department_id', $roleSpecificData['department_id'] ?? '') == $dept['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($dept['department_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <div class="form-text">Required for student accounts</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="edit_program_container" style="display: <?= old('role', strtolower($editUser['role_name'] ?? '')) === 'student' ? 'block' : 'none' ?>;">
+                                    <div class="mb-3">
+                                        <label for="edit_program_id" class="form-label fw-semibold">Program <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="edit_program_id" name="program_id">
+                                            <option value="">Select Program</option>
+                                            <?php if (isset($programs)): ?>
+                                                <?php foreach ($programs as $prog): ?>
+                                                    <option value="<?= $prog['id'] ?>" data-department="<?= $prog['department_id'] ?>" <?= old('program_id', $roleSpecificData['program_id'] ?? '') == $prog['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($prog['program_name']) ?> (<?= esc($prog['program_code']) ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <div class="form-text">Select department first to see available programs</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Teacher-specific fields -->
+                                <div class="col-md-6" id="edit_teacher_department_container" style="display: <?= in_array(old('role', strtolower($editUser['role_name'] ?? '')), ['instructor', 'teacher']) ? 'block' : 'none' ?>;">
+                                    <div class="mb-3">
+                                        <label for="edit_teacher_department_id" class="form-label fw-semibold">Department <small class="text-muted">(optional)</small></label>
+                                        <select class="form-select" id="edit_teacher_department_id" name="department_id">
+                                            <option value="">Select Department</option>
+                                            <?php if (isset($departments)): ?>
+                                                <?php foreach ($departments as $dept): ?>
+                                                    <option value="<?= $dept['id'] ?>" <?= old('department_id', $roleSpecificData['department_id'] ?? '') == $dept['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($dept['department_name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <div class="form-text">Optional for teacher accounts</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="edit_specialization_container" style="display: <?= in_array(old('role', strtolower($editUser['role_name'] ?? '')), ['instructor', 'teacher']) ? 'block' : 'none' ?>;">
+                                    <div class="mb-3">
+                                        <label for="edit_specialization" class="form-label fw-semibold">Specialization <small class="text-muted">(optional)</small></label>
+                                        <input type="text" class="form-control" id="edit_specialization" name="specialization" 
+                                               value="<?= old('specialization', $roleSpecificData['specialization'] ?? '') ?>" 
+                                               maxlength="255"
+                                               placeholder="e.g., Computer Science, Mathematics">
+                                        <div class="form-text">Teacher's area of expertise</div>
+                                    </div>
+                                </div>
+                                        <div class="form-text">Select department first to see available programs</div>
                                     </div>
                                 </div>
                             </div>
@@ -275,13 +428,13 @@
                     </div>
                     <div class="card-body pt-0">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover align-middle mb-0">                                <thead class="table-light">
                                     <tr>
                                         <th class="fw-semibold border-0 text-center">ID</th>
                                         <th class="fw-semibold border-0">User</th>
                                         <th class="fw-semibold border-0">Email</th>
                                         <th class="fw-semibold border-0 text-center">Role</th>
+                                        <th class="fw-semibold border-0 text-center">Status</th>
                                         <th class="fw-semibold border-0 text-center">Created</th>
                                         <th class="fw-semibold border-0 text-center">Actions</th>
                                     </tr>
@@ -293,9 +446,12 @@
                                         usort($users, function($a, $b) {
                                             return $a['id'] <=> $b['id'];
                                         });
-                                        ?>                                        
-                                        <?php foreach ($users as $user): ?>
-                                        <tr class="border-bottom">
+                                        ?>                                          <?php foreach ($users as $user): ?>
+                                        <?php 
+                                        $isInactive = ($user['is_active'] == 0);
+                                        $rowClass = $isInactive ? 'border-bottom table-secondary opacity-75' : 'border-bottom';
+                                        ?>
+                                        <tr class="<?= $rowClass ?>">
                                             <td class="text-center">
                                                 <span class="badge bg-secondary rounded-pill px-2 py-1"><?= $user['id'] ?></span>
                                             </td>                                            <td>
@@ -303,14 +459,18 @@
                                                     <?php 
                                                     $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['middle_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
                                                     $initial = strtoupper(substr($user['first_name'] ?? 'U', 0, 1));
+                                                    $avatarClass = $isInactive ? 'bg-secondary' : 'bg-primary';
                                                     ?>
-                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                    <div class="<?= $avatarClass ?> text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
                                                         <?= $initial ?>
                                                     </div>
                                                     <div>
                                                         <strong class="text-dark"><?= esc($fullName) ?></strong>
                                                         <?php if ($user['id'] == $currentAdminID): ?>
                                                             <span class="badge bg-info ms-2 small">You</span>
+                                                        <?php endif; ?>
+                                                        <?php if ($isInactive): ?>
+                                                            <span class="badge bg-danger ms-2 small">Inactive</span>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
@@ -331,15 +491,26 @@
                                                 </span>
                                             </td>
                                             <td class="text-center">
+                                                <?php if ($isInactive): ?>
+                                                    <span class="badge bg-danger rounded-pill px-3 py-2">
+                                                        🔒 Inactive
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-success rounded-pill px-3 py-2">
+                                                        ✓ Active
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="text-center">
                                                 <small class="text-muted">
                                                     <?= date('M j, Y', strtotime($user['created_at'])) ?>
                                                 </small>
-                                            </td>
-                                            <td class="text-center">
+                                            </td>                                            <td class="text-center">
                                                 <div class="btn-group btn-group-sm" role="group">                                                      <?php 
                                                     // Check if current admin can edit this user
-                                                    $canEdit = ($user['id'] != $currentAdminID);
-                                                    $canDelete = (strtolower($user['role_name'] ?? '') !== 'admin' && $user['id'] != $currentAdminID);
+                                                    $canEdit = ($user['id'] != $currentAdminID && !$isInactive);
+                                                    $canDeactivate = (strtolower($user['role_name'] ?? '') !== 'admin' && $user['id'] != $currentAdminID && !$isInactive);
+                                                    $canReactivate = ($user['id'] != $currentAdminID && $isInactive);
                                                     ?>
                                                     
                                                     <!-- Edit Button -->                                                    
@@ -349,28 +520,45 @@
                                                            title="Edit User">
                                                             ✏️
                                                         </a>
+                                                    <?php elseif ($isInactive): ?>
+                                                        <button class="btn btn-outline-secondary btn-sm me-1" 
+                                                                disabled 
+                                                                title="Cannot edit inactive accounts">
+                                                            🔒
+                                                        </button>
                                                     <?php else: ?>
                                                         <button class="btn btn-outline-secondary btn-sm me-1" 
                                                                 disabled 
-                                                                title="Cannot edit admin accounts">
+                                                                title="Cannot edit own account">
                                                             🔒
                                                         </button>
                                                     <?php endif; ?>
-                                                      <!-- Delete Button -->
-                                                    <?php if ($canDelete): ?>
+                                                      
+                                                    <!-- Deactivate/Reactivate Button -->
+                                                    <?php if ($canReactivate): ?>
                                                         <?php 
-                                                        $deleteUserName = trim(($user['first_name'] ?? '') . ' ' . ($user['middle_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                                                        $reactivateUserName = trim(($user['first_name'] ?? '') . ' ' . ($user['middle_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                                                        ?>
+                                                         <a href="<?= base_url('admin/manage_users?action=reactivate&id=' . $user['id']) ?>" 
+                                                           class="btn btn-outline-success btn-sm" 
+                                                           onclick="return confirm('Are you sure you want to reactivate this user?\n\nUser: <?= esc($reactivateUserName) ?>\nEmail: <?= esc($user['email']) ?>\n\nThis user will be able to log in again.')"
+                                                           title="Reactivate User">
+                                                            🔓
+                                                        </a>
+                                                    <?php elseif ($canDeactivate): ?>
+                                                        <?php 
+                                                        $deactivateUserName = trim(($user['first_name'] ?? '') . ' ' . ($user['middle_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
                                                         ?>
                                                          <a href="<?= base_url('admin/manage_users?action=delete&id=' . $user['id']) ?>" 
                                                            class="btn btn-outline-danger btn-sm" 
-                                                           onclick="return confirm('Are you sure you want to delete this user?\n\nUser: <?= esc($deleteUserName) ?>\nEmail: <?= esc($user['email']) ?>\n\nThis action cannot be undone!')"
-                                                           title="Delete User">
-                                                            🗑️
+                                                           onclick="return confirm('Are you sure you want to deactivate this user?\n\nUser: <?= esc($deactivateUserName) ?>\nEmail: <?= esc($user['email']) ?>\n\nThis user will no longer be able to log in, but their data will be preserved.')"
+                                                           title="Deactivate User">
+                                                            🔒
                                                         </a>
                                                     <?php else: ?>
                                                         <button class="btn btn-outline-secondary btn-sm" 
                                                                 disabled 
-                                                                title="Cannot delete admin accounts">
+                                                                title="Cannot deactivate admin accounts or own account">
                                                             🛡️
                                                         </button>
                                                     <?php endif; ?>                                                
@@ -400,68 +588,214 @@
 
 <!-- JavaScript for Enhanced Validation -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {    // Show/Hide year_level field based on role selection - CREATE FORM
+document.addEventListener('DOMContentLoaded', function() {
+    // ======= CREATE FORM =======
     const roleSelect = document.getElementById('role');
     const yearLevelContainer = document.getElementById('year_level_container');
     const yearLevelSelect = document.getElementById('year_level_id');
+    const departmentContainer = document.getElementById('department_container');
+    const departmentSelect = document.getElementById('department_id');
+    const programContainer = document.getElementById('program_container');
+    const programSelect = document.getElementById('program_id');
+    const teacherDepartmentContainer = document.getElementById('teacher_department_container');
+    const teacherDepartmentSelect = document.getElementById('teacher_department_id');
+    const specializationContainer = document.getElementById('specialization_container');
+    const specializationInput = document.getElementById('specialization');
     
-    if (roleSelect && yearLevelContainer) {
-        roleSelect.addEventListener('change', function() {
-            if (this.value === 'student') {
-                yearLevelContainer.style.display = 'block';
-                yearLevelSelect.setAttribute('required', 'required');
+    // Function to filter programs based on selected department
+    function filterProgramsByDepartment(deptSelect, progSelect) {
+        const selectedDept = deptSelect.value;
+        const options = progSelect.querySelectorAll('option');
+        
+        // Reset program selection
+        progSelect.value = '';
+        
+        options.forEach(function(option) {
+            if (option.value === '') {
+                option.style.display = 'block'; // Always show "Select Program" option
             } else {
-                yearLevelContainer.style.display = 'none';
-                yearLevelSelect.removeAttribute('required');
-                yearLevelSelect.value = '';
+                const optionDept = option.getAttribute('data-department');
+                if (selectedDept === '' || optionDept === selectedDept) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
             }
         });
-        
-        // Trigger on page load if role is already selected
-        if (roleSelect.value === 'student') {
-            yearLevelContainer.style.display = 'block';
-            yearLevelSelect.setAttribute('required', 'required');
+    }
+      // Function to show/hide student fields
+    function toggleStudentFields(isStudent, containers, selects) {
+        if (isStudent) {
+            containers.forEach(c => { if(c) c.style.display = 'block'; });
+            selects.forEach(s => { 
+                if(s) {
+                    s.setAttribute('required', 'required');
+                    s.disabled = false;
+                }
+            });
+        } else {
+            containers.forEach(c => { if(c) c.style.display = 'none'; });
+            selects.forEach(s => { 
+                if(s) {
+                    s.removeAttribute('required');
+                    s.disabled = true;
+                    s.value = '';
+                }
+            });
         }
     }
     
-    // Show/Hide year_level field based on role selection - EDIT FORM
-    const editRoleSelect = document.getElementById('edit_role');
-    const editYearLevelContainer = document.getElementById('edit_year_level_container');
-    const editYearLevelSelect = document.getElementById('edit_year_level_id');
+    // Function to show/hide teacher fields
+    function toggleTeacherFields(isTeacher, containers, inputs) {
+        if (isTeacher) {
+            containers.forEach(c => { if(c) c.style.display = 'block'; });
+            inputs.forEach(i => { 
+                if(i) {
+                    i.disabled = false;
+                }
+            });
+        } else {
+            containers.forEach(c => { if(c) c.style.display = 'none'; });
+            inputs.forEach(i => { 
+                if(i) {
+                    i.disabled = true;
+                    i.value = '';
+                }
+            });
+        }
+    }
     
-    if (editRoleSelect && editYearLevelContainer) {
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function() {
+            const isStudent = this.value === 'student';
+            const isTeacher = this.value === 'teacher';
+            
+            toggleStudentFields(
+                isStudent,
+                [yearLevelContainer, departmentContainer, programContainer],
+                [yearLevelSelect, departmentSelect, programSelect]
+            );
+            
+            toggleTeacherFields(
+                isTeacher,
+                [teacherDepartmentContainer, specializationContainer],
+                [teacherDepartmentSelect, specializationInput]
+            );
+        });
+          // Trigger on page load
+        if (roleSelect.value === 'student') {
+            toggleStudentFields(
+                true,
+                [yearLevelContainer, departmentContainer, programContainer],
+                [yearLevelSelect, departmentSelect, programSelect]
+            );
+        } else if (roleSelect.value === 'teacher') {
+            toggleTeacherFields(
+                true,
+                [teacherDepartmentContainer, specializationContainer],
+                [teacherDepartmentSelect, specializationInput]
+            );
+        }
+    }
+    
+    // Filter programs when department changes
+    if (departmentSelect && programSelect) {
+        departmentSelect.addEventListener('change', function() {
+            filterProgramsByDepartment(departmentSelect, programSelect);
+        });
+        
+        // Trigger on page load if department is already selected
+        if (departmentSelect.value) {
+            filterProgramsByDepartment(departmentSelect, programSelect);
+        }
+    }
+    
+    // ======= EDIT FORM =======
+    const editRoleSelect = document.getElementById('edit_role');
+    const editYearLevelContainer = document.getElementById('edit_year_level_container');    const editYearLevelSelect = document.getElementById('edit_year_level_id');
+    const editDepartmentContainer = document.getElementById('edit_department_container');
+    const editDepartmentSelect = document.getElementById('edit_department_id');
+    const editProgramContainer = document.getElementById('edit_program_container');
+    const editProgramSelect = document.getElementById('edit_program_id');
+    const editTeacherDepartmentContainer = document.getElementById('edit_teacher_department_container');
+    const editTeacherDepartmentSelect = document.getElementById('edit_teacher_department_id');
+    const editSpecializationContainer = document.getElementById('edit_specialization_container');
+    const editSpecializationInput = document.getElementById('edit_specialization');
+    
+    if (editRoleSelect) {
         editRoleSelect.addEventListener('change', function() {
-            if (this.value === 'student') {
-                editYearLevelContainer.style.display = 'block';
-                editYearLevelSelect.setAttribute('required', 'required');
-            } else {
-                editYearLevelContainer.style.display = 'none';
-                editYearLevelSelect.removeAttribute('required');
-                editYearLevelSelect.value = '';
-            }
+            const isStudent = this.value === 'student';
+            const isTeacher = this.value === 'teacher';
+            
+            toggleStudentFields(
+                isStudent,
+                [editYearLevelContainer, editDepartmentContainer, editProgramContainer],
+                [editYearLevelSelect, editDepartmentSelect, editProgramSelect]
+            );
+            
+            toggleTeacherFields(
+                isTeacher,
+                [editTeacherDepartmentContainer, editSpecializationContainer],
+                [editTeacherDepartmentSelect, editSpecializationInput]
+            );
         });
         
         // Trigger on page load if role is already student
         if (editRoleSelect.value === 'student') {
-            editYearLevelContainer.style.display = 'block';
-            editYearLevelSelect.setAttribute('required', 'required');
+            toggleStudentFields(
+                true,
+                [editYearLevelContainer, editDepartmentContainer, editProgramContainer],
+                [editYearLevelSelect, editDepartmentSelect, editProgramSelect]
+            );
+            // Also filter programs based on selected department
+            if (editDepartmentSelect && editDepartmentSelect.value) {
+                filterProgramsByDepartment(editDepartmentSelect, editProgramSelect);
+                // Restore the selected program after filtering
+                const selectedProgram = editProgramSelect.getAttribute('data-selected') || '<?= old('program_id', isset($roleSpecificData) ? ($roleSpecificData['program_id'] ?? '') : '') ?>';
+                if (selectedProgram) {
+                    editProgramSelect.value = selectedProgram;
+                }
+            }
+        } else if (editRoleSelect.value === 'teacher') {
+            toggleTeacherFields(
+                true,
+                [editTeacherDepartmentContainer, editSpecializationContainer],
+                [editTeacherDepartmentSelect, editSpecializationInput]
+            );
         }
     }
     
+    // Filter programs when department changes in edit form
+    if (editDepartmentSelect && editProgramSelect) {
+        editDepartmentSelect.addEventListener('change', function() {
+            filterProgramsByDepartment(editDepartmentSelect, editProgramSelect);
+        });
+        
+        // Trigger on page load if department is already selected
+        if (editDepartmentSelect.value) {
+            filterProgramsByDepartment(editDepartmentSelect, editProgramSelect);
+            // Restore the selected program value
+            const currentProgramId = '<?= old('program_id', isset($roleSpecificData) ? ($roleSpecificData['program_id'] ?? '') : '') ?>';
+            if (currentProgramId) {
+                editProgramSelect.value = currentProgramId;
+            }
+        }
+    }
+
     // Name field validation for both create and edit forms
-    const nameFields = document.querySelectorAll('input[name="name"]');
+    const nameFields = document.querySelectorAll('input[name="first_name"], input[name="middle_name"], input[name="last_name"]');
       nameFields.forEach(function(field) {
         field.addEventListener('input', function(e) {
             const value = e.target.value;
             const validPattern = /^[A-Za-zñÑ\s]*$/;
             
-            // Remove invalid characters as user types
+            // Remove invalid characters as user types (letters, ñÑ, and spaces allowed)
             if (!validPattern.test(value)) {
                 e.target.value = value.replace(/[^A-Za-zñÑ\s]/g, '');
             }
             
             // Visual feedback
-            if (e.target.value.length >= 3 && validPattern.test(e.target.value)) {
+            if (e.target.value.length >= 2 && validPattern.test(e.target.value)) {
                 e.target.classList.remove('is-invalid');
                 e.target.classList.add('is-valid');
             } else if (e.target.value.length > 0) {

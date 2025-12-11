@@ -176,7 +176,7 @@
                             
                             <!-- Assignments Dropdown -->
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_assignment_types') !== false || strpos($currentUri, 'admin/manage_grading_periods') !== false || strpos($currentUri, 'admin/manage_grading_components') !== false) ? 'active' : '' ?>" 
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_assignment_types') !== false || strpos($currentUri, 'admin/manage_grading_periods') !== false || strpos($currentUri, 'admin/manage_grade_components') !== false) ? 'active' : '' ?>" 
                                    href="#" 
                                    id="assignmentsDropdown" 
                                    role="button" 
@@ -198,35 +198,100 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_grading_components') !== false) ? 'active fw-bold' : '' ?>" 
-                                           href="<?= base_url('admin/manage_grading_components') ?>">
-                                            <i class="fas fa-chart-bar me-2"></i>Manage Grading Components
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_grade_components') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_grade_components') ?>">
+                                            <i class="fas fa-chart-bar me-2"></i>Manage Grade Components
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>                        
+                            <?php elseif ($userRole === 'teacher'): ?>
+                            <!-- Teacher Navigation -->
+                            
+                            <!-- Courses Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'teacher/courses') !== false || strpos($currentUri, 'teacher/all_courses') !== false) ? 'active' : '' ?>" 
+                                   href="#" 
+                                   id="teacherCoursesDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
+                                    📚 Courses
+                                </a>
+                                <ul class="dropdown-menu shadow" aria-labelledby="teacherCoursesDropdown">
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'teacher/courses') !== false && strpos($currentUri, 'all_courses') === false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('teacher/courses') ?>">
+                                            <i class="fas fa-chalkboard-teacher me-2"></i>Courses I Teach
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'teacher/course_material') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('teacher/course_material') ?>">
+                                            <i class="fas fa-mat me-2"></i>Materials for Courses
                                         </a>
                                     </li>
                                 </ul>
                             </li>
-                        <?php elseif ($userRole === 'teacher'): ?>
-                            <!-- Teacher Navigation -->
-                            <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'teacher/courses') !== false) ? 'active' : '' ?>" href="<?= base_url('teacher/courses') ?>">
-                                    📚 My Courses
+                            
+                            <!-- Enrollment Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'teacher/enroll_student') !== false || strpos($currentUri, 'teacher/enrolled_students') !== false) ? 'active' : '' ?>" 
+                                   href="#" 
+                                   id="teacherEnrollmentDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
+                                    🎓 Enrollment
                                 </a>
+                                <ul class="dropdown-menu shadow" aria-labelledby="teacherEnrollmentDropdown">
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'teacher/enroll_student') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('teacher/enroll_student') ?>">
+                                            <i class="fas fa-user-plus me-2"></i>Enroll a Student
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'teacher/enrolled_students') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('teacher/enrolled_students') ?>">
+                                            <i class="fas fa-users me-2"></i>List of Enrolled Students
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                              <!-- Assignments Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'teacher/assignments') !== false || strpos($currentUri, 'teacher/submissions') !== false) ? 'active' : '' ?>" 
+                                   href="#" 
+                                   id="teacherAssignmentsDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
                                     📝 Assignments
                                 </a>
+                                <ul class="dropdown-menu shadow" aria-labelledby="teacherAssignmentsDropdown">
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'teacher/assignments') !== false && strpos($currentUri, 'create') === false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('teacher/assignments') ?>">
+                                            <i class="fas fa-list me-2"></i>Manage Assignments
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'teacher/submissions') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('teacher/submissions') ?>">
+                                            <i class="fas fa-inbox me-2"></i>View Submissions
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
+                            
+                            <!-- Gradebook -->
                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'teacher/gradebook') !== false) ? 'active' : '' ?>" 
+                                   href="<?= base_url('teacher/gradebook') ?>">
                                     📊 Gradebook
                                 </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
-                                    👥 Students
-                                </a>
-                            </li>                        
+                            </li>                            
                             <?php elseif ($userRole === 'student'): ?>
                             <!-- Student Navigation -->
                             <li class="nav-item">
@@ -235,17 +300,17 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'student/assignments') !== false) ? 'active' : '' ?>" href="<?= base_url('student/assignments') ?>">
                                     📝 Assignments
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'student/grades') !== false) ? 'active' : '' ?>" href="<?= base_url('student/grades') ?>">
                                     📊 Grades
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold" href="#">
+                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'student/schedule') !== false) ? 'active' : '' ?>" href="<?= base_url('student/schedule') ?>">
                                     📅 Schedule
                                 </a>
                             </li>

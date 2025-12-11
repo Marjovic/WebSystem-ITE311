@@ -35,29 +35,26 @@ class UserModel extends Model
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';    // Validation
     protected $validationRules = [
-        'user_code'      => 'required|string|max_length[50]|is_unique[users.user_code,id,{id}]',
-        'email'          => 'required|valid_email|max_length[100]|is_unique[users.email,id,{id}]',
-        'password'       => 'required|min_length[8]',
-        'first_name'     => 'required|string|max_length[100]',
+        'user_code'      => 'permit_empty|string|max_length[50]',
+        'email'          => 'permit_empty|valid_email|max_length[100]',
+        'password'       => 'permit_empty|min_length[6]',
+        'first_name'     => 'permit_empty|string|max_length[100]',
         'middle_name'    => 'permit_empty|string|max_length[100]',
-        'last_name'      => 'required|string|max_length[100]',
+        'last_name'      => 'permit_empty|string|max_length[100]',
         'suffix'         => 'permit_empty|string|max_length[20]',
-        'role_id'        => 'required|integer'
+        'role_id'        => 'permit_empty|integer'
     ];
 
     protected $validationMessages = [
         'user_code' => [
-            'required'  => 'User code is required',
             'is_unique' => 'This user code already exists'
         ],
         'email' => [
-            'required'    => 'Email is required',
             'valid_email' => 'Please provide a valid email address',
             'is_unique'   => 'This email is already registered'
         ],
         'password' => [
-            'required'   => 'Password is required',
-            'min_length' => 'Password must be at least 8 characters'
+            'min_length' => 'Password must be at least 6 characters'
         ]
     ];
 

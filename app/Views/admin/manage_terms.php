@@ -113,19 +113,25 @@
                     </div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('admin/manage_terms?action=create') ?>">
-                            <?= csrf_field() ?>
-                            <div class="row">
+                            <?= csrf_field() ?>                            <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="academic_year_id" class="form-label fw-semibold">Academic Year <span class="text-danger">*</span></label>
                                         <select class="form-select" id="academic_year_id" name="academic_year_id" required>
                                             <option value="">Select Academic Year</option>
                                             <?php foreach ($academicYears as $year): ?>
-                                                <option value="<?= $year['id'] ?>" <?= old('academic_year_id') == $year['id'] ? 'selected' : '' ?>>
+                                                <option value="<?= $year['id'] ?>" 
+                                                        data-start="<?= esc($year['start_date'] ?? '') ?>" 
+                                                        data-end="<?= esc($year['end_date'] ?? '') ?>"
+                                                        <?= old('academic_year_id') == $year['id'] ? 'selected' : '' ?>>
                                                     <?= esc($year['year_name']) ?> (<?= esc($year['year_code']) ?>)
+                                                    <?php if (!empty($year['start_date']) && !empty($year['end_date'])): ?>
+                                                        [<?= date('M d, Y', strtotime($year['start_date'])) ?> - <?= date('M d, Y', strtotime($year['end_date'])) ?>]
+                                                    <?php endif; ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
+                                        <small class="text-muted" id="ay_date_hint">Select an Academic Year to see valid date range</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -157,17 +163,17 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="start_date" class="form-label fw-semibold">Start Date</label>
-                                        <input type="date" class="form-control" id="start_date" name="start_date" 
-                                               value="<?= old('start_date') ?>" min="<?= date('Y-m-d') ?>">
-                                        <small class="text-muted">Must be today or future date</small>
+                                        <input type="date" class="form-control term-date" id="start_date" name="start_date" 
+                                               value="<?= old('start_date') ?>">
+                                        <small class="text-muted">Must be within the Academic Year date range</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="end_date" class="form-label fw-semibold">End Date</label>
-                                        <input type="date" class="form-control" id="end_date" name="end_date" 
-                                               value="<?= old('end_date') ?>" min="<?= date('Y-m-d') ?>">
-                                        <small class="text-muted">Must be today or future date</small>
+                                        <input type="date" class="form-control term-date" id="end_date" name="end_date" 
+                                               value="<?= old('end_date') ?>">
+                                        <small class="text-muted">Must be within the Academic Year date range</small>
                                     </div>
                                 </div>
                             </div>
@@ -175,17 +181,16 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="enrollment_start" class="form-label fw-semibold">Enrollment Start</label>
-                                        <input type="date" class="form-control" id="enrollment_start" name="enrollment_start" 
+                                        <input type="date" class="form-control enrollment-date" id="enrollment_start" name="enrollment_start" 
                                                value="<?= old('enrollment_start') ?>" min="<?= date('Y-m-d') ?>">
-                                        <small class="text-muted">When enrollment opens (must be today or future)</small>
+                                        <small class="text-muted">When enrollment opens (cannot be in the past)</small>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
+                                </div>                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="enrollment_end" class="form-label fw-semibold">Enrollment End</label>
-                                        <input type="date" class="form-control" id="enrollment_end" name="enrollment_end" 
+                                        <input type="date" class="form-control enrollment-date" id="enrollment_end" name="enrollment_end" 
                                                value="<?= old('enrollment_end') ?>" min="<?= date('Y-m-d') ?>">
-                                        <small class="text-muted">Enrollment deadline (must be today or future)</small>
+                                        <small class="text-muted">Enrollment deadline (cannot be in the past)</small>
                                     </div>
                                 </div>
                             </div>
@@ -445,3 +450,76 @@
         </div>
     </div>
 </div>
+
+<script>
+// Academic Year date constraint handler
+document.addEventListener('DOMContentLoaded', function() {
+    const academicYearSelect = document.getElementById('academic_year_id');
+    const ayDateHint = document.getElementById('ay_date_hint');
+    const termDateInputs = document.querySelectorAll('.term-date');
+    const enrollmentDateInputs = document.querySelectorAll('.enrollment-date');
+    
+    if (academicYearSelect) {
+        academicYearSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const ayStartDate = selectedOption.getAttribute('data-start');
+            const ayEndDate = selectedOption.getAttribute('data-end');
+            
+            if (ayStartDate && ayEndDate) {
+                // Set min/max for term dates (start_date, end_date)
+                termDateInputs.forEach(input => {
+                    input.setAttribute('min', ayStartDate);
+                    input.setAttribute('max', ayEndDate);
+                });
+                
+                // Set min for enrollment dates (cannot be in the past, but within AY range)
+                const today = new Date().toISOString().split('T')[0];
+                const minEnrollmentDate = ayStartDate > today ? ayStartDate : today;
+                
+                enrollmentDateInputs.forEach(input => {
+                    input.setAttribute('min', minEnrollmentDate);
+                    input.setAttribute('max', ayEndDate);
+                });
+                
+                // Update hint text
+                if (ayDateHint) {
+                    ayDateHint.innerHTML = '<strong class="text-success">✓ Valid date range:</strong> ' + 
+                                          formatDate(ayStartDate) + ' - ' + formatDate(ayEndDate);
+                }
+            } else {
+                // Clear constraints if no dates available
+                termDateInputs.forEach(input => {
+                    input.removeAttribute('min');
+                    input.removeAttribute('max');
+                });
+                
+                const today = new Date().toISOString().split('T')[0];
+                enrollmentDateInputs.forEach(input => {
+                    input.setAttribute('min', today);
+                    input.removeAttribute('max');
+                });
+                
+                if (ayDateHint) {
+                    ayDateHint.textContent = 'Select an Academic Year to see valid date range';
+                }
+            }
+        });
+        
+        // Trigger on page load if an academic year is already selected
+        if (academicYearSelect.value) {
+            academicYearSelect.dispatchEvent(new Event('change'));
+        }
+    }
+    
+    // Helper function to format date
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+    }
+});
+</script>

@@ -76,11 +76,9 @@ class AssignmentModel extends Model
         return $this->select('
                 assignments.*,
                 at.type_name,
-                gc.component_name,
                 (SELECT COUNT(*) FROM submissions WHERE assignment_id = assignments.id) as submission_count
             ')
             ->join('assignment_types at', 'at.id = assignments.assignment_type_id', 'left')
-            ->join('grade_components gc', 'gc.id = assignments.grade_component_id', 'left')
             ->where('assignments.course_offering_id', $offeringId)
             ->where('assignments.is_active', 1)
             ->orderBy('assignments.due_date', 'ASC')
@@ -96,14 +94,11 @@ class AssignmentModel extends Model
                 assignments.*,
                 at.type_name,
                 at.type_code,
-                gc.component_name,
-                gc.weight_percentage,
                 co.section,
                 c.course_code,
                 c.title as course_title
             ')
             ->join('assignment_types at', 'at.id = assignments.assignment_type_id', 'left')
-            ->join('grade_components gc', 'gc.id = assignments.grade_component_id', 'left')
             ->join('course_offerings co', 'co.id = assignments.course_offering_id')
             ->join('courses c', 'c.id = co.course_id')
             ->find($assignmentId);

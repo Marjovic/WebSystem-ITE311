@@ -37,6 +37,12 @@ $routes->get(from: '/admin/manage_users', to: 'User::manageUsers');
 $routes->post(from: '/admin/manage_users', to: 'User::manageUsers');
 $routes->get(from: '/admin/manage_departments', to: 'Department::manageDepartments');
 $routes->post(from: '/admin/manage_departments', to: 'Department::manageDepartments');
+$routes->get(from: '/admin/manage_assignment_types', to: 'AssignmentType::manageAssignmentTypes');
+$routes->post(from: '/admin/manage_assignment_types', to: 'AssignmentType::manageAssignmentTypes');
+$routes->get(from: '/admin/manage_grading_periods', to: 'GradingPeriod::manageGradingPeriods');
+$routes->post(from: '/admin/manage_grading_periods', to: 'GradingPeriod::manageGradingPeriods');
+$routes->get(from: '/admin/manage_grade_components', to: 'GradeComponent::manageGradeComponents');
+$routes->post(from: '/admin/manage_grade_components', to: 'GradeComponent::manageGradeComponents');
 $routes->get(from: '/admin/manage_terms', to: 'Term::manageTerms');
 $routes->post(from: '/admin/manage_terms', to: 'Term::manageTerms');
 $routes->get(from: '/admin/manage_courses', to: 'Course::manageCourses');
@@ -53,13 +59,22 @@ $routes->get(from: '/admin/manage_programs', to: 'Program::managePrograms');
 $routes->post(from: '/admin/manage_programs', to: 'Program::managePrograms');
 $routes->get(from: '/admin/manage_curriculum', to: 'Program::manageCurriculum');
 $routes->post(from: '/admin/manage_curriculum', to: 'Program::manageCurriculum');
+$routes->get(from: '/admin/manage_enrollments', to: 'Enrollment::manageEnrollments');
+$routes->post(from: '/admin/manage_enrollments', to: 'Enrollment::manageEnrollments');
 
 // Course enrollment routes
 $routes->post(from: '/course/enroll', to: 'Course::enroll');
 
 // Teacher course management routes
-$routes->get(from: '/teacher/courses', to: 'Auth::teacherCourses');
-$routes->post(from: '/teacher/courses', to: 'Auth::teacherCourses');
+$routes->get(from: '/teacher/courses', to: 'CourseInstructors::teacherCourses');
+$routes->post(from: '/teacher/courses', to: 'CourseInstructors::teacherCourses');
+$routes->get(from: '/teacher/enroll_student', to: 'Enrollment::teacherEnrollStudent');
+$routes->post(from: '/teacher/enroll_student', to: 'Enrollment::teacherEnrollStudent');
+$routes->get(from: '/teacher/enrolled_students', to: 'Enrollment::teacherEnrolledStudents');
+
+// AJAX endpoint for teacher bulk enrollment
+$routes->post('/teacher/ajax_enroll_students', 'Enrollment::ajaxEnrollStudents');
+
 
 // Student course management routes
 $routes->get(from: '/student/courses', to: 'Auth::studentCourses');
@@ -89,3 +104,6 @@ $routes->get('/material/view/(:num)', 'Material::view/$1');
 $routes->get('/notifications', 'Notifications::get');
 $routes->post('/notifications/mark_read/(:num)', 'Notifications::mark_as_read/$1');
 $routes->post('/notifications/hide/(:num)', 'Notifications::hide/$1');
+
+// API routes for dynamic data
+$routes->get('/api/programs/by-department/(:num)', 'User::getProgramsByDepartment/$1');

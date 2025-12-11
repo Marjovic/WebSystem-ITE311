@@ -18,6 +18,7 @@ class StudentModel extends Model
         'student_id_number',
         'department_id',
         'year_level_id',
+        'program_id',
         'section',
         'enrollment_date',
         'enrollment_status',
@@ -37,10 +38,11 @@ class StudentModel extends Model
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';    // Validation
     protected $validationRules = [
-        'user_id'            => 'required|integer|is_unique[students.user_id,id,{id}]',
-        'student_id_number'  => 'permit_empty|string|max_length[50]|is_unique[students.student_id_number,id,{id}]',
+        'user_id'            => 'required|integer|is_unique[students.user_id,id,{id},deleted_at,NULL]',
+        'student_id_number'  => 'permit_empty|string|max_length[50]|is_unique[students.student_id_number,id,{id},deleted_at,NULL]',
         'department_id'      => 'permit_empty|integer',
         'year_level_id'      => 'permit_empty|integer',
+        'program_id'         => 'permit_empty|integer',
         'section'            => 'permit_empty|string|max_length[50]',
         'enrollment_date'    => 'permit_empty|valid_date',
         'enrollment_status'  => 'permit_empty|in_list[enrolled,graduated,dropped,on_leave,suspended]',
@@ -48,7 +50,7 @@ class StudentModel extends Model
         'guardian_contact'   => 'permit_empty|string|max_length[20]',
         'scholarship_status' => 'permit_empty|string|max_length[100]',
         'total_units'        => 'permit_empty|integer'
-    ];    protected $validationMessages = [
+    ];protected $validationMessages = [
         'user_id' => [
             'required'  => 'User ID is required',
             'is_unique' => 'This user is already registered as a student'
@@ -98,11 +100,14 @@ class StudentModel extends Model
                 users.is_active,
                 departments.department_name,
                 departments.department_code,
-                year_levels.year_level_name
+                year_levels.year_level_name,
+                programs.program_code,
+                programs.program_name
             ')
             ->join('users', 'users.id = students.user_id', 'left')
             ->join('departments', 'departments.id = students.department_id', 'left')
             ->join('year_levels', 'year_levels.id = students.year_level_id', 'left')
+            ->join('programs', 'programs.id = students.program_id', 'left')
             ->find($studentId);
     }
 
@@ -143,11 +148,14 @@ class StudentModel extends Model
                 users.is_active,
                 departments.department_name,
                 departments.department_code,
-                year_levels.year_level_name
+                year_levels.year_level_name,
+                programs.program_code,
+                programs.program_name
             ')
             ->join('users', 'users.id = students.user_id', 'left')
             ->join('departments', 'departments.id = students.department_id', 'left')
             ->join('year_levels', 'year_levels.id = students.year_level_id', 'left')
+            ->join('programs', 'programs.id = students.program_id', 'left')
             ->where('users.is_active', 1)
             ->orderBy('students.created_at', 'DESC')
             ->findAll();
@@ -190,13 +198,42 @@ class StudentModel extends Model
                 users.middle_name,
                 users.last_name,
                 users.email,
-                departments.department_name
+                departments.department_name,
+                programs.program_code,
+                programs.program_name
             ')
             ->join('users', 'users.id = students.user_id', 'left')
             ->join('departments', 'departments.id = students.department_id', 'left')
+            ->join('programs', 'programs.id = students.program_id', 'left')
             ->where('students.year_level_id', $yearLevelId)
             ->where('users.is_active', 1)
             ->orderBy('departments.department_name', 'ASC')
+            ->orderBy('students.section', 'ASC')
+            ->findAll();
+    }
+
+    /**
+     * Get students by program
+     * @param int $programId - The program ID
+     * @return array
+     */
+    public function getStudentsByProgram($programId)
+    {
+        return $this->select('
+                students.*,
+                users.first_name,
+                users.middle_name,
+                users.last_name,
+                users.email,
+                departments.department_name,
+                year_levels.year_level_name
+            ')
+            ->join('users', 'users.id = students.user_id', 'left')
+            ->join('departments', 'departments.id = students.department_id', 'left')
+            ->join('year_levels', 'year_levels.id = students.year_level_id', 'left')
+            ->where('students.program_id', $programId)
+            ->where('users.is_active', 1)
+            ->orderBy('year_levels.year_level_order', 'ASC')
             ->orderBy('students.section', 'ASC')
             ->findAll();
     }
@@ -269,11 +306,14 @@ class StudentModel extends Model
                 users.last_name,
                 users.email,
                 departments.department_name,
-                year_levels.year_level_name
+                year_levels.year_level_name,
+                programs.program_code,
+                programs.program_name
             ')
             ->join('users', 'users.id = students.user_id', 'left')
             ->join('departments', 'departments.id = students.department_id', 'left')
             ->join('year_levels', 'year_levels.id = students.year_level_id', 'left')
+            ->join('programs', 'programs.id = students.program_id', 'left')
             ->where('students.enrollment_status', $status)
             ->orderBy('students.created_at', 'DESC')
             ->findAll();
@@ -475,16 +515,21 @@ class StudentModel extends Model
                 users.last_name,
                 users.email,
                 departments.department_name,
-                year_levels.year_level_name
+                year_levels.year_level_name,
+                programs.program_code,
+                programs.program_name
             ')
             ->join('users', 'users.id = students.user_id', 'left')
             ->join('departments', 'departments.id = students.department_id', 'left')
             ->join('year_levels', 'year_levels.id = students.year_level_id', 'left')
+            ->join('programs', 'programs.id = students.program_id', 'left')
             ->groupStart()
                 ->like('users.first_name', $query)
                 ->orLike('users.last_name', $query)
                 ->orLike('users.email', $query)
                 ->orLike('students.student_id_number', $query)
+                ->orLike('programs.program_code', $query)
+                ->orLike('programs.program_name', $query)
             ->groupEnd()
             ->where('users.is_active', 1)
             ->orderBy('users.last_name', 'ASC')

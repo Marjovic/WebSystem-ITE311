@@ -32,13 +32,13 @@ class InstructorModel extends Model
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';    // Validation
     protected $validationRules = [
-        'user_id'            => 'required|integer|is_unique[instructors.user_id,id,{id}]',
-        'employee_id'        => 'permit_empty|string|max_length[50]|is_unique[instructors.employee_id,id,{id}]',
+        'user_id'            => 'required|integer',
+        'employee_id'        => 'permit_empty|string|max_length[50]',
         'department_id'      => 'permit_empty|integer',
         'hire_date'          => 'permit_empty|valid_date',
         'employment_status'  => 'permit_empty|in_list[full_time,part_time,contract,probationary,retired,resigned]',
         'specialization'     => 'permit_empty|string|max_length[255]'
-    ];    protected $validationMessages = [
+    ];protected $validationMessages = [
         'user_id' => [
             'required'  => 'User ID is required',
             'is_unique' => 'This user is already registered as an instructor'
@@ -390,7 +390,7 @@ class InstructorModel extends Model
     }
 
     /**
-     * Get active instructors (full-time and part-time only)
+     * Get active instructors (all currently employed, excluding retired and resigned)
      * @return array
      */
     public function getActiveInstructors()
@@ -406,7 +406,7 @@ class InstructorModel extends Model
             ')
             ->join('users', 'users.id = instructors.user_id')
             ->join('departments', 'departments.id = instructors.department_id', 'left')
-            ->whereIn('instructors.employment_status', ['full_time', 'part_time'])
+            ->whereIn('instructors.employment_status', ['full_time', 'part_time', 'contract', 'probationary'])
             ->where('users.is_active', 1)
             ->orderBy('users.last_name', 'ASC')
             ->findAll();

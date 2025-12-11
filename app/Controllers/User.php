@@ -9,6 +9,8 @@ use App\Models\StudentModel;
 use App\Models\InstructorModel;
 use App\Models\RoleModel;
 use App\Models\YearLevelModel;
+use App\Models\DepartmentModel;
+use App\Models\ProgramModel;
 
 class User extends BaseController
 {
@@ -20,6 +22,8 @@ class User extends BaseController
     protected $instructorModel;
     protected $roleModel;
     protected $yearLevelModel;
+    protected $departmentModel;
+    protected $programModel;
 
     /**
      * Constructor - Initialize models and dependencies
@@ -36,6 +40,8 @@ class User extends BaseController
         $this->instructorModel = new InstructorModel();
         $this->roleModel = new RoleModel();
         $this->yearLevelModel = new YearLevelModel();
+        $this->departmentModel = new DepartmentModel();
+        $this->programModel = new ProgramModel();
     }
 
     public function index()
@@ -72,10 +78,12 @@ class User extends BaseController
 
         if ($action === 'edit' && $userID) {
             return $this->editUser($userID, $currentAdminID);
+        }        if ($action === 'delete' && $userID) {
+            return $this->deleteUser($userID, $currentAdminID);
         }
 
-        if ($action === 'delete' && $userID) {
-            return $this->deleteUser($userID, $currentAdminID);
+        if ($action === 'reactivate' && $userID) {
+            return $this->reactivateUser($userID, $currentAdminID);
         }
 
         // Display user management interface
@@ -87,41 +95,40 @@ class User extends BaseController
      */
     private function createUser()
     {
-        $role = $this->request->getPost('role');
-
-        // Validation rules
+        $role = $this->request->getPost('role');        // Validation rules
         $rules = [
-            'first_name' => 'required|min_length[2]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s\-\.]+$/]',
-            'last_name'  => 'required|min_length[2]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s\-\.]+$/]',
-            'middle_name'=> 'permit_empty|max_length[100]|regex_match[/^[a-zA-ZñÑ\s\-\.]+$/]',
-            'suffix'     => 'permit_empty|max_length[10]|regex_match[/^[a-zA-Z\s\.]+$/]',
+            'first_name' => 'required|min_length[2]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+            'last_name'  => 'required|min_length[2]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+            'middle_name'=> 'permit_empty|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+            'suffix'     => 'permit_empty|max_length[10]|regex_match[/^[a-zA-Z]+$/]',
             'email'      => 'required|valid_email|is_unique[users.email]',
             'password'   => 'required|min_length[6]',
-            'role'       => 'required|in_list[admin,instructor,student]'
+            'role'       => 'required|in_list[admin,teacher,student]'
         ];
         
         // Add role-specific validation
         if ($role === 'student') {
             $rules['year_level_id'] = 'required|integer';
+            $rules['department_id'] = 'required|integer';
+            $rules['program_id'] = 'required|integer';
             $rules['section'] = 'permit_empty|max_length[50]';
-        } elseif ($role === 'instructor') {
+        } elseif ($role === 'teacher') {
             $rules['department_id'] = 'permit_empty|integer';
             $rules['specialization'] = 'permit_empty|max_length[255]';
-        }
-
+        }        
         $messages = [
             'first_name' => [
                 'required'    => 'First name is required.',
                 'min_length'  => 'First name must be at least 2 characters.',
-                'regex_match' => 'First name can only contain letters, spaces, hyphens, and periods.'
+                'regex_match' => 'First name can only contain letters and spaces. Numbers and special characters are not allowed.'
             ],
             'last_name' => [
                 'required'    => 'Last name is required.',
                 'min_length'  => 'Last name must be at least 2 characters.',
-                'regex_match' => 'Last name can only contain letters, spaces, hyphens, and periods.'
+                'regex_match' => 'Last name can only contain letters and spaces. Numbers and special characters are not allowed.'
             ],
             'middle_name' => [
-                'regex_match' => 'Middle name can only contain letters, spaces, hyphens, and periods.'
+                'regex_match' => 'Middle name can only contain letters and spaces. Numbers and special characters are not allowed.'
             ],
             'email' => [
                 'required'    => 'Email is required.',
@@ -141,9 +148,7 @@ class User extends BaseController
         if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validation->getErrors());
             return redirect()->back()->withInput();
-        }
-
-        // Start database transaction
+        }        // Start database transaction
         $this->db->transStart();
         
         try {
@@ -153,6 +158,13 @@ class User extends BaseController
                 throw new \Exception('Invalid role specified.');
             }
 
+            // Check email uniqueness
+            $email = $this->request->getPost('email');
+            $existingUser = $this->userModel->where('email', $email)->first();
+            if ($existingUser) {
+                throw new \Exception('This email is already registered.');
+            }
+
             // Prepare user data
             $userData = [
                 'user_code'   => $this->generateUserCode($role),
@@ -160,17 +172,17 @@ class User extends BaseController
                 'middle_name' => $this->request->getPost('middle_name'),
                 'last_name'   => $this->request->getPost('last_name'),
                 'suffix'      => $this->request->getPost('suffix'),
-                'email'       => $this->request->getPost('email'),
+                'email'       => $email,
                 'password'    => $this->request->getPost('password'), // Will be hashed by UserModel
                 'role_id'     => $roleRecord['id'],
                 'is_active'   => 1,
                 'email_verified_at' => date('Y-m-d H:i:s') // Auto-verify for admin-created accounts
-            ];
-
-            // Insert user
+            ];// Insert user
             $userID = $this->userModel->insert($userData);
             if (!$userID) {
-                throw new \Exception('Failed to create user account.');
+                $errors = $this->userModel->errors();
+                $errorMessage = $errors ? implode(', ', $errors) : 'Failed to create user account.';
+                throw new \Exception($errorMessage);
             }
 
             // Create role-specific record
@@ -178,6 +190,8 @@ class User extends BaseController
                 $studentData = [
                     'user_id'          => $userID,
                     'year_level_id'    => $this->request->getPost('year_level_id'),
+                    'department_id'    => $this->request->getPost('department_id'),
+                    'program_id'       => $this->request->getPost('program_id'),
                     'section'          => $this->request->getPost('section'),
                     'enrollment_date'  => date('Y-m-d'),
                     'enrollment_status'=> 'enrolled'
@@ -185,18 +199,21 @@ class User extends BaseController
                 
                 if (!$this->studentModel->insert($studentData)) {
                     throw new \Exception('Failed to create student record.');
-                }
-            } elseif ($role === 'instructor') {
+                }            } elseif ($role === 'teacher') {
+                // Prepare instructor data - handle empty department_id
+                $departmentId = $this->request->getPost('department_id');
                 $instructorData = [
                     'user_id'           => $userID,
-                    'department_id'     => $this->request->getPost('department_id'),
+                    'department_id'     => (!empty($departmentId) && $departmentId !== '') ? $departmentId : null,
                     'specialization'    => $this->request->getPost('specialization'),
                     'hire_date'         => date('Y-m-d'),
                     'employment_status' => 'full_time'
                 ];
                 
                 if (!$this->instructorModel->insert($instructorData)) {
-                    throw new \Exception('Failed to create instructor record.');
+                    $errors = $this->instructorModel->errors();
+                    $errorMessage = $errors ? implode(', ', $errors) : 'Failed to create instructor record.';
+                    throw new \Exception($errorMessage);
                 }
             }
 
@@ -244,15 +261,14 @@ class User extends BaseController
 
         // Handle POST request
         if ($this->request->getMethod() === 'POST') {
-            $role = $this->request->getPost('role');
-
+            $role = $this->request->getPost('role');            
             $rules = [
-                'first_name' => 'required|min_length[2]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s\-\.]+$/]',
-                'last_name'  => 'required|min_length[2]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s\-\.]+$/]',
-                'middle_name'=> 'permit_empty|max_length[100]|regex_match[/^[a-zA-ZñÑ\s\-\.]+$/]',
-                'suffix'     => 'permit_empty|max_length[10]|regex_match[/^[a-zA-Z\s\.]+$/]',
+                'first_name' => 'required|min_length[2]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+                'last_name'  => 'required|min_length[2]|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+                'middle_name'=> 'permit_empty|max_length[100]|regex_match[/^[a-zA-ZñÑ\s]+$/]',
+                'suffix'     => 'permit_empty|max_length[10]|regex_match[/^[a-zA-Z]+$/]',
                 'email'      => "required|valid_email|is_unique[users.email,id,{$userID}]",
-                'role'       => 'required|in_list[admin,instructor,student]'
+                'role'       => 'required|in_list[admin,teacher,student]'
             ];
 
             if ($this->request->getPost('password')) {
@@ -262,7 +278,9 @@ class User extends BaseController
             // Add role-specific validation
             if ($role === 'student') {
                 $rules['year_level_id'] = 'required|integer';
-            } elseif ($role === 'instructor') {
+                $rules['department_id'] = 'required|integer';
+                $rules['program_id'] = 'required|integer';
+            } elseif ($role === 'teacher') {
                 $rules['department_id'] = 'permit_empty|integer';
             }
 
@@ -273,12 +291,18 @@ class User extends BaseController
 
             // Start transaction
             $this->db->transStart();
-            
-            try {
+              try {
                 // Get role ID
                 $roleRecord = $this->roleModel->where('role_name', ucfirst($role))->first();
                 if (!$roleRecord) {
                     throw new \Exception('Invalid role specified.');
+                }
+
+                // Check email uniqueness (exclude current user)
+                $email = $this->request->getPost('email');
+                $existingUser = $this->userModel->where('email', $email)->first();
+                if ($existingUser && $existingUser['id'] != $userID) {
+                    throw new \Exception('This email is already registered to another user.');
                 }
 
                 // Update user data
@@ -287,40 +311,44 @@ class User extends BaseController
                     'middle_name' => $this->request->getPost('middle_name'),
                     'last_name'   => $this->request->getPost('last_name'),
                     'suffix'      => $this->request->getPost('suffix'),
-                    'email'       => $this->request->getPost('email'),
+                    'email'       => $email,
                     'role_id'     => $roleRecord['id']
-                ];
-
-                if ($this->request->getPost('password')) {
+                ];                if ($this->request->getPost('password')) {
                     $updateData['password'] = $this->request->getPost('password');
                 }
 
                 if (!$this->userModel->update($userID, $updateData)) {
-                    throw new \Exception('Failed to update user.');
-                }
-
-                // Handle role changes
+                    $errors = $this->userModel->errors();
+                    $errorMessage = $errors ? implode(', ', $errors) : 'Failed to update user.';
+                    throw new \Exception($errorMessage);
+                }                // Handle role changes
                 $oldRole = $this->getRoleName($userToEdit['role_id']);
-                
-                // If role changed, delete old role record and create new one
+                  // If role changed, delete old role record and create new one
                 if ($oldRole !== $role) {
-                    if ($oldRole === 'student') {
-                        $this->studentModel->where('user_id', $userID)->delete();
-                    } elseif ($oldRole === 'instructor') {
-                        $this->instructorModel->where('user_id', $userID)->delete();
-                    }
+                    // Delete any existing student or instructor records for this user (force delete to avoid soft-delete conflicts)
+                    // Use purgeDeleted() to also remove any soft-deleted records that might cause unique constraint issues
+                    $this->studentModel->where('user_id', $userID)->purgeDeleted();
+                    $this->studentModel->where('user_id', $userID)->delete(null, true); // true = hard delete
+                    
+                    $this->instructorModel->where('user_id', $userID)->purgeDeleted();
+                    $this->instructorModel->where('user_id', $userID)->delete(null, true); // true = hard delete
 
                     // Create new role record
                     if ($role === 'student') {
                         $studentData = [
                             'user_id'          => $userID,
                             'year_level_id'    => $this->request->getPost('year_level_id'),
+                            'department_id'    => $this->request->getPost('department_id'),
+                            'program_id'       => $this->request->getPost('program_id'),
                             'section'          => $this->request->getPost('section'),
                             'enrollment_date'  => date('Y-m-d'),
                             'enrollment_status'=> 'enrolled'
-                        ];
-                        $this->studentModel->insert($studentData);
-                    } elseif ($role === 'instructor') {
+                        ];                        if (!$this->studentModel->insert($studentData)) {
+                            $errors = $this->studentModel->errors();
+                            $errorMessage = $errors ? implode(', ', $errors) : 'Failed to create student record.';
+                            throw new \Exception($errorMessage);
+                        }
+                    } elseif ($role === 'teacher') {
                         $instructorData = [
                             'user_id'           => $userID,
                             'department_id'     => $this->request->getPost('department_id'),
@@ -328,19 +356,25 @@ class User extends BaseController
                             'hire_date'         => date('Y-m-d'),
                             'employment_status' => 'full_time'
                         ];
-                        $this->instructorModel->insert($instructorData);
+                        if (!$this->instructorModel->insert($instructorData)) {
+                            $errors = $this->instructorModel->errors();
+                            $errorMessage = $errors ? implode(', ', $errors) : 'Failed to create instructor record.';
+                            throw new \Exception($errorMessage);
+                        }
                     }
-                } else {
+                }else {
                     // Update existing role record
                     if ($role === 'student') {
                         $studentRecord = $this->studentModel->where('user_id', $userID)->first();
                         if ($studentRecord) {
                             $this->studentModel->update($studentRecord['id'], [
                                 'year_level_id' => $this->request->getPost('year_level_id'),
+                                'department_id' => $this->request->getPost('department_id'),
+                                'program_id'    => $this->request->getPost('program_id'),
                                 'section'       => $this->request->getPost('section')
                             ]);
                         }
-                    } elseif ($role === 'instructor') {
+                    } elseif ($role === 'teacher') {
                         $instructorRecord = $this->instructorModel->where('user_id', $userID)->first();
                         if ($instructorRecord) {
                             $this->instructorModel->update($instructorRecord['id'], [
@@ -375,6 +409,12 @@ class User extends BaseController
         }        // Get year levels for dropdown
         $yearLevels = $this->yearLevelModel->orderBy('year_level_order')->findAll();
 
+        // Get departments for dropdown
+        $departments = $this->departmentModel->getActiveDepartments();
+
+        // Get all active programs for dropdown
+        $programs = $this->programModel->getActivePrograms();
+
         // Get role-specific data
         $roleName = $this->getRoleName($userToEdit['role_id']);
         
@@ -384,7 +424,7 @@ class User extends BaseController
         $roleSpecificData = null;
         if ($roleName === 'student') {
             $roleSpecificData = $this->studentModel->where('user_id', $userID)->first();
-        } elseif ($roleName === 'instructor') {
+        } elseif ($roleName === 'teacher') {
             $roleSpecificData = $this->instructorModel->where('user_id', $userID)->first();
         }
 
@@ -404,15 +444,15 @@ class User extends BaseController
             'editUser'          => $userToEdit,
             'roleSpecificData'  => $roleSpecificData,
             'yearLevels'        => $yearLevels,
+            'departments'       => $departments,
+            'programs'          => $programs,
             'showCreateForm'    => false,
             'showEditForm'      => true
         ];
 
         return view('admin/manage_users', $data);
-    }
-
-    /**
-     * Delete a user (soft delete)
+    }/**
+     * Delete a user (mark as inactive - soft delete alternative)
      */
     private function deleteUser($userID, $currentAdminID)
     {
@@ -424,26 +464,21 @@ class User extends BaseController
         }
 
         if ($userToDelete['id'] == $currentAdminID) {
-            $this->session->setFlashdata('error', 'You cannot delete your own account.');
+            $this->session->setFlashdata('error', 'You cannot deactivate your own account.');
+            return redirect()->to(base_url('admin/manage_users'));
+        }
+
+        if ($userToDelete['is_active'] == 0) {
+            $this->session->setFlashdata('error', 'This user is already inactive.');
             return redirect()->to(base_url('admin/manage_users'));
         }
 
         $this->db->transStart();
         
         try {
-            // Get role to delete associated records
-            $roleName = $this->getRoleName($userToDelete['role_id']);
-            
-            // Soft delete role-specific record
-            if ($roleName === 'student') {
-                $this->studentModel->where('user_id', $userID)->delete();
-            } elseif ($roleName === 'instructor') {
-                $this->instructorModel->where('user_id', $userID)->delete();
-            }
-
-            // Soft delete user
-            if (!$this->userModel->delete($userID)) {
-                throw new \Exception('Failed to delete user.');
+            // Mark user as inactive instead of deleting
+            if (!$this->userModel->update($userID, ['is_active' => 0])) {
+                throw new \Exception('Failed to deactivate user.');
             }
 
             $this->db->transComplete();
@@ -453,17 +488,65 @@ class User extends BaseController
             }
 
             // Log activity
-            $this->logActivity('user_deletion', [
+            $this->logActivity('user_deactivation', [
                 'name' => $userToDelete['first_name'] . ' ' . $userToDelete['last_name'],
                 'id'   => $userToDelete['id']
             ]);
 
-            $this->session->setFlashdata('success', 'User deleted successfully! (Soft delete - data preserved)');
+            $this->session->setFlashdata('success', 'User account deactivated successfully! The user can no longer log in.');
 
         } catch (\Exception $e) {
             $this->db->transRollback();
-            log_message('error', 'User deletion failed: ' . $e->getMessage());
-            $this->session->setFlashdata('error', 'Failed to delete user: ' . $e->getMessage());
+            log_message('error', 'User deactivation failed: ' . $e->getMessage());
+            $this->session->setFlashdata('error', 'Failed to deactivate user: ' . $e->getMessage());
+        }
+
+        return redirect()->to(base_url('admin/manage_users'));
+    }
+
+    /**
+     * Reactivate an inactive user
+     */
+    private function reactivateUser($userID, $currentAdminID)
+    {
+        $userToReactivate = $this->userModel->find($userID);
+
+        if (!$userToReactivate) {
+            $this->session->setFlashdata('error', 'User not found.');
+            return redirect()->to(base_url('admin/manage_users'));
+        }
+
+        if ($userToReactivate['is_active'] == 1) {
+            $this->session->setFlashdata('error', 'This user is already active.');
+            return redirect()->to(base_url('admin/manage_users'));
+        }
+
+        $this->db->transStart();
+        
+        try {
+            // Reactivate user
+            if (!$this->userModel->update($userID, ['is_active' => 1])) {
+                throw new \Exception('Failed to reactivate user.');
+            }
+
+            $this->db->transComplete();
+            
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Transaction failed.');
+            }
+
+            // Log activity
+            $this->logActivity('user_reactivation', [
+                'name' => $userToReactivate['first_name'] . ' ' . $userToReactivate['last_name'],
+                'id'   => $userToReactivate['id']
+            ]);
+
+            $this->session->setFlashdata('success', 'User account reactivated successfully! The user can now log in again.');
+
+        } catch (\Exception $e) {
+            $this->db->transRollback();
+            log_message('error', 'User reactivation failed: ' . $e->getMessage());
+            $this->session->setFlashdata('error', 'Failed to reactivate user: ' . $e->getMessage());
         }
 
         return redirect()->to(base_url('admin/manage_users'));
@@ -478,7 +561,15 @@ class User extends BaseController
         $users = $this->getUsersWithRoles();
 
         // Get year levels for dropdown
-        $yearLevels = $this->yearLevelModel->orderBy('year_level_order')->findAll();        $data = [
+        $yearLevels = $this->yearLevelModel->orderBy('year_level_order')->findAll();
+
+        // Get departments for dropdown
+        $departments = $this->departmentModel->getActiveDepartments();
+
+        // Get all active programs for dropdown
+        $programs = $this->programModel->getActivePrograms();
+        
+        $data = [
             'user' => [
                 'userID' => $this->session->get('userID'),
                 'name'   => $this->session->get('name'),
@@ -488,6 +579,8 @@ class User extends BaseController
             'title'          => 'Manage Users - Admin Dashboard',
             'users'          => $users,
             'yearLevels'     => $yearLevels,
+            'departments'    => $departments,
+            'programs'       => $programs,
             'currentAdminID' => $currentAdminID,
             'editUser'       => null,
             'showCreateForm' => $this->request->getGet('action') === 'create',
@@ -495,7 +588,7 @@ class User extends BaseController
         ];
           
         return view('admin/manage_users', $data);
-    }    /**
+    }/**
      * Get all users with their role names
      */
     private function getUsersWithRoles()
@@ -527,23 +620,24 @@ class User extends BaseController
         $year = date('Y');
         $random = rand(1000, 9999);
         return "{$prefix}-{$year}-{$random}";
-    }
-
-    /**
+    }    /**
      * Log user management activity
      */
     private function logActivity($type, $data)
-    {
-        $icons = [
-            'user_creation' => '➕',
-            'user_update'   => '✏️',
-            'user_deletion' => '🗑️'
+    {        $icons = [
+            'user_creation'     => '➕',
+            'user_update'       => '✏️',
+            'user_deletion'     => '🗑️',
+            'user_deactivation' => '🔒',
+            'user_reactivation' => '🔓'
         ];
 
         $titles = [
-            'user_creation' => 'New User Created',
-            'user_update'   => 'User Account Updated',
-            'user_deletion' => 'User Account Deleted'
+            'user_creation'     => 'New User Created',
+            'user_update'       => 'User Account Updated',
+            'user_deletion'     => 'User Account Deleted',
+            'user_deactivation' => 'User Account Deactivated',
+            'user_reactivation' => 'User Account Reactivated'
         ];
 
         $activity = [
@@ -555,10 +649,14 @@ class User extends BaseController
             'user_name'   => $data['name'] ?? 'Unknown',
             'user_role'   => $data['role'] ?? 'unknown',
             'created_by'  => $this->session->get('name')
-        ];
-
-        $activityKey = $type === 'user_creation' ? 'creation_activities' : 
-                      ($type === 'user_update' ? 'update_activities' : 'deletion_activities');
+        ];        
+        $activityKey = match($type) {
+            'user_creation' => 'creation_activities',
+            'user_update' => 'update_activities',
+            'user_deletion', 'user_deactivation' => 'deletion_activities',
+            'user_reactivation' => 'reactivation_activities',
+            default => 'general_activities'
+        };
 
         $activities = $this->session->get($activityKey) ?? [];
         array_unshift($activities, $activity);
@@ -573,13 +671,37 @@ class User extends BaseController
     {
         switch ($type) {
             case 'user_creation':
-                return esc($data['name']) . ' (' . ucfirst($data['role']) . ') account was created by admin';
+                return esc($data['name']) . ' (' . ucfirst($data['role'] ?? 'User') . ') account was created by admin';
             case 'user_update':
-                return esc($data['name']) . ' (' . ucfirst($data['role']) . ') account was updated by admin';
+                return esc($data['name']) . ' (' . ucfirst($data['role'] ?? 'User') . ') account was updated by admin';
             case 'user_deletion':
                 return esc($data['name']) . ' (ID: ' . $data['id'] . ') account was soft deleted from the system';
+            case 'user_deactivation':
+                return esc($data['name']) . ' (ID: ' . $data['id'] . ') account was deactivated and can no longer log in';
+            case 'user_reactivation':
+                return esc($data['name']) . ' (ID: ' . $data['id'] . ') account was reactivated and can now log in';
             default:
                 return 'User activity logged';
         }
+    }
+
+    /**
+     * API endpoint to get programs by department
+     * Returns JSON array of programs for a given department ID
+     */
+    public function getProgramsByDepartment($departmentId = null)
+    {
+        // Check if user is logged in
+        if ($this->session->get('isLoggedIn') !== true) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        if (!$departmentId) {
+            return $this->response->setJSON([]);
+        }
+
+        $programs = $this->programModel->getProgramsByDepartment($departmentId);
+        
+        return $this->response->setJSON($programs);
     }
 }

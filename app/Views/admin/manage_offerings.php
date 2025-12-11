@@ -91,16 +91,15 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-body">
-                        <div class="row align-items-center">                            <div class="col-md-6 mb-3 mb-md-0">
+                    <div class="card-body">                        <div class="row align-items-center">                            <div class="col-md-6 mb-3 mb-md-0">
                                 <label for="termFilter" class="form-label fw-semibold mb-2">Filter by Term:</label>
                                 <select class="form-select" id="termFilter" onchange="filterByTerm(this.value)">
                                     <option value="">All Terms</option>
-                                    <?php foreach ($terms as $term): ?>
-                                        <option value="<?= $term['id'] ?>" <?= $selectedTermId == $term['id'] ? 'selected' : '' ?>>
-                                            <?= esc($term['term_name']) ?>
-                                            <?php if ($term['start_date'] && $term['end_date']): ?>
-                                                (<?= date('M Y', strtotime($term['start_date'])) ?> - <?= date('M Y', strtotime($term['end_date'])) ?>)
+                                    <?php foreach ($terms as $termOption): ?>
+                                        <option value="<?= $termOption['id'] ?>" <?= $selectedTermId == $termOption['id'] ? 'selected' : '' ?>>
+                                            <?= esc($termOption['year_code'] ?? '') ?> | <?= esc($termOption['semester_name'] ?? '') ?> - <?= esc($termOption['term_name']) ?>
+                                            <?php if (!empty($termOption['start_date']) && !empty($termOption['end_date'])): ?>
+                                                (<?= date('M d', strtotime($termOption['start_date'])) ?> - <?= date('M d, Y', strtotime($termOption['end_date'])) ?>)
                                             <?php endif; ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -115,17 +114,20 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Selected Term Info -->
+        </div>        <!-- Selected Term Info -->
         <?php if ($selectedTerm): ?>
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3 border-primary">                    <div class="card-body bg-light">
-                        <h5 class="mb-2 fw-bold text-primary">📆 Current Term:</h5>
-                        <h4 class="mb-1"><?= esc($selectedTerm['term_name']) ?></h4>
+                        <h5 class="mb-2 fw-bold text-primary">📆 Selected Term:</h5>
+                        <h4 class="mb-1">
+                            <?php if (!empty($selectedTerm['year_name'])): ?>
+                                <?= esc($selectedTerm['year_name']) ?> - <?= esc($selectedTerm['semester_name'] ?? '') ?>
+                            <?php endif; ?>
+                        </h4>
+                        <h5 class="text-secondary mb-2"><?= esc($selectedTerm['term_name']) ?></h5>
                         <p class="text-muted mb-0">
-                            <?php if ($selectedTerm['start_date'] && $selectedTerm['end_date']): ?>
+                            <?php if (!empty($selectedTerm['start_date']) && !empty($selectedTerm['end_date'])): ?>
                                 <strong>Period:</strong> <?= date('M d, Y', strtotime($selectedTerm['start_date'])) ?> - <?= date('M d, Y', strtotime($selectedTerm['end_date'])) ?> | 
                             <?php endif; ?>
                             <strong>Offerings:</strong> <?= count($offerings) ?> |
@@ -167,16 +169,19 @@
                                         <label for="term_id" class="form-label fw-semibold">Term <span class="text-danger">*</span></label>
                                         <select class="form-select" id="term_id" name="term_id" required>
                                             <option value="">-- Select Term --</option>
-                                            <?php foreach ($terms as $term): ?>
-                                                <option value="<?= $term['id'] ?>" <?= (old('term_id') == $term['id'] || $selectedTermId == $term['id']) ? 'selected' : '' ?>>
-                                                    <?= esc($term['term_name']) ?>
-                                                    <?php if ($term['start_date'] && $term['end_date']): ?>
-                                                        (<?= date('M Y', strtotime($term['start_date'])) ?> - <?= date('M Y', strtotime($term['end_date'])) ?>)
+                                            <?php foreach ($terms as $termOption): ?>
+                                                <option value="<?= $termOption['id'] ?>" 
+                                                        data-start="<?= esc($termOption['start_date'] ?? '') ?>" 
+                                                        data-end="<?= esc($termOption['end_date'] ?? '') ?>"
+                                                        <?= (old('term_id') == $termOption['id'] || $selectedTermId == $termOption['id']) ? 'selected' : '' ?>>
+                                                    <?= esc($termOption['year_code'] ?? '') ?> | <?= esc($termOption['semester_name'] ?? '') ?> - <?= esc($termOption['term_name']) ?>
+                                                    <?php if (!empty($termOption['start_date']) && !empty($termOption['end_date'])): ?>
+                                                        (<?= date('M d', strtotime($termOption['start_date'])) ?> - <?= date('M d, Y', strtotime($termOption['end_date'])) ?>)
                                                     <?php endif; ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <small class="text-muted">Select the academic term</small>
+                                        <small class="text-muted">Select the academic term (Academic Year | Semester - Term)</small>
                                     </div>
                                 </div>
                             </div>
@@ -220,21 +225,22 @@
                                             <option value="completed" <?= old('status') == 'completed' ? 'selected' : '' ?>>✔️ Completed</option>
                                         </select>
                                         <small class="text-muted">Current offering status</small>
-                                    </div>
-                                </div>                                <div class="col-md-4">
+                                    </div>                                </div>                                <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="start_date" class="form-label fw-semibold">Start Date</label>
                                         <input type="date" class="form-control" id="start_date" name="start_date" 
-                                               value="<?= old('start_date') ?>" min="<?= date('Y-m-d') ?>">
-                                        <small class="text-muted">Must be today or future date</small>
+                                               value="<?= old('start_date') ?>"
+                                               min="<?= date('Y-m-d') ?>">
+                                        <small class="text-muted">Year must match Academic Year</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="end_date" class="form-label fw-semibold">End Date</label>
                                         <input type="date" class="form-control" id="end_date" name="end_date" 
-                                               value="<?= old('end_date') ?>" min="<?= date('Y-m-d') ?>">
-                                        <small class="text-muted">Must be today or future date</small>
+                                               value="<?= old('end_date') ?>"
+                                               min="<?= date('Y-m-d') ?>">
+                                        <small class="text-muted">Year must match Academic Year</small>
                                     </div>
                                 </div>
                             </div>
@@ -264,12 +270,23 @@
                     </div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('admin/manage_offerings?action=edit&id=' . $editOffering['id']) ?>">
-                            <?= csrf_field() ?>
-                            
-                            <!-- Display course and term info (non-editable) -->
+                            <?= csrf_field() ?>                            <!-- Display course and term info (non-editable) -->
                             <div class="alert alert-info mb-3">
                                 <strong>Course:</strong> <?= esc($course['course_code']) ?> - <?= esc($course['title']) ?><br>
-                                <strong>Term:</strong> <?= esc($term['term_name']) ?>
+                                <strong>Term:</strong> 
+                                <?php if (!empty($term)): ?>
+                                    <?php if (!empty($term['year_name'])): ?>
+                                        <?= esc($term['year_name']) ?> - <?= esc($term['semester_name'] ?? '') ?> | 
+                                    <?php endif; ?>
+                                    <?= esc($term['term_name'] ?? 'Unknown Term') ?>
+                                    <?php if (!empty($term['start_date']) && !empty($term['end_date'])): ?>
+                                        <br><strong>Term Period:</strong> <?= date('M d, Y', strtotime($term['start_date'])) ?> - <?= date('M d, Y', strtotime($term['end_date'])) ?>
+                                    <?php else: ?>
+                                        <br><small class="text-warning">⚠️ Term dates not set - please set dates in Term management</small>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-danger">Term data not found</span>
+                                <?php endif; ?>
                                 <small class="d-block mt-1 text-muted">Course and term cannot be changed. Create a new offering if needed.</small>
                             </div>
 
@@ -314,20 +331,34 @@
                                     </div>
                                 </div>                                <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="start_date" class="form-label fw-semibold">Start Date</label>
-                                        <input type="date" class="form-control" id="start_date" name="start_date" 
-                                               value="<?= old('start_date', $editOffering['start_date']) ?>" 
-                                               min="<?= $editOffering['start_date'] && strtotime($editOffering['start_date']) < strtotime('today') ? $editOffering['start_date'] : date('Y-m-d') ?>">
-                                        <small class="text-muted">Must be today or future date</small>
+                                        <label for="edit_start_date" class="form-label fw-semibold">Start Date</label>
+                                        <input type="date" class="form-control" id="edit_start_date" name="start_date" 
+                                               value="<?= old('start_date', $editOffering['start_date']) ?>"
+                                               <?php if (!empty($term['start_date'])): ?>min="<?= $term['start_date'] ?>"<?php endif; ?>
+                                               <?php if (!empty($term['end_date'])): ?>max="<?= $term['end_date'] ?>"<?php endif; ?>>
+                                        <small class="text-muted">
+                                            <?php if (!empty($term['year_code'])): ?>
+                                                Year must match Academic Year <?= esc($term['year_code']) ?>
+                                            <?php else: ?>
+                                                Set the offering start date
+                                            <?php endif; ?>
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="end_date" class="form-label fw-semibold">End Date</label>
-                                        <input type="date" class="form-control" id="end_date" name="end_date" 
-                                               value="<?= old('end_date', $editOffering['end_date']) ?>" 
-                                               min="<?= $editOffering['end_date'] && strtotime($editOffering['end_date']) < strtotime('today') ? $editOffering['end_date'] : date('Y-m-d') ?>">
-                                        <small class="text-muted">Must be today or future date</small>
+                                        <label for="edit_end_date" class="form-label fw-semibold">End Date</label>
+                                        <input type="date" class="form-control" id="edit_end_date" name="end_date" 
+                                               value="<?= old('end_date', $editOffering['end_date']) ?>"
+                                               <?php if (!empty($term['start_date'])): ?>min="<?= $term['start_date'] ?>"<?php endif; ?>
+                                               <?php if (!empty($term['end_date'])): ?>max="<?= $term['end_date'] ?>"<?php endif; ?>>
+                                        <small class="text-muted">
+                                            <?php if (!empty($term['year_code'])): ?>
+                                                Year must match Academic Year <?= esc($term['year_code']) ?>
+                                            <?php else: ?>
+                                                Set the offering end date
+                                            <?php endif; ?>
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -473,4 +504,358 @@ function filterByTerm(termId) {
         window.location.href = '<?= base_url('admin/manage_offerings') ?>';
     }
 }
+
+// Term data for auto-populating dates and validation
+const termsData = {
+    <?php foreach ($terms as $termOption): ?>
+    '<?= $termOption['id'] ?>': {
+        start_date: '<?= $termOption['start_date'] ?? '' ?>',
+        end_date: '<?= $termOption['end_date'] ?? '' ?>',
+        term_name: '<?= esc($termOption['term_name']) ?>',
+        year_code: '<?= esc($termOption['year_code'] ?? '') ?>',
+        academic_year: '<?= esc($termOption['academic_year'] ?? '') ?>'
+    },
+    <?php endforeach; ?>
+};
+
+// Function to extract years from academic year code (e.g., "AY2025-2026" or "2025-2026" returns [2025, 2026])
+function getAcademicYears(yearCode) {
+    if (!yearCode) return [];
+    
+    // Remove "AY" prefix if present (case-insensitive)
+    let cleanedCode = yearCode.replace(/^AY/i, '').trim();
+    
+    // Extract all 4-digit numbers from the string (handles dashes, HTML entities, etc.)
+    const matches = cleanedCode.match(/\d{4}/g);
+    
+    if (!matches) return [];
+    
+    const years = matches.map(y => parseInt(y));
+    
+    return years.filter(y => !isNaN(y));
+}
+
+// Function to validate if a date falls within the academic year
+function validateAcademicYearDate(dateString, yearCode) {
+    if (!dateString || !yearCode) return true; // Allow empty dates
+    
+    const selectedDate = new Date(dateString);
+    const selectedYear = selectedDate.getFullYear();
+    const academicYears = getAcademicYears(yearCode);
+    
+    if (academicYears.length === 0) return true; // No validation if year code not available
+    
+    // Check if the selected year matches any of the academic years
+    return academicYears.includes(selectedYear);
+}
+
+// Function to show validation error message
+function showDateValidationError(inputElement, message) {
+    inputElement.classList.add('is-invalid');
+    inputElement.setCustomValidity(message); // HTML5 validation API
+    
+    // Remove existing error message
+    const existingError = inputElement.parentElement.querySelector('.invalid-feedback');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Add new error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'invalid-feedback d-block';
+    errorDiv.innerHTML = '<strong>⚠️ ' + message + '</strong>';
+    inputElement.parentElement.appendChild(errorDiv);
+}
+
+// Function to clear validation error
+function clearDateValidationError(inputElement) {
+    inputElement.classList.remove('is-invalid');
+    inputElement.setCustomValidity(''); // Clear HTML5 validation
+    const errorDiv = inputElement.parentElement.querySelector('.invalid-feedback');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+}
+
+// Auto-populate dates when term is selected
+document.addEventListener('DOMContentLoaded', function() {
+    const termSelect = document.getElementById('term_id');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    
+    // Edit form elements
+    const editStartDateInput = document.getElementById('edit_start_date');
+    const editEndDateInput = document.getElementById('edit_end_date');
+    
+    // Function to setup date validation for a form
+    function setupDateValidation(termSelectEl, startDateEl, endDateEl) {
+        if (!termSelectEl || !startDateEl || !endDateEl) return;
+        
+        let currentYearCode = '';
+        
+        // Update year code when term changes
+        termSelectEl.addEventListener('change', function() {
+            const termId = this.value;
+            if (termId && termsData[termId]) {
+                currentYearCode = termsData[termId].year_code;
+                
+                // Validate existing dates
+                if (startDateEl.value) {
+                    validateDateInput(startDateEl, currentYearCode, 'Start Date');
+                }
+                if (endDateEl.value) {
+                    validateDateInput(endDateEl, currentYearCode, 'End Date');
+                }
+            } else {
+                currentYearCode = '';
+                clearDateValidationError(startDateEl);
+                clearDateValidationError(endDateEl);
+            }
+        });
+        
+        // Set initial year code if term is pre-selected
+        if (termSelectEl.value && termsData[termSelectEl.value]) {
+            currentYearCode = termsData[termSelectEl.value].year_code;
+        }
+        
+        // Validate dates on input
+        function validateDateInput(inputEl, yearCode, fieldName) {
+            if (!inputEl.value) {
+                clearDateValidationError(inputEl);
+                return true;
+            }
+            
+            if (!yearCode) {
+                clearDateValidationError(inputEl);
+                return true;
+            }
+            
+            const isValid = validateAcademicYearDate(inputEl.value, yearCode);
+            
+            if (!isValid) {
+                const academicYears = getAcademicYears(yearCode);
+                const yearsList = academicYears.join(' or ');
+                showDateValidationError(inputEl, `${fieldName} year must be ${yearsList} to match Academic Year ${yearCode}`);
+                return false;
+            } else {
+                clearDateValidationError(inputEl);
+                return true;
+            }
+        }
+        
+        startDateEl.addEventListener('change', function() {
+            validateDateInput(this, currentYearCode, 'Start Date');
+        });
+        
+        endDateEl.addEventListener('change', function() {
+            validateDateInput(this, currentYearCode, 'End Date');
+        });
+          // Prevent form submission if validation fails
+        const form = startDateEl.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+                const errors = [];
+                
+                if (startDateEl.value && !validateAcademicYearDate(startDateEl.value, currentYearCode)) {
+                    validateDateInput(startDateEl, currentYearCode, 'Start Date');
+                    isValid = false;
+                    errors.push('Start Date year does not match Academic Year');
+                }
+                
+                if (endDateEl.value && !validateAcademicYearDate(endDateEl.value, currentYearCode)) {
+                    validateDateInput(endDateEl, currentYearCode, 'End Date');
+                    isValid = false;
+                    errors.push('End Date year does not match Academic Year');
+                }
+                  if (!isValid) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const academicYears = getAcademicYears(currentYearCode);
+                    const yearsList = academicYears.join(' or ');
+                    alert(`⚠️ Validation Error!\n\nThe dates you entered do not match the Academic Year ${currentYearCode}.\n\nPlease use dates from year ${yearsList} only.\n\nErrors:\n- ${errors.join('\n- ')}`);
+                    return false;
+                }
+                
+                // Check if term has dates set when offering dates are provided
+                const termId = termSelectEl.value;
+                if (termId && termsData[termId]) {
+                    const termData = termsData[termId];
+                    const hasOfferingDates = startDateEl.value || endDateEl.value;
+                    const termHasDates = termData.start_date && termData.end_date;
+                    
+                    if (hasOfferingDates && !termHasDates) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        alert(`⚠️ Term Dates Required!\n\nThe selected term does not have start/end dates set.\n\nPlease either:\n1. Clear the offering dates (leave them empty), OR\n2. Set term dates first in Term Management\n\nTerm: ${termData.term_name}\nAcademic Year: ${termData.academic_year || 'N/A'}`);
+                        return false;
+                    }
+                }
+            });
+        }
+    }
+    
+    // Setup validation for create form
+    if (termSelect && startDateInput && endDateInput) {
+        setupDateValidation(termSelect, startDateInput, endDateInput);
+          termSelect.addEventListener('change', function() {
+            const termId = this.value;
+            
+            if (termId && termsData[termId]) {
+                const termData = termsData[termId];
+                
+                // Check if term has dates set
+                const termHasDates = termData.start_date && termData.end_date;
+                
+                // Show warning if term doesn't have dates
+                let warningDiv = document.getElementById('term-date-warning');
+                if (!termHasDates) {
+                    if (!warningDiv) {
+                        warningDiv = document.createElement('div');
+                        warningDiv.id = 'term-date-warning';
+                        warningDiv.className = 'alert alert-warning mt-3';
+                        warningDiv.innerHTML = `<strong>⚠️ Warning:</strong> The selected term does not have start/end dates set. You should leave the offering dates empty, or set term dates first in <a href="${'<?= base_url("admin/manage_terms") ?>'}" target="_blank">Term Management</a>.`;
+                        termSelect.parentElement.parentElement.appendChild(warningDiv);
+                    }
+                    // Disable date inputs if term has no dates
+                    startDateInput.disabled = true;
+                    endDateInput.disabled = true;
+                    startDateInput.value = '';
+                    endDateInput.value = '';
+                    startDateInput.parentElement.querySelector('.text-muted').innerHTML = '<span class="text-warning">⚠️ Term dates must be set first</span>';
+                    endDateInput.parentElement.querySelector('.text-muted').innerHTML = '<span class="text-warning">⚠️ Term dates must be set first</span>';
+                } else {
+                    // Remove warning if it exists
+                    if (warningDiv) {
+                        warningDiv.remove();
+                    }
+                    // Enable date inputs
+                    startDateInput.disabled = false;
+                    endDateInput.disabled = false;
+                    startDateInput.parentElement.querySelector('.text-muted').innerHTML = 'Year must match Academic Year';
+                    endDateInput.parentElement.querySelector('.text-muted').innerHTML = 'Year must match Academic Year';
+                }
+                
+                // Only auto-fill if term has dates and fields are empty
+                if (termHasDates) {
+                    if (!startDateInput.value && termData.start_date) {
+                        // Use term date only if it's today or in the future, otherwise use today
+                        startDateInput.value = termData.start_date >= today ? termData.start_date : today;
+                    }
+                    if (!endDateInput.value && termData.end_date) {
+                        // Use term date only if it's today or in the future, otherwise use today
+                        endDateInput.value = termData.end_date >= today ? termData.end_date : today;
+                    }
+                }
+                
+                // Update min/max attributes based on term dates (but min can't be before today)
+                if (termData.start_date) {
+                    const minDate = termData.start_date >= today ? termData.start_date : today;
+                    startDateInput.min = minDate;
+                    endDateInput.min = minDate;
+                }
+                if (termData.end_date) {
+                    startDateInput.max = termData.end_date;
+                    endDateInput.max = termData.end_date;
+                }
+            }
+        });
+        
+        // Trigger on page load if term is pre-selected
+        if (termSelect.value && termsData[termSelect.value]) {
+            const termData = termsData[termSelect.value];
+            if (!startDateInput.value && termData.start_date) {
+                startDateInput.value = termData.start_date >= today ? termData.start_date : today;
+            }
+            if (!endDateInput.value && termData.end_date) {
+                endDateInput.value = termData.end_date >= today ? termData.end_date : today;
+            }
+            
+            // Update min/max attributes based on term dates
+            if (termData.start_date) {
+                const minDate = termData.start_date >= today ? termData.start_date : today;
+                startDateInput.min = minDate;
+                endDateInput.min = minDate;
+            }
+            if (termData.end_date) {
+                startDateInput.max = termData.end_date;
+                endDateInput.max = termData.end_date;
+            }
+        }
+    }
+    
+    // Setup validation for edit form
+    if (editStartDateInput && editEndDateInput) {
+        // Get term ID from the edit form (it's fixed, not changeable)
+        const editForm = editStartDateInput.closest('form');
+        if (editForm) {
+            const editTermInfo = editForm.querySelector('.alert-info');
+            if (editTermInfo) {
+                // Extract term info from the page context
+                <?php if ($showEditForm && isset($editOffering) && isset($term)): ?>
+                const editTermData = {
+                    year_code: '<?= esc($term['year_code'] ?? '') ?>',
+                    academic_year: '<?= esc($term['year_name'] ?? '') ?>'
+                };
+                
+                let currentYearCode = editTermData.year_code;
+                
+                function validateEditDateInput(inputEl, fieldName) {
+                    if (!inputEl.value || !currentYearCode) {
+                        clearDateValidationError(inputEl);
+                        return true;
+                    }
+                    
+                    const isValid = validateAcademicYearDate(inputEl.value, currentYearCode);
+                    
+                    if (!isValid) {
+                        const academicYears = getAcademicYears(currentYearCode);
+                        const yearsList = academicYears.join(' or ');
+                        showDateValidationError(inputEl, `${fieldName} year must be ${yearsList} to match Academic Year ${currentYearCode}`);
+                        return false;
+                    } else {
+                        clearDateValidationError(inputEl);
+                        return true;
+                    }
+                }
+                
+                editStartDateInput.addEventListener('change', function() {
+                    validateEditDateInput(this, 'Start Date');
+                });
+                
+                editEndDateInput.addEventListener('change', function() {
+                    validateEditDateInput(this, 'End Date');
+                });
+                  // Validate on form submit
+                editForm.addEventListener('submit', function(e) {
+                    let isValid = true;
+                    const errors = [];
+                    
+                    if (editStartDateInput.value && !validateAcademicYearDate(editStartDateInput.value, currentYearCode)) {
+                        validateEditDateInput(editStartDateInput, 'Start Date');
+                        isValid = false;
+                        errors.push('Start Date year does not match Academic Year');
+                    }
+                    
+                    if (editEndDateInput.value && !validateAcademicYearDate(editEndDateInput.value, currentYearCode)) {
+                        validateEditDateInput(editEndDateInput, 'End Date');
+                        isValid = false;
+                        errors.push('End Date year does not match Academic Year');
+                    }
+                    
+                    if (!isValid) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const academicYears = getAcademicYears(currentYearCode);
+                        const yearsList = academicYears.join(' or ');
+                        alert(`⚠️ Validation Error!\n\nThe dates you entered do not match the Academic Year ${currentYearCode}.\n\nPlease use dates from year ${yearsList} only.\n\nErrors:\n- ${errors.join('\n- ')}`);
+                        return false;
+                    }
+                });
+                <?php endif; ?>
+            }
+        }
+    }
+});
 </script>

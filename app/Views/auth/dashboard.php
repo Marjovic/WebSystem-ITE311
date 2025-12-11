@@ -552,11 +552,13 @@
                                                             </small>
                                                         </div>
                                                     <?php endif; ?>
-                                                    
-                                                    <!-- Enrollment Button -->
+                                                      <!-- Enrollment Button -->
                                                     <button class="btn btn-primary btn-sm w-100 enroll-btn" 
                                                             data-course-id="<?= $course['id'] ?>"
-                                                            data-course-title="<?= esc($course['title']) ?>">
+                                                            data-course-title="<?= esc($course['course_code']) ?> - <?= esc($course['title']) ?>"
+                                                            data-available-slots="<?= $course['available_slots'] ?>"
+                                                            data-max-students="<?= $course['max_students'] ?>"
+                                                            data-credits="<?= $course['credits'] ?>">
                                                         <i class="fas fa-plus-circle me-1"></i>
                                                         Enroll in Course
                                                     </button>

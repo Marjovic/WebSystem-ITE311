@@ -463,26 +463,32 @@
                                             <div class="card h-100 border-0 shadow-sm">
                                                 <div class="card-body">
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
-                                                        <h6 class="card-title fw-bold text-primary mb-0"><?= esc($course['course_title']) ?></h6>
+                                                        <h6 class="card-title fw-bold text-primary mb-0"><?= esc($course['course_title'] ?? 'Untitled Course') ?></h6>
                                                         <span class="badge bg-success rounded-pill small">Enrolled</span>
                                                     </div>
-                                                    <p class="text-muted small mb-2"><?= esc($course['course_code']) ?> • <?= esc($course['instructor_name']) ?></p>
-                                                    <p class="card-text text-muted small mb-3"><?= esc(substr($course['course_description'], 0, 100)) ?>...</p>
+                                                    <p class="text-muted small mb-2">
+                                                        <?= esc($course['course_code'] ?? '') ?> 
+                                                        <?php if (!empty($course['section'])): ?>• Section <?= esc($course['section']) ?><?php endif; ?>
+                                                        <?php if (!empty($course['instructor_name'])): ?>• <?= esc($course['instructor_name']) ?><?php endif; ?>
+                                                    </p>
+                                                    <p class="card-text text-muted small mb-3">
+                                                        <?= esc($course['term_name'] ?? '') ?> • <?= esc($course['semester_name'] ?? '') ?> <?= esc($course['academic_year'] ?? '') ?>
+                                                    </p>
                                                     
                                                     <!-- Progress Bar -->
                                                     <div class="mb-3">
                                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                                             <small class="text-muted">Progress</small>
-                                                            <small class="fw-bold"><?= $course['progress'] ?>%</small>
+                                                            <small class="fw-bold"><?= $course['progress'] ?? 0 ?>%</small>
                                                         </div>
                                                         <div class="progress" style="height: 6px;">
-                                                            <div class="progress-bar" role="progressbar" style="width: <?= $course['progress'] ?>%" aria-valuenow="<?= $course['progress'] ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                                                            <div class="progress-bar" role="progressbar" style="width: <?= $course['progress'] ?? 0 ?>%" aria-valuenow="<?= $course['progress'] ?? 0 ?>" aria-valuemin="0" aria-valuemax="100"></div>
                                                         </div>
                                                     </div>
                                                     
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <small class="text-muted">
-                                                            <i class="fas fa-calendar"></i> Enrolled: <?= $course['enrollment_date_formatted'] ?>
+                                                            <i class="fas fa-calendar"></i> Enrolled: <?= !empty($course['enrollment_date']) ? date('M j, Y', strtotime($course['enrollment_date'])) : 'N/A' ?>
                                                         </small>
                                                         <a href="<?= base_url('student/courses') ?>" class="btn btn-sm btn-outline-primary">Continue</a>
                                                     </div>
@@ -519,46 +525,46 @@
                                             <div class="card h-100 border-0 shadow-sm course-card" data-course-id="<?= $course['id'] ?>">
                                                 <div class="card-body">
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
-                                                        <h6 class="card-title fw-bold text-dark mb-0"><?= esc($course['title']) ?></h6>
-                                                        <span class="badge bg-info rounded-pill small"><?= ucfirst($course['status']) ?></span>
+                                                        <h6 class="card-title fw-bold text-dark mb-0"><?= esc($course['course_title'] ?? $course['title'] ?? 'Untitled Course') ?></h6>
+                                                        <span class="badge bg-info rounded-pill small"><?= ucfirst($course['status'] ?? 'open') ?></span>
                                                     </div>
-                                                    <p class="text-muted small mb-2"><?= esc($course['course_code']) ?> • <?= esc($course['instructor_name']) ?></p>
-                                                    <p class="card-text text-muted small mb-3"><?= esc(substr($course['description'], 0, 100)) ?>...</p>
+                                                    <p class="text-muted small mb-2"><?= esc($course['course_code'] ?? '') ?> • <?= esc($course['instructor_name'] ?? 'TBA') ?></p>
+                                                    <p class="card-text text-muted small mb-3"><?= esc(substr($course['description'] ?? '', 0, 100)) ?>...</p>
                                                     
                                                     <!-- Course Details -->
                                                     <div class="mb-3">
                                                         <div class="row text-center">
                                                             <div class="col-4">
                                                                 <small class="text-muted d-block">Credits</small>
-                                                                <strong class="small"><?= $course['credits'] ?></strong>
+                                                                <strong class="small"><?= $course['credits'] ?? 0 ?></strong>
                                                             </div>
                                                             <div class="col-4">
-                                                                <small class="text-muted d-block">Duration</small>
-                                                                <strong class="small"><?= $course['duration_weeks'] ?>w</strong>
+                                                                <small class="text-muted d-block">Slots</small>
+                                                                <strong class="small"><?= $course['available_slots'] ?? 0 ?></strong>
                                                             </div>
                                                             <div class="col-4">
-                                                                <small class="text-muted d-block">Students</small>
-                                                                <strong class="small"><?= $course['max_students'] ?></strong>
+                                                                <small class="text-muted d-block">Max</small>
+                                                                <strong class="small"><?= $course['max_students'] ?? 0 ?></strong>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     
                                                     <!-- Course Dates -->
-                                                    <?php if ($course['start_date']): ?>
+                                                    <?php if (!empty($course['start_date'])): ?>
                                                         <div class="mb-3">
                                                             <small class="text-muted">
                                                                 <i class="fas fa-calendar"></i> 
-                                                                <?= $course['start_date_formatted'] ?> - <?= $course['end_date_formatted'] ?>
+                                                                <?= $course['start_date_formatted'] ?? date('M j, Y', strtotime($course['start_date'])) ?> - <?= $course['end_date_formatted'] ?? 'TBA' ?>
                                                             </small>
                                                         </div>
                                                     <?php endif; ?>
                                                       <!-- Enrollment Button -->
                                                     <button class="btn btn-primary btn-sm w-100 enroll-btn" 
                                                             data-course-id="<?= $course['id'] ?>"
-                                                            data-course-title="<?= esc($course['course_code']) ?> - <?= esc($course['title']) ?>"
-                                                            data-available-slots="<?= $course['available_slots'] ?>"
-                                                            data-max-students="<?= $course['max_students'] ?>"
-                                                            data-credits="<?= $course['credits'] ?>">
+                                                            data-course-title="<?= esc($course['course_code'] ?? '') ?> - <?= esc($course['course_title'] ?? $course['title'] ?? '') ?>"
+                                                            data-available-slots="<?= $course['available_slots'] ?? 0 ?>"
+                                                            data-max-students="<?= $course['max_students'] ?? 0 ?>"
+                                                            data-credits="<?= $course['credits'] ?? 0 ?>">
                                                         <i class="fas fa-plus-circle me-1"></i>
                                                         Enroll in Course
                                                     </button>
@@ -678,15 +684,38 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="mb-3">
                                 <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
                             </div>
-                            <h5 class="text-success">Welcome to ${courseTitle}!</h5>
-                            <p class="text-muted">You have been successfully enrolled in this course. You can now access course materials and start learning.</p>                            <div class="alert alert-info">
-                                <strong>Enrollment Date:</strong> ${data.data.enrollment_date_formatted}
+                            <h5 class="text-success">Welcome to ${data.data.course_code}!</h5>
+                            <p class="mb-3"><strong>${data.data.course_title}</strong></p>
+                            <p class="text-muted">You have been successfully enrolled in this course. You can now access course materials and start learning.</p>
+                            
+                            <div class="card border-0 bg-light mt-3 mb-3">
+                                <div class="card-body py-2">
+                                    <div class="row text-start">
+                                        <div class="col-6 mb-2">
+                                            <small class="text-muted">📅 Enrollment Date</small>
+                                            <div class="fw-bold">${data.data.enrollment_date_formatted || 'N/A'}</div>
+                                        </div>
+                                        <div class="col-6 mb-2">
+                                            <small class="text-muted">📚 Section</small>
+                                            <div class="fw-bold">${data.data.section || 'N/A'}</div>
+                                        </div>
+                                        <div class="col-6 mb-2">
+                                            <small class="text-muted">📖 Credits</small>
+                                            <div class="fw-bold">${data.data.credits || 'N/A'}</div>
+                                        </div>
+                                        <div class="col-6 mb-2">
+                                            <small class="text-muted">🎓 Term</small>
+                                            <div class="fw-bold">${data.data.term || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            
                             <div class="mt-3">
-                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.location.reload()">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="window.location.reload()">
                                     <i class="fas fa-sync-alt me-1"></i>Refresh Page
                                 </button>
-                                <small class="text-muted d-block mt-2">Click refresh to see updated course list</small>
+                                <small class="text-muted d-block mt-2">Click refresh to see your enrolled courses</small>
                             </div>
                         </div>
                     `;

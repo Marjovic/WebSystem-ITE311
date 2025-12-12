@@ -2056,3 +2056,37 @@ Stack trace:
 #12 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
 #13 {main}
 ERROR - 2025-12-11 16:03:12 --> Student dashboard error: Unknown column 'student_id' in 'where clause'
+ERROR - 2025-12-11 16:23:56 --> mysqli_sql_exception: Unknown column 'student_id' in 'where clause' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT *\nFROM `...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT *\nFROM `...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT *\nFROM `...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT *\nFROM `...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\system\Model.php(330): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\BaseModel.php(715): CodeIgniter\Model->doFirst()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(659): CodeIgniter\BaseModel->first()
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->dashboard()
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+ERROR - 2025-12-11 16:23:56 --> Student dashboard error: Unknown column 'student_id' in 'where clause'
+ERROR - 2025-12-11 16:30:25 --> mysqli_sql_exception: Unknown column 'student_id' in 'where clause' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT *\nFROM `...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT *\nFROM `...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT *\nFROM `...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT *\nFROM `...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\system\Model.php(330): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\BaseModel.php(715): CodeIgniter\Model->doFirst()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(659): CodeIgniter\BaseModel->first()
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->dashboard()
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+ERROR - 2025-12-11 16:30:25 --> Student dashboard error: Unknown column 'student_id' in 'where clause'

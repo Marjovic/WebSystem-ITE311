@@ -554,13 +554,13 @@ class Auth extends BaseController
                     ]);
                     
                     return view('auth/dashboard', $dashboardData);
-                }                case 'student':
+                }            case 'student':
                 // Student gets enrollment and course data using EnrollmentModel and CourseOfferingModel
                 $userID = $this->session->get('userID');
                 
                 try {
-                    // Get the student record for this user
-                    $student = $this->studentModel->where('user_id', $userID)->first();
+                    // Get the student record for this user - Use getStudentByUserId method to avoid query builder state issues
+                    $student = $this->studentModel->getStudentByUserId($userID);
                     
                     if (!$student) {
                         log_message('error', 'Student record not found for user ID: ' . $userID);
@@ -673,6 +673,7 @@ class Auth extends BaseController
                         'availableCoursesData' => $availableOfferings,
                         'completedAssignments' => $completedAssignments,
                         'pendingAssignments' => $pendingAssignments,
+                        'averageGrade' => 0, // Placeholder - implement when grades are calculated
                         'currentTerm' => $currentTerm,
                         'studentInfo' => $student
                     ]);
@@ -689,7 +690,10 @@ class Auth extends BaseController
                         'enrolledCoursesData' => [],
                         'availableCoursesData' => [],
                         'completedAssignments' => 0,
-                        'pendingAssignments' => 0
+                        'pendingAssignments' => 0,
+                        'averageGrade' => 0,
+                        'currentTerm' => null,
+                        'studentInfo' => null
                     ]);
                     
                     return view('auth/dashboard', $dashboardData);
@@ -810,16 +814,14 @@ class Auth extends BaseController
         if (!$user) {
             $this->session->setFlashdata('error', 'No account found with this email address.');
             return redirect()->to(base_url('login'));
-        }
-
-        // Check if already verified
+        }        // Check if already verified
         if ($this->userModel->isEmailVerified($user['id'])) {
             $this->session->setFlashdata('info', 'Your email is already verified. You can log in now.');
             return redirect()->to(base_url('login'));
         }
 
-        // Get student data for the email
-        $student = $this->studentModel->where('user_id', $user['id'])->first();
+        // Get student data for the email - Use getStudentByUserId method to avoid query builder state issues
+        $student = $this->studentModel->getStudentByUserId($user['id']);
         $studentId = $student ? $student['student_id_number'] : 'N/A';
 
         // Create new verification token

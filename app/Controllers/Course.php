@@ -340,9 +340,12 @@ class Course extends BaseController
             if ($db->transStatus() === false) {
                 throw new \Exception('Transaction failed');
             }
-            
-            // Get course details for response
+              // Get course details for response
             $offeringDetails = $this->courseOfferingModel->getOfferingWithDetails($courseOfferingId);
+            
+            // Format enrollment date
+            $enrollmentDate = $enrollmentData['enrollment_date'];
+            $enrollmentDateFormatted = date('F j, Y', strtotime($enrollmentDate));
             
             return $this->response->setJSON([
                 'success' => true,
@@ -351,7 +354,11 @@ class Course extends BaseController
                     'course_code' => $offeringDetails['course_code'],
                     'course_title' => $offeringDetails['course_title'],
                     'section' => $offeringDetails['section'],
-                    'term' => $offeringDetails['term_name']
+                    'term' => $offeringDetails['term_name'],
+                    'enrollment_date' => $enrollmentDate,
+                    'enrollment_date_formatted' => $enrollmentDateFormatted,
+                    'enrollment_status' => 'enrolled',
+                    'credits' => $offeringDetails['credits']
                 ],
                 'csrf_hash' => csrf_hash() // Return new CSRF token
             ]);

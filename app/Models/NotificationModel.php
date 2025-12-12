@@ -11,13 +11,9 @@ class NotificationModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
-    protected $allowedFields    = [
+    protected $protectFields    = true;    protected $allowedFields    = [
         'user_id',
         'message',
-        'type',
-        'reference_id',
-        'reference_type',
         'is_read',
         'is_hidden'
     ];
@@ -29,12 +25,12 @@ class NotificationModel extends Model
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
+    protected $updatedField  = '';  // No updated_at field in database
 
     // Validation
     protected $validationRules = [
         'user_id' => 'required|integer',
         'message' => 'required|string|max_length[255]',
-        'type'    => 'permit_empty|in_list[info,success,warning,error,assignment,grade,enrollment]',
         'is_read' => 'permit_empty|in_list[0,1]',
         'is_hidden' => 'permit_empty|in_list[0,1]'
     ];
@@ -133,26 +129,21 @@ class NotificationModel extends Model
         return $this->where('user_id', $userId)
                     ->set('is_hidden', 1)
                     ->update();
-    }
-
-    /**
+    }    /**
      * Create notification for user
+     * Note: type, referenceId, referenceType parameters are kept for backward compatibility but not stored
      */
     public function createNotification($userId, $message, $type = 'info', $referenceId = null, $referenceType = null)
     {
         return $this->insert([
-            'user_id'        => $userId,
-            'message'        => $message,
-            'type'           => $type,
-            'reference_id'   => $referenceId,
-            'reference_type' => $referenceType,
-            'is_read'        => 0,
-            'is_hidden'      => 0
+            'user_id'   => $userId,
+            'message'   => $message,
+            'is_read'   => 0,
+            'is_hidden' => 0
         ]);
-    }
-
-    /**
+    }    /**
      * Create notification for multiple users
+     * Note: type, referenceId, referenceType parameters are kept for backward compatibility but not stored
      */
     public function createBulkNotifications($userIds, $message, $type = 'info', $referenceId = null, $referenceType = null)
     {
@@ -160,27 +151,23 @@ class NotificationModel extends Model
         
         foreach ($userIds as $userId) {
             $notifications[] = [
-                'user_id'        => $userId,
-                'message'        => $message,
-                'type'           => $type,
-                'reference_id'   => $referenceId,
-                'reference_type' => $referenceType,
-                'is_read'        => 0,
-                'is_hidden'      => 0,
-                'created_at'     => date('Y-m-d H:i:s')
+                'user_id'    => $userId,
+                'message'    => $message,
+                'is_read'    => 0,
+                'is_hidden'  => 0,
+                'created_at' => date('Y-m-d H:i:s')
             ];
         }
         
         return $this->insertBatch($notifications);
-    }
-
-    /**
+    }    /**
      * Get notifications by type
+     * Note: This method is kept for backward compatibility but type filtering is not supported
      */
     public function getNotificationsByType($userId, $type)
     {
+        // Type is not stored in database, so just return all notifications for user
         return $this->where('user_id', $userId)
-                    ->where('type', $type)
                     ->where('is_hidden', 0)
                     ->orderBy('created_at', 'DESC')
                     ->findAll();
@@ -209,17 +196,13 @@ class NotificationModel extends Model
             'read'       => $this->where('user_id', $userId)->where('is_read', 1)->where('is_hidden', 0)->countAllResults(),
             'by_type'    => $this->getTypeBreakdown($userId)
         ];
-    }
-
-    /**
+    }    /**
      * Get breakdown by notification type
+     * Note: Type is not stored in database, returns empty array
      */
     private function getTypeBreakdown($userId)
     {
-        return $this->select('type, COUNT(*) as count')
-                    ->where('user_id', $userId)
-                    ->where('is_hidden', 0)
-                    ->groupBy('type')
-                    ->findAll();
+        // Type is not stored in database
+        return [];
     }
 }

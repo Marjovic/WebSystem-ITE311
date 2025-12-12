@@ -460,9 +460,15 @@
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
-                                                </td>
-                                                <td class="py-3 text-end px-4">
+                                                </td>                                                <td class="py-3 text-end px-4">
                                                     <div class="btn-group btn-group-sm">
+                                                        <!-- Course Materials Button -->
+                                                        <a href="<?= base_url('admin/course/' . $offering['id'] . '/upload') ?>" 
+                                                           class="btn btn-outline-success" 
+                                                           title="Manage Course Materials">
+                                                            <i class="fas fa-folder-open"></i>
+                                                        </a>
+                                                        
                                                         <a href="<?= base_url('admin/manage_offerings?action=toggle_status&id=' . $offering['id']) ?>" 
                                                            class="btn btn-outline-primary" 
                                                            title="Toggle Status"

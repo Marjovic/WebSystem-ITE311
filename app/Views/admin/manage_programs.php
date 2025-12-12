@@ -103,6 +103,39 @@
             </div>
         </div>
 
+        <!-- Search Box -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-search text-muted"></i>
+                                    </span>
+                                    <input type="text" 
+                                           id="programSearchInput" 
+                                           class="form-control border-start-0" 
+                                           placeholder="🔍 Search programs by code, name, description, or department...">
+                                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                        <i class="fas fa-times"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-2 mt-md-0">
+                                <div class="text-muted">
+                                    <small>
+                                        <strong id="searchResultCount"><?= count($programs) ?></strong> program(s) found
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Create Program Form (shown when action=create) -->
         <?php if ($showCreateForm): ?>
         <div class="row mb-4">
@@ -401,10 +434,9 @@
                 <div class="card border-0 shadow-sm rounded-3">
                     <div class="card-header bg-white border-0">
                         <h5 class="mb-0 fw-bold">📋 Program List</h5>
-                    </div>
-                    <div class="card-body p-0">
+                    </div>                    <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-hover mb-0" id="programsTable">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Code</th>
@@ -419,10 +451,14 @@
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="programTableBody">
                                     <?php if (!empty($programs)): ?>
                                         <?php foreach ($programs as $program): ?>
-                                            <tr>
+                                            <tr class="program-row"
+                                                data-program-code="<?= esc(strtolower($program['program_code'])) ?>"
+                                                data-program-name="<?= esc(strtolower($program['program_name'])) ?>"
+                                                data-description="<?= esc(strtolower($program['description'] ?? '')) ?>"
+                                                data-department="<?= esc(strtolower($program['department_name'] ?? '')) ?>">
                                                 <td>
                                                     <span class="badge bg-secondary"><?= esc($program['program_code']) ?></span>
                                                 </td>
@@ -485,17 +521,23 @@
                                                             <?= csrf_field() ?>
                                                             <input type="hidden" name="action" value="delete">
                                                             <input type="hidden" name="program_id" value="<?= $program['id'] ?>">
-                                                            <button type="submit" class="btn btn-sm btn-danger" 
+                                                            <button type="submit" class="btn btn-sm btn-danger"
                                                                     onclick="return confirm('Are you sure you want to delete this program? This action may fail if there are dependencies.')">
                                                                 🗑️ Delete
                                                             </button>
                                                         </form>
                                                     </div>
-                                                </td>
-                                            </tr>
+                                                </td>                                        </tr>
                                         <?php endforeach; ?>
+                                        <tr id="noResultsRow" style="display: none;">
+                                            <td colspan="10" class="text-center text-muted py-4">
+                                                <i class="fas fa-search mb-2" style="font-size: 2rem;"></i>
+                                                <p class="mb-0">No programs match your search criteria.</p>
+                                                <small>Try adjusting your search terms.</small>
+                                            </td>
+                                        </tr>
                                     <?php else: ?>
-                                        <tr>
+                                        <tr id="noProgramsRow">
                                             <td colspan="10" class="text-center text-muted py-4">
                                                 <div class="display-1">📭</div>
                                                 <p class="mb-0">No programs found. Create one to get started!</p>
@@ -550,6 +592,50 @@ $(document).ready(function() {
         // Only allow numbers
         value = value.replace(/[^0-9]/g, '');
         $(this).val(value);
+    });
+
+    // Program search functionality
+    function filterPrograms() {
+        const searchTerm = $('#programSearchInput').val().toLowerCase().trim();
+        let visibleCount = 0;
+        
+        $('.program-row').each(function() {
+            const programCode = $(this).data('program-code') || '';
+            const programName = $(this).data('program-name') || '';
+            const description = $(this).data('description') || '';
+            const department = $(this).data('department') || '';
+            
+            const searchableText = programCode + ' ' + programName + ' ' + description + ' ' + department;
+            
+            if (searchableText.includes(searchTerm)) {
+                $(this).show();
+                visibleCount++;
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        // Update count
+        $('#searchResultCount').text(visibleCount);
+        
+        // Show/hide no results message
+        if (visibleCount === 0 && $('.program-row').length > 0) {
+            $('#noResultsRow').show();
+        } else {
+            $('#noResultsRow').hide();
+        }
+    }
+    
+    // Search on keyup
+    $('#programSearchInput').on('keyup', function() {
+        filterPrograms();
+    });
+    
+    // Clear search button
+    $('#clearSearch').on('click', function() {
+        $('#programSearchInput').val('');
+        filterPrograms();
+        $('#programSearchInput').focus();
     });
 });
 </script>

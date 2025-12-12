@@ -73,12 +73,11 @@ class Material extends BaseController
             if (!is_dir($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
-            
-            // Configure validation rules for file upload
+              // Configure validation rules for file upload (PDF and PPT only)
             $validationRules = [
                 'material_file' => [
                     'label' => 'Material File',
-                    'rules' => 'uploaded[material_file]|max_size[material_file,10240]|ext_in[material_file,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,rtf,jpg,jpeg,png,gif,mp4,avi,mov]'
+                    'rules' => 'uploaded[material_file]|max_size[material_file,10240]|ext_in[material_file,pdf,ppt,pptx]'
                 ]
             ];
             
@@ -86,7 +85,7 @@ class Material extends BaseController
                 'material_file' => [
                     'uploaded' => 'Please select a file to upload.',
                     'max_size' => 'File size cannot exceed 10MB.',
-                    'ext_in' => 'Only PDF, Word, Excel, PowerPoint, text, image, and video files are allowed.'
+                    'ext_in' => 'Only PDF and PowerPoint (PPT/PPTX) files are allowed.'
                 ]
             ];
             
@@ -263,12 +262,10 @@ class Material extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'Material deletion error: ' . $e->getMessage());
             $this->session->setFlashdata('error', 'Delete failed due to server error.');
-        }
-
-        // Redirect back to the course upload page or dashboard
-        $course_id = $material['course_id'] ?? null;
-        if ($course_id) {
-            return redirect()->to('/material/upload/' . $course_id);
+        }        // Redirect back to the course upload page or dashboard
+        $course_offering_id = $material['course_offering_id'] ?? null;
+        if ($course_offering_id) {
+            return redirect()->to('/material/upload/' . $course_offering_id);
         }
         return redirect()->to('/dashboard');
     }
@@ -300,14 +297,12 @@ class Material extends BaseController
             $material = $this->materialModel->find($material_id);
             if (!$material) {
                 return redirect()->to('/dashboard')->with('error', 'Material not found.');
-            }
-
-            // Convert to array if needed
+            }            // Convert to array if needed
             if (is_object($material)) {
                 $material = (array) $material;
             }
 
-            $course_id = $material['course_id'];
+            $course_offering_id = $material['course_offering_id'];
 
             // 4. AUTHORIZATION CHECK - Verify user can download this material
             $canDownload = false;
@@ -318,7 +313,7 @@ class Material extends BaseController
             }
             // Students can only download materials from courses they're enrolled in
             elseif ($userRole === 'student') {
-                $isEnrolled = $this->enrollmentModel->isAlreadyEnrolled($userID, $course_id);
+                $isEnrolled = $this->enrollmentModel->isAlreadyEnrolled($userID, $course_offering_id);
                 if ($isEnrolled) {
                     $canDownload = true;
                 }
@@ -382,14 +377,12 @@ class Material extends BaseController
             $material = $this->materialModel->find($material_id);
             if (!$material) {
                 return redirect()->to('/dashboard')->with('error', 'Material not found.');
-            }
-
-            // Convert to array if needed
+            }            // Convert to array if needed
             if (is_object($material)) {
                 $material = (array) $material;
             }
 
-            $course_id = $material['course_id'];
+            $course_offering_id = $material['course_offering_id'];
 
             // 4. AUTHORIZATION CHECK - Verify user can view this material
             $canView = false;
@@ -400,7 +393,7 @@ class Material extends BaseController
             }
             // Students can only view materials from courses they're enrolled in
             elseif ($userRole === 'student') {
-                $isEnrolled = $this->enrollmentModel->isAlreadyEnrolled($userID, $course_id);
+                $isEnrolled = $this->enrollmentModel->isAlreadyEnrolled($userID, $course_offering_id);
                 if ($isEnrolled) {
                     $canView = true;
                 }

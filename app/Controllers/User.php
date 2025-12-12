@@ -704,4 +704,77 @@ class User extends BaseController
         
         return $this->response->setJSON($programs);
     }
+
+    /**
+     * Search users - AJAX endpoint
+     * Accepts GET or POST requests with search term
+     * Searches first_name, last_name, email, and user_code
+     */
+    public function search()
+    {
+        // Check if user is logged in and is admin
+        if ($this->session->get('isLoggedIn') !== true || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ]);
+        }
+
+        // Get search term from GET or POST
+        $searchTerm = $this->request->getGet('search') ?? $this->request->getPost('search');
+
+        if (empty($searchTerm)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Search term is required'
+            ]);
+        }
+
+        try {
+            // Search users using Query Builder with LIKE queries
+            $results = $this->userModel->select('
+                    users.*,
+                    roles.role_name,
+                    students.student_id_number,
+                    students.section as student_section,
+                    programs.program_name,
+                    year_levels.level_name as year_level_name,
+                    instructors.employee_id,
+                    departments.department_name
+                ')
+                ->join('roles', 'roles.id = users.role_id', 'left')
+                ->join('students', 'students.user_id = users.id', 'left')
+                ->join('programs', 'programs.id = students.program_id', 'left')
+                ->join('year_levels', 'year_levels.id = students.year_level_id', 'left')
+                ->join('instructors', 'instructors.user_id = users.id', 'left')
+                ->join('departments', 'departments.id = instructors.department_id', 'left')
+                ->groupStart()
+                    ->like('users.first_name', $searchTerm)
+                    ->orLike('users.last_name', $searchTerm)
+                    ->orLike('users.email', $searchTerm)
+                    ->orLike('users.user_code', $searchTerm)
+                    ->orLike('students.student_id_number', $searchTerm)
+                    ->orLike('instructors.employee_id', $searchTerm)
+                    ->orLike('roles.role_name', $searchTerm)
+                    ->orLike('programs.program_name', $searchTerm)
+                    ->orLike('departments.department_name', $searchTerm)
+                ->groupEnd()
+                ->orderBy('users.last_name', 'ASC')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'count' => count($results),
+                'data' => $results,
+                'search_term' => $searchTerm
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'User search error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while searching users'
+            ]);
+        }
+    }
 }

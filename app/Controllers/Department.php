@@ -351,4 +351,64 @@ class Department extends BaseController
           
         return view('admin/manage_departments', $data);
     }
+
+    /**
+     * Search departments - AJAX endpoint
+     * Accepts GET or POST requests with search term
+     * Searches department_code, department_name, and description
+     */
+    public function search()
+    {
+        // Check if user is logged in and is admin
+        if ($this->session->get('isLoggedIn') !== true || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ]);
+        }
+
+        // Get search term from GET or POST
+        $searchTerm = $this->request->getGet('search') ?? $this->request->getPost('search');
+
+        if (empty($searchTerm)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Search term is required'
+            ]);
+        }
+
+        try {
+            // Search departments using Query Builder with LIKE queries
+            $results = $this->departmentModel->select('
+                    departments.*,
+                    CONCAT(users.first_name, " ", users.last_name) as head_name,
+                    users.email as head_email
+                ')
+                ->join('instructors', 'instructors.id = departments.head_instructor_id', 'left')
+                ->join('users', 'users.id = instructors.user_id', 'left')
+                ->groupStart()
+                    ->like('departments.department_code', $searchTerm)
+                    ->orLike('departments.department_name', $searchTerm)
+                    ->orLike('departments.description', $searchTerm)
+                    ->orLike('users.first_name', $searchTerm)
+                    ->orLike('users.last_name', $searchTerm)
+                ->groupEnd()
+                ->orderBy('departments.department_name', 'ASC')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'count' => count($results),
+                'data' => $results,
+                'search_term' => $searchTerm
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Department search error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while searching departments'
+            ]);
+        }
+    }
 }

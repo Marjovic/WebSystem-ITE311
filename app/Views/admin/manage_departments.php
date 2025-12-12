@@ -76,6 +76,39 @@
             </div>
         </div>
 
+        <!-- Search Box -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-search text-muted"></i>
+                                    </span>
+                                    <input type="text" 
+                                           id="departmentSearchInput" 
+                                           class="form-control border-start-0" 
+                                           placeholder="🔍 Search departments by code, name, description, or head...">
+                                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                        <i class="fas fa-times"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-2 mt-md-0">
+                                <div class="text-muted">
+                                    <small>
+                                        <strong id="searchResultCount"><?= count($departments) ?></strong> department(s) found
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Create Department Form (shown when action=create) -->
         <?php if ($showCreateForm): ?>
         <div class="row mb-4">
@@ -230,10 +263,9 @@
                                 Total: <?= count($departments) ?> departments
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body pt-0">
+                    </div>                    <div class="card-body pt-0">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
+                            <table class="table table-hover align-middle mb-0" id="departmentsTable">
                                 <thead class="table-light">
                                     <tr>
                                         <th class="fw-semibold border-0 text-center">ID</th>
@@ -245,10 +277,14 @@
                                         <th class="fw-semibold border-0 text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="departmentTableBody">
                                     <?php if (!empty($departments)): ?>
                                         <?php foreach ($departments as $department): ?>
-                                        <tr class="border-bottom">
+                                        <tr class="department-row border-bottom"
+                                            data-dept-code="<?= esc(strtolower($department['department_code'])) ?>"
+                                            data-dept-name="<?= esc(strtolower($department['department_name'])) ?>"
+                                            data-description="<?= esc(strtolower($department['description'] ?? '')) ?>"
+                                            data-head-name="<?= esc(strtolower($department['head_name'] ?? '')) ?>">
                                             <td class="text-center">
                                                 <span class="badge bg-secondary rounded-pill px-2 py-1"><?= $department['id'] ?></span>
                                             </td>
@@ -308,11 +344,17 @@
                                                         🗑️
                                                     </a>
                                                 </div>
+                                            </td>                                        </tr>
+                                        <?php endforeach; ?>
+                                        <tr id="noResultsRow" style="display: none;">
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                <i class="fas fa-search mb-2" style="font-size: 2rem;"></i>
+                                                <p class="mb-0">No departments match your search criteria.</p>
+                                                <small>Try adjusting your search terms.</small>
                                             </td>
                                         </tr>
-                                        <?php endforeach; ?>
                                     <?php else: ?>
-                                        <tr>
+                                        <tr id="noDepartmentsRow">
                                             <td colspan="7" class="text-center py-5">
                                                 <div class="text-muted">
                                                     <div class="display-1 mb-3">🏢</div>
@@ -330,3 +372,52 @@
         </div>
     </div>
 </div>
+
+<!-- Department Search JavaScript -->
+<script>
+$(document).ready(function() {
+    // Department search functionality
+    function filterDepartments() {
+        const searchTerm = $('#departmentSearchInput').val().toLowerCase().trim();
+        let visibleCount = 0;
+        
+        $('.department-row').each(function() {
+            const deptCode = $(this).data('dept-code') || '';
+            const deptName = $(this).data('dept-name') || '';
+            const description = $(this).data('description') || '';
+            const headName = $(this).data('head-name') || '';
+            
+            const searchableText = deptCode + ' ' + deptName + ' ' + description + ' ' + headName;
+            
+            if (searchableText.includes(searchTerm)) {
+                $(this).show();
+                visibleCount++;
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        // Update count
+        $('#searchResultCount').text(visibleCount);
+        
+        // Show/hide no results message
+        if (visibleCount === 0 && $('.department-row').length > 0) {
+            $('#noResultsRow').show();
+        } else {
+            $('#noResultsRow').hide();
+        }
+    }
+    
+    // Search on keyup
+    $('#departmentSearchInput').on('keyup', function() {
+        filterDepartments();
+    });
+    
+    // Clear search button
+    $('#clearSearch').on('click', function() {
+        $('#departmentSearchInput').val('');
+        filterDepartments();
+        $('#departmentSearchInput').focus();
+    });
+});
+</script>

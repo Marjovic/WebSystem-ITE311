@@ -67,32 +67,32 @@
                                 <i class="fas fa-info-circle me-2"></i>
                                 You don't have any assigned course offerings yet.
                             </div>
-                        <?php else: ?>
-                            <form method="get" action="<?= base_url('teacher/enroll_student') ?>" id="courseFilterForm">
+                        <?php else: ?>                            <form method="get" action="<?= base_url('teacher/enroll_student') ?>" id="courseFilterForm">
                                 <div class="row align-items-end">
-                                    <div class="col-md-10">
-                                        <label for="course_offering_id" class="form-label fw-semibold">Course Offering</label>                                        <select name="course_offering_id" id="course_offering_id" class="form-select" required>
-                                            <option value="">-- Select a Course Offering --</option>
-                                            <?php foreach ($assignedCourses as $course): ?>
+                                    <div class="col-12">
+                                        <label for="course_offering_id" class="form-label fw-semibold">
+                                            Course Offering
+                                            <small class="text-muted">(Students will be filtered automatically)</small>
+                                        </label>
+                                        <select name="course_offering_id" id="course_offering_id" class="form-select" required>
+                                            <option value="">-- Select a Course Offering --</option>                                            <?php foreach ($assignedCourses as $course): ?>
                                                 <option value="<?= $course['id'] ?>" 
                                                         <?= $selectedCourseId == $course['id'] ? 'selected' : '' ?>
                                                         data-department="<?= esc($course['department_name'] ?? 'N/A') ?>"
                                                         data-enrolled="<?= $course['enrolled_count'] ?>"
                                                         data-max="<?= $course['max_students'] ?>">
-                                                    <?= esc($course['course_code']) ?> - <?= esc($course['course_title']) ?>
-                                                    (<?= esc($course['term_name']) ?> <?= esc($course['academic_year']) ?>)
+                                                    <?= esc($course['course_code']) ?> - <?= esc($course['course_title']) ?> 
+                                                    <?php if (!empty($course['section'])): ?>
+                                                        (Section <?= esc($course['section']) ?>)
+                                                    <?php endif; ?>
+                                                    - <?= esc($course['term_name']) ?> <?= esc($course['academic_year']) ?>
                                                     - Enrolled: <?= $course['enrolled_count'] ?><?= $course['max_students'] ? '/' . $course['max_students'] : '' ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <button type="submit" class="btn btn-primary w-100">
-                                            <i class="fas fa-filter"></i> Filter Students
-                                        </button>
-                                    </div>
                                 </div>
-                            </form>                            <?php if ($selectedCourseId): ?>
+                            </form><?php if ($selectedCourseId): ?>
                                 <div class="mt-3">
                                     <div class="row g-2">
                                         <div class="col-md-6">
@@ -297,26 +297,35 @@
 <!-- JavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Loaded - Initializing enrollment form');
-    
-    // Update course info when selection changes
+    console.log('DOM Loaded - Initializing enrollment form');    // Update course info when selection changes and auto-submit form
     const courseSelect = document.getElementById('course_offering_id');
-    if (courseSelect) {
+    const courseFilterForm = document.getElementById('courseFilterForm');
+    
+    if (courseSelect && courseFilterForm) {
+        let isSubmitting = false; // Prevent duplicate submissions
+        
         courseSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value) {
-                document.getElementById('selectedDepartment').textContent = 
-                    selectedOption.dataset.department || 'Not specified';
-                document.getElementById('selectedCapacity').textContent = 
-                    selectedOption.dataset.enrolled + '/' + 
-                    (selectedOption.dataset.max || '∞');
+            
+            if (selectedOption.value && !isSubmitting) {
+                // Update course info display (if elements exist)
+                const deptElement = document.getElementById('selectedDepartment');
+                const capacityElement = document.getElementById('selectedCapacity');
+                
+                if (deptElement) {
+                    deptElement.textContent = selectedOption.dataset.department || 'Not specified';
+                }
+                if (capacityElement) {
+                    capacityElement.textContent = selectedOption.dataset.enrolled + '/' + 
+                        (selectedOption.dataset.max || '∞');
+                }
+                
+                // Auto-submit the form to load students for this course
+                console.log('Auto-submitting course filter form for course:', selectedOption.value);
+                isSubmitting = true;
+                courseFilterForm.submit();
             }
         });
-        
-        // Trigger on page load if course is already selected
-        if (courseSelect.value) {
-            courseSelect.dispatchEvent(new Event('change'));
-        }
     }
 
     // Bulk selection functionality

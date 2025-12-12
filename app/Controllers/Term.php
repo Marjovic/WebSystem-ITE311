@@ -370,4 +370,62 @@ class Term extends BaseController
             'current' => $this->termModel->where('is_current', 1)->countAllResults()
         ];
     }
+
+    /**
+     * Search terms - AJAX endpoint
+     * Accepts GET or POST requests with search term
+     * Searches term_name, academic year, and semester
+     */
+    public function search()
+    {
+        // Check if user is logged in and is admin
+        if ($this->session->get('isLoggedIn') !== true || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ]);
+        }
+
+        // Get search term from GET or POST
+        $searchTerm = $this->request->getGet('search') ?? $this->request->getPost('search');
+
+        if (empty($searchTerm)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Search term is required'
+            ]);
+        }
+
+        try {
+            // Search terms using Query Builder with LIKE queries
+            $results = $this->termModel->select('
+                    terms.*,
+                    academic_years.year_name,
+                    semesters.semester_name
+                ')
+                ->join('academic_years', 'academic_years.id = terms.academic_year_id', 'left')
+                ->join('semesters', 'semesters.id = terms.semester_id', 'left')
+                ->groupStart()
+                    ->like('terms.term_name', $searchTerm)
+                    ->orLike('academic_years.year_name', $searchTerm)
+                    ->orLike('semesters.semester_name', $searchTerm)
+                ->groupEnd()
+                ->orderBy('terms.start_date', 'DESC')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'count' => count($results),
+                'data' => $results,
+                'search_term' => $searchTerm
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Term search error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while searching terms'
+            ]);
+        }
+    }
 }

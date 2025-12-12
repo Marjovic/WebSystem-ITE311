@@ -75,9 +75,17 @@ $routes->get(from: '/teacher/enrolled_students', to: 'Enrollment::teacherEnrolle
 // AJAX endpoint for teacher bulk enrollment
 $routes->post('/teacher/ajax_enroll_students', 'Enrollment::ajaxEnrollStudents');
 
+// AJAX course search routes
+$routes->post('/student/search_courses', 'Auth::searchStudentCourses');
+$routes->get('/student/search_courses', 'Auth::searchStudentCourses');
+$routes->post('/teacher/search_courses', 'CourseInstructors::searchTeacherCourses');
+$routes->get('/teacher/search_courses', 'CourseInstructors::searchTeacherCourses');
+
 
 // Student course management routes
 $routes->get(from: '/student/courses', to: 'Auth::studentCourses');
+$routes->get('/student/materials', 'Auth::studentMaterials');
+$routes->get('/student/course/(:num)/materials', 'Auth::studentCourseMaterials/$1');
 
 // Material management routes
 $routes->get('/admin/course/(:num)/upload', 'Material::upload/$1');
@@ -85,10 +93,8 @@ $routes->post('/admin/course/(:num)/upload', 'Material::upload/$1');
 $routes->get('/teacher/course/(:num)/upload', 'Material::upload/$1');
 $routes->post('/teacher/course/(:num)/upload', 'Material::upload/$1');
 
-// Teacher student management routes  
-$routes->post('/teacher/course/remove_student', 'Course::removeStudent');
-$routes->post('/teacher/course/add_student', 'Course::addStudent');
-$routes->get('/teacher/course/get_available_students', 'Course::getAvailableStudents');
+// Teacher course view routes (placeholders for future implementation)
+$routes->get('/teacher/course/(:num)/view', 'CourseInstructors::viewCourse/$1');
 
 // Legacy material upload route 
 $routes->get('/material/upload/(:num)', 'Material::upload/$1');
@@ -102,8 +108,28 @@ $routes->get('/material/view/(:num)', 'Material::view/$1');
 
 // Notification API routes
 $routes->get('/notifications', 'Notifications::get');
+$routes->get('/notifications/unread', 'Notifications::getUnread');
+$routes->get('/notifications/stats', 'Notifications::getStats');
+$routes->get('/notifications/type/(:segment)', 'Notifications::getByType/$1');
 $routes->post('/notifications/mark_read/(:num)', 'Notifications::mark_as_read/$1');
+$routes->post('/notifications/mark_all_read', 'Notifications::markAllAsRead');
 $routes->post('/notifications/hide/(:num)', 'Notifications::hide/$1');
+$routes->post('/notifications/clear_all', 'Notifications::clearAll');
+$routes->post('/notifications/create', 'Notifications::create');
 
 // API routes for dynamic data
 $routes->get('/api/programs/by-department/(:num)', 'User::getProgramsByDepartment/$1');
+
+// Search routes for Admin functionality
+$routes->get('/admin/search/courses', 'Course::search');
+$routes->post('/admin/search/courses', 'Course::search');
+$routes->get('/admin/search/terms', 'Term::search');
+$routes->post('/admin/search/terms', 'Term::search');
+$routes->get('/admin/search/departments', 'Department::search');
+$routes->post('/admin/search/departments', 'Department::search');
+$routes->get('/admin/search/programs', 'Program::search');
+$routes->post('/admin/search/programs', 'Program::search');
+$routes->get('/admin/search/users', 'User::search');
+$routes->post('/admin/search/users', 'User::search');
+
+$routes->get('student/search/courses', 'Auth::searchStudentCourses');

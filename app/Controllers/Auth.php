@@ -394,7 +394,8 @@ class Auth extends BaseController
                 'role'   => $this->session->get(key: 'role')   // User's role
             ]
         ];        // Step 6: Get role-specific data and determine view based on user type
-        switch ($userRole) {                case 'admin':
+        switch ($userRole) {                
+            case 'admin':
                 // Admin gets system statistics and user management data using UserModel
                 $totalUsers = $this->userModel->countAll();
                 
@@ -466,7 +467,8 @@ class Auth extends BaseController
                     'recentUsers' => $recentUsers,
                     'recentActivities' => $recentActivities
                 ]);
-                return view('auth/dashboard', $dashboardData);                  case 'teacher':
+                return view('auth/dashboard', $dashboardData);                  
+                case 'teacher':
                 // Teacher gets course and student data using proper relational queries
                 $teacherUserID = $this->session->get('userID');
                 
@@ -554,7 +556,8 @@ class Auth extends BaseController
                     ]);
                     
                     return view('auth/dashboard', $dashboardData);
-                }            case 'student':
+                }            
+                case 'student':
                 // Student gets enrollment and course data using EnrollmentModel and CourseOfferingModel
                 $userID = $this->session->get('userID');
                 
@@ -577,7 +580,14 @@ class Auth extends BaseController
                         ]);
                         return view('auth/dashboard', $dashboardData);
                     }
-                      $studentId = $student['id'];
+                    
+                    $studentId = $student['id'];
+                    
+                    // Get complete student info with program name for display
+                    $studentComplete = $this->studentModel->getStudentComplete($studentId);
+                    if ($studentComplete) {
+                        $student = $studentComplete;
+                    }
                     
                     // Initialize CourseOfferingModel
                     $courseOfferingModel = new \App\Models\CourseOfferingModel();
@@ -1004,5 +1014,468 @@ class Auth extends BaseController
         }
 
         return redirect()->to(base_url('verify-otp'));
+    }
+      /**
+     * Student Courses View - Display enrolled courses with downloadable materials
+     * 
+     * Step 6: Display Downloadable Materials for Students
+     * - Fetches materials for courses the student is enrolled in
+     * - Lists materials with file name and download button
+     * - Download links point to Material::download() method with enrollment verification
+     * 
+     * Step 7: Download Method Implementation (in Material Controller)
+     * - Checks if user is logged in and enrolled in the course
+     * - Retrieves file path from database
+     * - Uses Response class to force secure file download
+     */
+    public function studentCourses()
+    {
+        // 1. AUTHENTICATION CHECK
+        if ($this->session->get('isLoggedIn') !== true) {
+            $this->session->setFlashdata('error', 'Please login to access this page.');
+            return redirect()->to(base_url('login'));
+        }
+
+        // 2. ROLE CHECK - Only students can access
+        if ($this->session->get('role') !== 'student') {
+            $this->session->setFlashdata('error', 'Access denied. This page is for students only.');
+            return redirect()->to(base_url('dashboard'));
+        }
+
+        $userID = $this->session->get('userID');
+
+        try {
+            // 3. GET STUDENT RECORD
+            $student = $this->studentModel->getStudentByUserId($userID);
+            
+            if (!$student) {
+                log_message('error', 'Student record not found for user ID: ' . $userID);
+                $this->session->setFlashdata('error', 'Student profile not found.');
+                return redirect()->to(base_url('dashboard'));
+            }
+
+            $studentId = $student['id'];
+            
+            // 4. GET ENROLLED COURSES (using EnrollmentModel method)
+            // This returns courses with: course_offering_id, course_code, course_title, 
+            // course_description, credits, section, start_date, end_date, term_name, 
+            // academic_year, semester_name, enrollment_date, enrollment_status
+            $enrolledCourses = $this->enrollmentModel->getStudentEnrollments($studentId);
+            
+            // 5. STEP 6 IMPLEMENTATION: Fetch downloadable materials for each enrolled course
+            $materialModel = new \App\Models\MaterialModel();
+              foreach ($enrolledCourses as &$course) {
+                // Get materials for this course offering
+                $materials = $materialModel->getOfferingMaterials($course['course_offering_id']);
+                $course['materials'] = $materials; // Array of materials with download links
+                
+                // Add computed fields for view display
+                $course['duration_weeks'] = 16; // Default semester duration
+                $course['progress'] = 0; // Progress tracking (can be enhanced later)
+                
+                // Format dates for display
+                $course['start_date_formatted'] = !empty($course['start_date']) 
+                    ? date('M d, Y', strtotime($course['start_date'])) 
+                    : 'TBA';
+                $course['end_date_formatted'] = !empty($course['end_date']) 
+                    ? date('M d, Y', strtotime($course['end_date'])) 
+                    : 'TBA';
+                
+                // Format enrollment date (MISSING FIELD - Added here)
+                $course['enrollment_date_formatted'] = !empty($course['enrollment_date']) 
+                    ? date('M d, Y', strtotime($course['enrollment_date'])) 
+                    : 'TBA';
+                
+                // Get instructor information for this course offering
+                $instructors = $this->db->table('course_instructors ci')
+                    ->select('CONCAT(u.first_name, " ", u.last_name) as name, u.email')
+                    ->join('instructors i', 'i.id = ci.instructor_id')
+                    ->join('users u', 'u.id = i.user_id')
+                    ->where('ci.course_offering_id', $course['course_offering_id'])
+                    ->limit(1)
+                    ->get()
+                    ->getRowArray();
+                
+                $course['instructor_name'] = $instructors ? $instructors['name'] : 'N/A';
+                $course['instructor_email'] = $instructors ? $instructors['email'] : '';
+                
+                // Create status badge based on enrollment status
+                $status = $course['enrollment_status'] ?? 'enrolled';
+                $badgeClass = match($status) {
+                    'pending' => 'bg-warning',
+                    'dropped' => 'bg-danger',
+                    'completed' => 'bg-info',
+                    default => 'bg-success'
+                };
+                
+                $course['status_badge'] = '<span class="badge ' . $badgeClass . '">' . ucfirst($status) . '</span>';
+            }
+
+            // 6. PREPARE VIEW DATA
+            $data = [
+                'title' => 'My Courses - Student Portal',
+                'enrolledCourses' => $enrolledCourses,
+                'totalEnrolled' => count($enrolledCourses),
+                'totalAvailable' => 0, // Can be calculated if needed
+                'student' => $student
+            ];
+
+            return view('student/courses', $data);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Student courses error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            $this->session->setFlashdata('error', 'An error occurred while loading your courses.');
+            return redirect()->to(base_url('dashboard'));
+        }    }
+    
+    /**
+     * Student Materials Browser - Display all materials from all enrolled courses
+     * 
+     * @return mixed View or redirect
+     */
+    public function studentMaterials()
+    {
+        // 1. AUTHENTICATION CHECK
+        if ($this->session->get('isLoggedIn') !== true) {
+            $this->session->setFlashdata('error', 'Please login to access this page.');
+            return redirect()->to(base_url('login'));
+        }
+
+        // 2. ROLE CHECK - Only students can access
+        if ($this->session->get('role') !== 'student') {
+            $this->session->setFlashdata('error', 'Access denied. This page is for students only.');
+            return redirect()->to(base_url('dashboard'));
+        }
+
+        $userID = $this->session->get('userID');
+
+        try {
+            // 3. GET STUDENT RECORD
+            $student = $this->studentModel->getStudentByUserId($userID);
+            
+            if (!$student) {
+                log_message('error', 'Student record not found for user ID: ' . $userID);
+                $this->session->setFlashdata('error', 'Student profile not found.');
+                return redirect()->to(base_url('dashboard'));
+            }
+
+            $studentId = $student['id'];
+            
+            // 4. GET ALL ENROLLED COURSES WITH DETAILS
+            $enrollments = $this->enrollmentModel->getStudentEnrollments($studentId);
+            
+            // 5. GET MATERIALS FOR EACH COURSE
+            $materialModel = new \App\Models\MaterialModel();
+            $allMaterials = [];
+            $courseMap = [];
+            
+            foreach ($enrollments as $enrollment) {
+                $offeringId = $enrollment['course_offering_id'];
+                
+                // Get materials for this course
+                $materials = $materialModel->getOfferingMaterials($offeringId);
+                
+                // Store course info for reference
+                $courseMap[$offeringId] = [
+                    'course_code' => $enrollment['course_code'],
+                    'course_title' => $enrollment['course_title'],
+                    'section' => $enrollment['section'],
+                    'credits' => $enrollment['credits']
+                ];
+                
+                // Add course info to each material
+                foreach ($materials as $material) {
+                    $material['course_info'] = $courseMap[$offeringId];
+                    $material['course_offering_id'] = $offeringId;
+                    $allMaterials[] = $material;
+                }
+            }
+            
+            // 6. SORT MATERIALS BY UPLOAD DATE (NEWEST FIRST)
+            usort($allMaterials, function($a, $b) {
+                return strtotime($b['uploaded_at']) - strtotime($a['uploaded_at']);
+            });
+            
+            // 7. PREPARE VIEW DATA
+            $data = [
+                'title' => 'Course Materials',
+                'materials' => $allMaterials,
+                'totalMaterials' => count($allMaterials),
+                'totalCourses' => count($enrollments),
+                'student' => $student
+            ];
+
+            return view('student/materials', $data);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Student materials browser error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            $this->session->setFlashdata('error', 'An error occurred while loading materials.');
+            return redirect()->to(base_url('student/courses'));
+        }
+    }
+    
+    /**
+     * Student Course Materials View - Display all materials for a specific course offering
+     * 
+     * @param int $offeringId Course offering ID
+     * @return mixed View or redirect
+     */
+    public function studentCourseMaterials($offeringId)
+    {
+        // 1. AUTHENTICATION CHECK
+        if ($this->session->get('isLoggedIn') !== true) {
+            $this->session->setFlashdata('error', 'Please login to access this page.');
+            return redirect()->to(base_url('login'));
+        }
+
+        // 2. ROLE CHECK - Only students can access
+        if ($this->session->get('role') !== 'student') {
+            $this->session->setFlashdata('error', 'Access denied. This page is for students only.');
+            return redirect()->to(base_url('dashboard'));
+        }
+
+        // 3. VALIDATE OFFERING ID
+        if (!$offeringId || !is_numeric($offeringId)) {
+            $this->session->setFlashdata('error', 'Invalid course offering.');
+            return redirect()->to(base_url('student/courses'));
+        }
+
+        $userID = $this->session->get('userID');
+
+        try {
+            // 4. GET STUDENT RECORD
+            $student = $this->studentModel->getStudentByUserId($userID);
+            
+            if (!$student) {
+                log_message('error', 'Student record not found for user ID: ' . $userID);
+                $this->session->setFlashdata('error', 'Student profile not found.');
+                return redirect()->to(base_url('dashboard'));
+            }
+
+            $studentId = $student['id'];
+            
+            // 5. VERIFY STUDENT IS ENROLLED IN THIS COURSE
+            $isEnrolled = $this->enrollmentModel->isStudentEnrolled($studentId, $offeringId);
+            
+            if (!$isEnrolled) {
+                $this->session->setFlashdata('error', 'You are not enrolled in this course.');
+                return redirect()->to(base_url('student/courses'));
+            }
+            
+            // 6. GET COURSE OFFERING DETAILS
+            $course = $this->db->table('course_offerings co')
+                ->select('
+                    co.id as course_offering_id,
+                    co.section,
+                    co.start_date,
+                    co.end_date,
+                    c.id as course_id,
+                    c.course_code,
+                    c.title as course_title,
+                    c.description as course_description,
+                    c.credits,
+                    t.term_name,
+                    ay.year_name as academic_year,
+                    s.semester_name
+                ')
+                ->join('courses c', 'c.id = co.course_id')
+                ->join('terms t', 't.id = co.term_id')
+                ->join('academic_years ay', 'ay.id = t.academic_year_id')
+                ->join('semesters s', 's.id = t.semester_id')
+                ->where('co.id', $offeringId)
+                ->get()
+                ->getRowArray();
+            
+            if (!$course) {
+                $this->session->setFlashdata('error', 'Course offering not found.');
+                return redirect()->to(base_url('student/courses'));
+            }
+            
+            // 7. FORMAT DATES
+            $course['start_date_formatted'] = !empty($course['start_date']) 
+                ? date('M d, Y', strtotime($course['start_date'])) 
+                : 'TBA';
+            $course['end_date_formatted'] = !empty($course['end_date']) 
+                ? date('M d, Y', strtotime($course['end_date'])) 
+                : 'TBA';
+            
+            // 8. GET INSTRUCTOR INFORMATION
+            $instructors = $this->db->table('course_instructors ci')
+                ->select('CONCAT(u.first_name, " ", u.last_name) as name, u.email')
+                ->join('instructors i', 'i.id = ci.instructor_id')
+                ->join('users u', 'u.id = i.user_id')
+                ->where('ci.course_offering_id', $offeringId)
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+            
+            $course['instructor_name'] = $instructors ? $instructors['name'] : 'N/A';
+            $course['instructor_email'] = $instructors ? $instructors['email'] : '';
+            
+            // 9. GET COURSE PROGRESS (placeholder - can be calculated from assignments)
+            $course['progress'] = 0;
+            
+            // 10. GET ALL MATERIALS FOR THIS COURSE OFFERING
+            $materialModel = new \App\Models\MaterialModel();
+            $materials = $materialModel->getOfferingMaterials($offeringId);
+            
+            // 11. PREPARE VIEW DATA
+            $data = [
+                'title' => $course['course_title'] . ' - Materials',
+                'course' => $course,
+                'materials' => $materials,
+                'totalMaterials' => count($materials),
+                'student' => $student
+            ];
+
+            return view('student/course_materials', $data);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Student course materials error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            $this->session->setFlashdata('error', 'An error occurred while loading course materials.');
+            return redirect()->to(base_url('student/courses'));
+        }
+    }
+        /**
+     * AJAX Search Student Courses - Search enrolled courses via AJAX
+     * 
+     * @return \CodeIgniter\HTTP\ResponseInterface JSON response with search results
+     */
+    public function searchStudentCourses()
+    {
+        // 1. AUTHENTICATION CHECK
+        if ($this->session->get('isLoggedIn') !== true) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Authentication required'
+            ]);
+        }
+
+        // 2. ROLE CHECK - Only students can access
+        if ($this->session->get('role') !== 'student') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Access denied'
+            ]);
+        }
+
+        $userID = $this->session->get('userID');
+
+        try {
+            // 3. GET SEARCH TERM
+            $searchTerm = $this->request->getGet('search') ?? '';
+            
+            if (empty($searchTerm)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Search term is required'
+                ]);
+            }
+
+            // 4. GET STUDENT RECORD
+            $student = $this->studentModel->getStudentByUserId($userID);
+            
+            if (!$student) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Student profile not found'
+                ]);
+            }
+
+            $studentId = $student['id'];
+            
+            // 5. SEARCH ENROLLED COURSES
+            $searchResults = $this->db->table('enrollments e')
+                ->select('
+                    co.id as course_offering_id,
+                    c.course_code,
+                    c.title as course_title,
+                    c.description as course_description,
+                    c.credits,
+                    co.section,
+                    co.start_date,
+                    co.end_date,
+                    t.term_name,
+                    ay.year_name as academic_year,
+                    s.semester_name,
+                    e.enrollment_date,
+                    e.enrollment_status,
+                    CONCAT(u.first_name, " ", u.last_name) as instructor_name,
+                    u.email as instructor_email
+                ')
+                ->join('course_offerings co', 'co.id = e.course_offering_id')
+                ->join('courses c', 'c.id = co.course_id')
+                ->join('terms t', 't.id = co.term_id')
+                ->join('academic_years ay', 'ay.id = t.academic_year_id')
+                ->join('semesters s', 's.id = t.semester_id')
+                ->join('course_instructors ci', 'ci.course_offering_id = co.id', 'left')
+                ->join('instructors i', 'i.id = ci.instructor_id', 'left')
+                ->join('users u', 'u.id = i.user_id', 'left')
+                ->where('e.student_id', $studentId)
+                ->groupStart()
+                    ->like('c.course_code', $searchTerm)
+                    ->orLike('c.title', $searchTerm)
+                    ->orLike('c.description', $searchTerm)
+                    ->orLike('co.section', $searchTerm)
+                    ->orLike('t.term_name', $searchTerm)
+                    ->orLike('ay.year_name', $searchTerm)
+                    ->orLike('s.semester_name', $searchTerm)
+                    ->orLike('CONCAT(u.first_name, " ", u.last_name)', $searchTerm)
+                ->groupEnd()
+                ->orderBy('e.enrollment_date', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            // 6. FORMAT RESULTS
+            $materialModel = new \App\Models\MaterialModel();
+            
+            foreach ($searchResults as &$course) {
+                // Get materials for this course
+                $materials = $materialModel->getOfferingMaterials($course['course_offering_id']);
+                $course['materials'] = $materials;
+                
+                // Format dates
+                $course['start_date_formatted'] = !empty($course['start_date']) 
+                    ? date('M d, Y', strtotime($course['start_date'])) 
+                    : 'TBA';
+                $course['end_date_formatted'] = !empty($course['end_date']) 
+                    ? date('M d, Y', strtotime($course['end_date'])) 
+                    : 'TBA';
+                $course['enrollment_date_formatted'] = !empty($course['enrollment_date']) 
+                    ? date('M d, Y', strtotime($course['enrollment_date'])) 
+                    : 'TBA';
+                
+                // Create status badge
+                $status = $course['enrollment_status'] ?? 'enrolled';
+                $badgeClass = match($status) {
+                    'pending' => 'bg-warning',
+                    'dropped' => 'bg-danger',
+                    'completed' => 'bg-info',
+                    default => 'bg-success'
+                };
+                
+                $course['status_badge'] = '<span class="badge ' . $badgeClass . '">' . ucfirst($status) . '</span>';
+                $course['progress'] = 0;
+            }
+
+            // 7. RETURN JSON RESPONSE
+            return $this->response->setJSON([
+                'success' => true,
+                'count' => count($searchResults),
+                'search_term' => $searchTerm,
+                'data' => $searchResults
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Student course search error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while searching courses'
+            ]);
+        }
     }
 }

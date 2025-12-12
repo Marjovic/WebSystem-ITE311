@@ -72,8 +72,35 @@
                     <div class="fw-semibold">Available Courses</div>
                     <small class="opacity-75">Ready to enroll</small>
                 </div>
+            </div>        </div>
+
+        <!-- Search Box -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body p-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control border-start-0 ps-0" 
+                                   id="courseSearchInput" 
+                                   placeholder="🔍 Search courses by code, title, instructor, or term...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Found: <strong id="searchResultCount"><?= count($enrolledCourses ?? []) ?></strong> course(s)
+                        </small>
+                    </div>
+                </div>
             </div>
-        </div><!-- Tab Header -->
+        </div>
+
+        <!-- Tab Header -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
@@ -85,12 +112,18 @@
                     </div>
                 </div>
             </div>
-        </div>        <!-- Course Content -->
+        </div><!-- Course Content -->
         <div class="row">
-            <!-- Enrolled Courses Section -->
-            <?php if (!empty($enrolledCourses)): ?>
+            <!-- Enrolled Courses Section -->            <?php if (!empty($enrolledCourses)): ?>
                 <?php foreach ($enrolledCourses as $course): ?>
-                            <div class="col-lg-6 col-xl-4 mb-4">
+                            <div class="col-lg-6 col-xl-4 mb-4 course-card-wrapper"
+                                 data-course-code="<?= esc(strtolower($course['course_code'])) ?>"
+                                 data-course-title="<?= esc(strtolower($course['course_title'])) ?>"
+                                 data-course-description="<?= esc(strtolower($course['course_description'])) ?>"
+                                 data-instructor-name="<?= esc(strtolower($course['instructor_name'])) ?>"
+                                 data-term="<?= esc(strtolower($course['term_name'] ?? '')) ?>"
+                                 data-academic-year="<?= esc(strtolower($course['academic_year'] ?? '')) ?>"
+                                 data-semester="<?= esc(strtolower($course['semester'] ?? '')) ?>">
                                 <div class="card h-100 border-0 shadow-sm rounded-3 course-card enrolled-course">
                                     <div class="card-body p-4">
                                         <!-- Course Header -->
@@ -173,31 +206,31 @@
                                                     <i class="fas fa-check-circle me-1"></i>Enrollment Details
                                                 </small>
                                             </div>
-                                            <div class="card-body p-2">
+                                            <div class="card-body p-3">
                                                 <div class="row g-2 small">
                                                     <!-- Enrollment Date -->
-                                                    <div class="col-6">
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-calendar me-1"></i>
+                                                    <div class="col-12">
+                                                        <div class="d-flex align-items-center text-muted mb-1">
+                                                            <i class="fas fa-calendar me-2" style="width: 20px;"></i>
                                                             <span>Enrolled: <strong class="text-dark"><?= $course['enrollment_date_formatted'] ?></strong></span>
                                                         </div>
                                                     </div>
                                                     
                                                     <!-- Year Level -->
                                                     <?php if (!empty($course['year_level_at_enrollment'])): ?>
-                                                    <div class="col-6">
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-graduation-cap me-1"></i>
-                                                            <span>Year: <strong class="text-dark"><?= esc($course['year_level_at_enrollment']) ?></strong></span>
+                                                    <div class="col-12">
+                                                        <div class="d-flex align-items-center text-muted mb-1">
+                                                            <i class="fas fa-graduation-cap me-2" style="width: 20px;"></i>
+                                                            <span>Year Level: <strong class="text-dark"><?= esc($course['year_level_at_enrollment']) ?></strong></span>
                                                         </div>
                                                     </div>
                                                     <?php endif; ?>
                                                     
                                                     <!-- Semester -->
                                                     <?php if (!empty($course['semester'])): ?>
-                                                    <div class="col-6">
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-calendar-check me-1"></i>
+                                                    <div class="col-12">
+                                                        <div class="d-flex align-items-center text-muted mb-1">
+                                                            <i class="fas fa-calendar-check me-2" style="width: 20px;"></i>
                                                             <span>Semester: <strong class="text-dark"><?= esc($course['semester']) ?></strong></span>
                                                         </div>
                                                     </div>
@@ -205,9 +238,9 @@
                                                     
                                                     <!-- Semester Duration -->
                                                     <?php if (!empty($course['semester_duration_weeks'])): ?>
-                                                    <div class="col-6">
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-hourglass-half me-1"></i>
+                                                    <div class="col-12">
+                                                        <div class="d-flex align-items-center text-muted mb-1">
+                                                            <i class="fas fa-hourglass-half me-2" style="width: 20px;"></i>
                                                             <span>Duration: <strong class="text-dark"><?= esc($course['semester_duration_weeks']) ?> weeks</strong></span>
                                                         </div>
                                                     </div>
@@ -215,40 +248,40 @@
                                                     
                                                     <!-- Semester End Date -->
                                                     <?php if (!empty($course['semester_end_date_formatted'])): ?>
-                                                    <div class="col-6">
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-calendar-times me-1"></i>
-                                                            <span>Ends: <strong class="text-dark"><?= $course['semester_end_date_formatted'] ?></strong></span>
+                                                    <div class="col-12">
+                                                        <div class="d-flex align-items-center text-muted mb-1">
+                                                            <i class="fas fa-calendar-times me-2" style="width: 20px;"></i>
+                                                            <span>Semester Ends: <strong class="text-dark"><?= $course['semester_end_date_formatted'] ?></strong></span>
                                                         </div>
                                                     </div>
                                                     <?php endif; ?>
                                                     
                                                     <!-- Academic Year -->
                                                     <?php if (!empty($course['academic_year'])): ?>
-                                                    <div class="col-6">
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-book me-1"></i>
-                                                            <span>A.Y.: <strong class="text-dark"><?= esc($course['academic_year']) ?></strong></span>
+                                                    <div class="col-12">
+                                                        <div class="d-flex align-items-center text-muted mb-1">
+                                                            <i class="fas fa-book me-2" style="width: 20px;"></i>
+                                                            <span>Academic Year: <strong class="text-dark"><?= esc($course['academic_year']) ?></strong></span>
                                                         </div>
                                                     </div>
                                                     <?php endif; ?>
                                                     
                                                     <!-- Enrollment Type -->
                                                     <?php if (!empty($course['enrollment_type'])): ?>
-                                                    <div class="col-6">
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-tag me-1"></i>
-                                                            <span>Type: <strong class="text-dark"><?= ucfirst($course['enrollment_type']) ?></strong></span>
+                                                    <div class="col-12">
+                                                        <div class="d-flex align-items-center text-muted mb-1">
+                                                            <i class="fas fa-tag me-2" style="width: 20px;"></i>
+                                                            <span>Enrollment Type: <strong class="text-dark"><?= ucfirst($course['enrollment_type']) ?></strong></span>
                                                         </div>
                                                     </div>
                                                     <?php endif; ?>
                                                     
                                                     <!-- Payment Status -->
                                                     <?php if (!empty($course['payment_status'])): ?>
-                                                    <div class="col-6">
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-credit-card me-1"></i>
-                                                            <span>Payment: 
+                                                    <div class="col-12">
+                                                        <div class="d-flex align-items-center text-muted mb-1">
+                                                            <i class="fas fa-credit-card me-2" style="width: 20px;"></i>
+                                                            <span>Payment Status: 
                                                                 <strong class="<?= $course['payment_status'] === 'paid' ? 'text-success' : ($course['payment_status'] === 'partial' ? 'text-warning' : 'text-danger') ?>">
                                                                     <?= ucfirst($course['payment_status']) ?>
                                                                 </strong>
@@ -258,49 +291,70 @@
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <!-- Course Materials Section -->
-                                        <?php if (!empty($course['materials'])): ?>
+                                        </div><!-- Course Materials Section - REDESIGNED WIDER -->
                                         <div class="mb-3">
-                                            <h6 class="fw-semibold text-primary mb-2">
-                                                <i class="fas fa-download me-1"></i>Course Materials (<?= count($course['materials']) ?>)
-                                            </h6>
-                                            <div class="bg-light p-3 rounded-3">
-                                                <?php foreach ($course['materials'] as $material): ?>
-                                                <div class="d-flex justify-content-between align-items-center py-2 <?= !end($course['materials']) ? 'border-bottom' : '' ?>">
-                                                    <div class="flex-grow-1">
-                                                        <div class="fw-medium text-truncate" style="max-width: 200px;" title="<?= esc($material['file_name']) ?>">
-                                                            <i class="fas fa-file me-1 text-muted"></i>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 class="fw-semibold text-primary mb-0">
+                                                    <i class="fas fa-folder-open me-1"></i>Course Materials
+                                                </h6>
+                                                <?php if (!empty($course['materials'])): ?>
+                                                <a href="<?= base_url('student/course/' . $course['course_offering_id'] . '/materials') ?>" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye me-1"></i>View All (<?= count($course['materials']) ?>)
+                                                </a>
+                                                <?php endif; ?>
+                                            </div>
+                                              <?php if (!empty($course['materials'])): ?>
+                                            <div class="card border-0 bg-light">
+                                                <div class="card-body p-3">
+                                                    <?php 
+                                                    // Show max 3 materials in card
+                                                    $displayMaterials = array_slice($course['materials'], 0, 3);
+                                                    foreach ($displayMaterials as $idx => $material): 
+                                                    ?>
+                                                    <div class="py-2 <?= ($idx < count($displayMaterials) - 1) ? 'border-bottom' : '' ?>">
+                                                        <div class="fw-medium mb-1">
+                                                            <?php
+                                                            $extension = pathinfo($material['file_name'], PATHINFO_EXTENSION);
+                                                            $icon = match(strtolower($extension)) {
+                                                                'pdf' => 'fa-file-pdf text-danger',
+                                                                'ppt', 'pptx' => 'fa-file-powerpoint text-warning',
+                                                                'doc', 'docx' => 'fa-file-word text-primary',
+                                                                default => 'fa-file text-secondary'
+                                                            };
+                                                            ?>
+                                                            <i class="fas <?= $icon ?> me-2"></i>
                                                             <?= esc($material['file_name']) ?>
                                                         </div>
                                                         <small class="text-muted">
-                                                            <i class="fas fa-calendar me-1"></i>
-                                                            <?= date('M j, Y', strtotime($material['created_at'])) ?>
+                                                            <i class="fas fa-calendar-alt me-1"></i>
+                                                            Uploaded: <?= date('M j, Y', strtotime($material['created_at'])) ?>
                                                         </small>
                                                     </div>
-                                                    <a href="<?= base_url('material/download/' . $material['id']) ?>" 
-                                                       class="btn btn-outline-primary btn-sm" 
-                                                       title="Download <?= esc($material['file_name']) ?>">
-                                                        <i class="fas fa-download"></i>
-                                                    </a>
+                                                    <?php endforeach; ?>
+                                                    
+                                                    <?php if (count($course['materials']) > 3): ?>
+                                                    <div class="text-center mt-2">
+                                                        <a href="<?= base_url('student/course/' . $course['course_offering_id'] . '/materials') ?>" 
+                                                           class="btn btn-sm btn-link">
+                                                            <i class="fas fa-plus-circle me-1"></i>
+                                                            View <?= count($course['materials']) - 3 ?> more material<?= (count($course['materials']) - 3) > 1 ? 's' : '' ?>
+                                                        </a>
+                                                    </div>
+                                                    <?php endif; ?>
                                                 </div>
-                                                <?php endforeach; ?>
                                             </div>
-                                        </div>
-                                        <?php else: ?>
-                                        <div class="mb-3">
-                                            <h6 class="fw-semibold text-muted mb-2">
-                                                <i class="fas fa-download me-1"></i>Course Materials
-                                            </h6>
-                                            <div class="bg-light p-3 rounded-3 text-center">
-                                                <small class="text-muted">
-                                                    <i class="fas fa-info-circle me-1"></i>
-                                                    No materials available yet
-                                                </small>
+                                            <?php else: ?>
+                                            <div class="card border-0 bg-light">
+                                                <div class="card-body p-3 text-center">
+                                                    <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                                    <p class="text-muted mb-0 small">
+                                                        No materials available yet
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <?php endif; ?>                                        <!-- Course Actions -->
+                                            <?php endif; ?>
+                                        </div><!-- Course Actions -->
                                         <div class="d-grid gap-2">
                                             <button class="btn btn-primary btn-sm">
                                                 <i class="fas fa-play me-1"></i>Continue Learning
@@ -327,63 +381,46 @@
                                                         <i class="fas fa-folder-open me-2"></i>Course Materials
                                                     </h6>
                                                 </div>
-                                                <div class="card-body p-0">
-                                                    <?php if (!empty($course['materials'])): ?>
+                                                <div class="card-body p-0">                                                    <?php if (!empty($course['materials'])): ?>
                                                         <div class="list-group list-group-flush">
                                                             <?php foreach ($course['materials'] as $index => $material): ?>
                                                             <div class="list-group-item">
-                                                                <div class="d-flex justify-content-between align-items-center">
-                                                                    <div class="flex-grow-1">
-                                                                        <div class="d-flex align-items-center">
-                                                                            <div class="me-3">
-                                                                                <?php
-                                                                                $extension = strtolower(pathinfo($material['file_name'], PATHINFO_EXTENSION));
-                                                                                $fileIcons = [
-                                                                                    'pdf' => ['icon' => '📄', 'color' => 'danger'],
-                                                                                    'doc' => ['icon' => '📝', 'color' => 'primary'],
-                                                                                    'docx' => ['icon' => '📝', 'color' => 'primary'],
-                                                                                    'xls' => ['icon' => '📊', 'color' => 'success'],
-                                                                                    'xlsx' => ['icon' => '📊', 'color' => 'success'],
-                                                                                    'ppt' => ['icon' => '📋', 'color' => 'warning'],
-                                                                                    'pptx' => ['icon' => '📋', 'color' => 'warning'],
-                                                                                    'txt' => ['icon' => '📄', 'color' => 'secondary'],
-                                                                                    'jpg' => ['icon' => '🖼️', 'color' => 'info'],
-                                                                                    'jpeg' => ['icon' => '🖼️', 'color' => 'info'],
-                                                                                    'png' => ['icon' => '🖼️', 'color' => 'info'],
-                                                                                    'mp4' => ['icon' => '🎥', 'color' => 'dark'],
-                                                                                    'mp3' => ['icon' => '🎵', 'color' => 'purple']
-                                                                                ];
-                                                                                $icon = $fileIcons[$extension] ?? ['icon' => '📎', 'color' => 'secondary'];
-                                                                                ?>
-                                                                                <span class="badge bg-<?= $icon['color'] ?> rounded-circle p-2">
-                                                                                    <?= $icon['icon'] ?>
-                                                                                </span>
-                                                                            </div>
-                                                                            <div>
-                                                                                <div class="fw-medium"><?= esc($material['file_name']) ?></div>
-                                                                                <small class="text-muted">
-                                                                                    <i class="fas fa-calendar me-1"></i>
-                                                                                    Uploaded: <?= date('M j, Y g:i A', strtotime($material['created_at'])) ?>
-                                                                                </small>
-                                                                                <div>
-                                                                                    <span class="badge bg-light text-dark">
-                                                                                        <?= strtoupper($extension) ?>
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
+                                                                <div class="d-flex align-items-center">
+                                                                    <div class="me-3">
+                                                                        <?php
+                                                                        $extension = strtolower(pathinfo($material['file_name'], PATHINFO_EXTENSION));
+                                                                        $fileIcons = [
+                                                                            'pdf' => ['icon' => '📄', 'color' => 'danger'],
+                                                                            'doc' => ['icon' => '📝', 'color' => 'primary'],
+                                                                            'docx' => ['icon' => '📝', 'color' => 'primary'],
+                                                                            'xls' => ['icon' => '📊', 'color' => 'success'],
+                                                                            'xlsx' => ['icon' => '📊', 'color' => 'success'],
+                                                                            'ppt' => ['icon' => '📋', 'color' => 'warning'],
+                                                                            'pptx' => ['icon' => '📋', 'color' => 'warning'],
+                                                                            'txt' => ['icon' => '📄', 'color' => 'secondary'],
+                                                                            'jpg' => ['icon' => '🖼️', 'color' => 'info'],
+                                                                            'jpeg' => ['icon' => '🖼️', 'color' => 'info'],
+                                                                            'png' => ['icon' => '🖼️', 'color' => 'info'],
+                                                                            'mp4' => ['icon' => '🎥', 'color' => 'dark'],
+                                                                            'mp3' => ['icon' => '🎵', 'color' => 'purple']
+                                                                        ];
+                                                                        $icon = $fileIcons[$extension] ?? ['icon' => '📎', 'color' => 'secondary'];
+                                                                        ?>
+                                                                        <span class="badge bg-<?= $icon['color'] ?> rounded-circle p-2" style="font-size: 1.2rem;">
+                                                                            <?= $icon['icon'] ?>
+                                                                        </span>
                                                                     </div>
-                                                                    <div class="btn-group btn-group-sm">
-                                                                        <a href="<?= base_url('material/download/' . $material['id']) ?>" 
-                                                                           class="btn btn-success btn-sm" 
-                                                                           title="Download <?= esc($material['file_name']) ?>">
-                                                                            <i class="fas fa-download"></i> Download
-                                                                        </a>
-                                                                        <button class="btn btn-outline-info btn-sm" 
-                                                                                onclick="previewFile('<?= esc($material['file_name']) ?>', '<?= $extension ?>')"
-                                                                                title="Preview file details">
-                                                                            <i class="fas fa-eye"></i> Preview
-                                                                        </button>
+                                                                    <div class="flex-grow-1">
+                                                                        <div class="fw-medium"><?= esc($material['file_name']) ?></div>
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-calendar me-1"></i>
+                                                                            Uploaded: <?= date('M j, Y g:i A', strtotime($material['created_at'])) ?>
+                                                                        </small>
+                                                                        <div class="mt-1">
+                                                                            <span class="badge bg-light text-dark">
+                                                                                <?= strtoupper($extension) ?>
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -392,7 +429,7 @@
                                                         <div class="card-footer bg-light text-center">
                                                             <small class="text-muted">
                                                                 <i class="fas fa-info-circle me-1"></i>
-                                                                Total: <?= count($course['materials']) ?> files available for download
+                                                                Total: <?= count($course['materials']) ?> file<?= count($course['materials']) !== 1 ? 's' : '' ?> available
                                                             </small>
                                                         </div>
                                                     <?php else: ?>
@@ -423,7 +460,27 @@
                         </div>
                     </div>
                 </div>
-            <?php endif; ?>        </div>
+            <?php endif; ?>
+
+            <!-- No Search Results Message -->
+            <div class="col-12 text-center py-5" id="noResultsMessage" style="display: none;">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body p-5">
+                        <div class="mb-4">
+                            <i class="fas fa-search text-muted" style="font-size: 4rem;"></i>
+                        </div>
+                        <h4 class="text-muted mb-3">No Courses Found</h4>
+                        <p class="text-muted mb-4">
+                            No courses match your search criteria. Try adjusting your search terms.
+                        </p>
+                        <button class="btn btn-primary" id="clearSearchBtn">
+                            <i class="fas fa-times me-2"></i>Clear Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
 
         <!-- Success/Error Modal (for future functionality) -->
         <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
@@ -601,6 +658,133 @@
 <!-- Student Courses Script -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Course Search Functionality with AJAX
+    let searchTimeout;
+    
+    function filterCourses() {
+        const searchTerm = $('#courseSearchInput').val().trim();
+        
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+        
+        // If search is empty, show all courses
+        if (searchTerm === '') {
+            $('.course-card-wrapper').show();
+            $('#searchResultCount').text($('.course-card-wrapper').length);
+            $('#noResultsMessage').hide();
+            return;
+        }
+
+        searchTimeout = setTimeout(function() {
+            // Show loading state
+            $('#courseSearchInput').prop('disabled', true);
+            
+            // Make AJAX request
+            $.ajax({
+                url: '<?= base_url('student/search_courses') ?>',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    search: searchTerm,
+                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Hide all courses first
+                        $('.course-card-wrapper').hide();
+                        
+                        // Show matching courses
+                        let visibleCount = 0;
+                        if (response.data && response.data.length > 0) {
+                            response.data.forEach(function(course) {
+                                // Find matching course card by course_offering_id
+                                $('.course-card-wrapper').each(function() {
+                                    const courseCode = $(this).data('course-code');
+                                    const searchableCourseCode = course.course_code.toLowerCase();
+                                    
+                                    if (courseCode === searchableCourseCode) {
+                                        $(this).show();
+                                        visibleCount++;
+                                    }
+                                });
+                            });
+                        }
+                        
+                        // Update result count
+                        $('#searchResultCount').text(visibleCount);
+                        
+                        // Show/hide no results message
+                        if (visibleCount === 0) {
+                            $('#noResultsMessage').show();
+                        } else {
+                            $('#noResultsMessage').hide();
+                        }
+                    } else {
+                        console.error('Search error:', response.message);
+                        // Fall back to client-side search
+                        filterCoursesClientSide(searchTerm);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', error);
+                    // Fall back to client-side search
+                    filterCoursesClientSide(searchTerm);
+                },
+                complete: function() {
+                    $('#courseSearchInput').prop('disabled', false);
+                }
+            });
+        }, 600); 
+    }
+    
+    // Fallback client-side search function
+    function filterCoursesClientSide(searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        let visibleCount = 0;
+        
+        $('.course-card-wrapper').each(function() {
+            const courseCode = $(this).data('course-code') || '';
+            const courseTitle = $(this).data('course-title') || '';
+            const courseDescription = $(this).data('course-description') || '';
+            const instructorName = $(this).data('instructor-name') || '';
+            const term = $(this).data('term') || '';
+            const academicYear = $(this).data('academic-year') || '';
+            const semester = $(this).data('semester') || '';
+            
+            // Combine all searchable fields
+            const searchableText = `${courseCode} ${courseTitle} ${courseDescription} ${instructorName} ${term} ${academicYear} ${semester}`;
+            
+            if (searchableText.includes(searchLower)) {
+                $(this).show();
+                visibleCount++;
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        // Update result count
+        $('#searchResultCount').text(visibleCount);
+        
+        // Show/hide no results message
+        if (visibleCount === 0 && searchTerm !== '') {
+            $('#noResultsMessage').show();
+        } else {
+            $('#noResultsMessage').hide();
+        }
+    }
+    
+    // Search input event
+    $('#courseSearchInput').on('keyup', filterCourses);
+    
+    // Clear search button
+    $('#clearSearch, #clearSearchBtn').on('click', function() {
+        $('#courseSearchInput').val('');
+        $('.course-card-wrapper').show();
+        $('#searchResultCount').text($('.course-card-wrapper').length);
+        $('#noResultsMessage').hide();
+        $('#courseSearchInput').focus();
+    });
+
     // Materials toggle functionality
     const materialsButtons = document.querySelectorAll('.materials-toggle');
     materialsButtons.forEach(button => {

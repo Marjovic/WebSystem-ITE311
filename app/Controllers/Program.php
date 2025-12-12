@@ -719,4 +719,63 @@ class Program extends BaseController
 
         return redirect()->to('/admin/manage_curriculum' . ($programId ? '?program_id=' . $programId : ''));
     }
+
+    /**
+     * Search programs - AJAX endpoint
+     * Accepts GET or POST requests with search term
+     * Searches program_code, program_name, and description
+     */
+    public function search()
+    {
+        // Check if user is logged in and is admin
+        if ($this->session->get('isLoggedIn') !== true || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ]);
+        }
+
+        // Get search term from GET or POST
+        $searchTerm = $this->request->getGet('search') ?? $this->request->getPost('search');
+
+        if (empty($searchTerm)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Search term is required'
+            ]);
+        }
+
+        try {
+            // Search programs using Query Builder with LIKE queries
+            $results = $this->programModel->select('
+                    programs.*,
+                    departments.department_name,
+                    departments.department_code
+                ')
+                ->join('departments', 'departments.id = programs.department_id', 'left')
+                ->groupStart()
+                    ->like('programs.program_code', $searchTerm)
+                    ->orLike('programs.program_name', $searchTerm)
+                    ->orLike('programs.description', $searchTerm)
+                    ->orLike('departments.department_name', $searchTerm)
+                    ->orLike('departments.department_code', $searchTerm)
+                ->groupEnd()
+                ->orderBy('programs.program_name', 'ASC')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'count' => count($results),
+                'data' => $results,
+                'search_term' => $searchTerm
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Program search error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while searching programs'
+            ]);
+        }
+    }
 }

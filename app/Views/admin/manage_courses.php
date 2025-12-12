@@ -103,6 +103,39 @@
             </div>
         </div>
 
+        <!-- Search Box -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-search text-muted"></i>
+                                    </span>
+                                    <input type="text" 
+                                           id="courseSearchInput" 
+                                           class="form-control border-start-0" 
+                                           placeholder="🔍 Search courses by code, title, description, department, or category...">
+                                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                        <i class="fas fa-times"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-2 mt-md-0">
+                                <div class="text-muted">
+                                    <small>
+                                        <strong id="searchResultCount"><?= count($courses) ?></strong> course(s) found
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Create Course Form (shown when action=create) -->
         <?php if ($showCreateForm): ?>
         <div class="row mb-4">
@@ -464,9 +497,8 @@
                     <div class="card-header bg-white border-0">
                         <h5 class="mb-0 fw-bold">📋 Course List</h5>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                    <div class="card-body p-0">                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="coursesTable">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Course Code</th>
@@ -479,16 +511,21 @@
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="courseTableBody">
                                     <?php if (empty($courses)): ?>
-                                        <tr>
+                                        <tr id="noCoursesRow">
                                             <td colspan="8" class="text-center text-muted py-4">
                                                 No courses found. Create your first course to get started!
                                             </td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($courses as $course): ?>
-                                            <tr>
+                                            <tr class="course-row" 
+                                                data-course-code="<?= esc(strtolower($course['course_code'])) ?>"
+                                                data-title="<?= esc(strtolower($course['title'])) ?>"
+                                                data-description="<?= esc(strtolower($course['description'] ?? '')) ?>"
+                                                data-department="<?= esc(strtolower($course['department_name'] ?? '')) ?>"
+                                                data-category="<?= esc(strtolower($course['category_name'] ?? '')) ?>">
                                                 <td><strong><?= esc($course['course_code']) ?></strong></td>
                                                 <td><?= esc($course['title']) ?></td>
                                                 <td><?= esc($course['credits']) ?></td>
@@ -517,6 +554,13 @@
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
+                                        <tr id="noResultsRow" style="display: none;">
+                                            <td colspan="8" class="text-center text-muted py-4">
+                                                <i class="fas fa-search mb-2" style="font-size: 2rem;"></i>
+                                                <p class="mb-0">No courses match your search criteria.</p>
+                                                <small>Try adjusting your search terms.</small>
+                                            </td>
+                                        </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -527,3 +571,53 @@
         </div>
     </div>
 </div>
+
+<!-- Course Search JavaScript -->
+<script>
+$(document).ready(function() {
+    // Course search functionality
+    function filterCourses() {
+        const searchTerm = $('#courseSearchInput').val().toLowerCase().trim();
+        let visibleCount = 0;
+        
+        $('.course-row').each(function() {
+            const courseCode = $(this).data('course-code') || '';
+            const title = $(this).data('title') || '';
+            const description = $(this).data('description') || '';
+            const department = $(this).data('department') || '';
+            const category = $(this).data('category') || '';
+            
+            const searchableText = courseCode + ' ' + title + ' ' + description + ' ' + department + ' ' + category;
+            
+            if (searchableText.includes(searchTerm)) {
+                $(this).show();
+                visibleCount++;
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        // Update count
+        $('#searchResultCount').text(visibleCount);
+        
+        // Show/hide no results message
+        if (visibleCount === 0 && $('.course-row').length > 0) {
+            $('#noResultsRow').show();
+        } else {
+            $('#noResultsRow').hide();
+        }
+    }
+    
+    // Search on keyup
+    $('#courseSearchInput').on('keyup', function() {
+        filterCourses();
+    });
+    
+    // Clear search button
+    $('#clearSearch').on('click', function() {
+        $('#courseSearchInput').val('');
+        filterCourses();
+        $('#courseSearchInput').focus();
+    });
+});
+</script>

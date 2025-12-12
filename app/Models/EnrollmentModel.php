@@ -80,19 +80,24 @@ class EnrollmentModel extends Model
             ->join('year_levels', 'year_levels.id = enrollments.year_level_id', 'left')
             ->where('enrollments.id', $enrollmentId)
             ->first();
-    }
-
-    /**
-     * Get all enrollments for a student
+    }    /**
+     * Get all enrollments for a student with course materials
      */
     public function getStudentEnrollments($studentId, $termId = null)
     {
         $builder = $this->select('
                 enrollments.*,
+                enrollments.enrollment_date,
+                enrollments.enrollment_status,
+                course_offerings.id as course_offering_id,
+                courses.id as course_id,
                 courses.course_code,
                 courses.title as course_title,
+                courses.description as course_description,
                 courses.credits,
                 course_offerings.section,
+                course_offerings.start_date,
+                course_offerings.end_date,
                 terms.term_name,
                 academic_years.year_name as academic_year,
                 semesters.semester_name
@@ -102,7 +107,8 @@ class EnrollmentModel extends Model
             ->join('terms', 'terms.id = course_offerings.term_id')
             ->join('academic_years', 'academic_years.id = terms.academic_year_id')
             ->join('semesters', 'semesters.id = terms.semester_id')
-            ->where('enrollments.student_id', $studentId);
+            ->where('enrollments.student_id', $studentId)
+            ->where('enrollments.enrollment_status', 'enrolled'); // Only show enrolled courses
 
         if ($termId) {
             $builder->where('course_offerings.term_id', $termId);
@@ -143,6 +149,27 @@ class EnrollmentModel extends Model
                     ->where('course_offering_id', $courseOfferingId)
                     ->whereNotIn('enrollment_status', ['dropped', 'withdrawn'])
                     ->countAllResults() > 0;
+    }
+
+    /**
+     * Check if student is enrolled (alias method for Material controller)
+     * This method accepts user_id and course_offering_id
+     */
+    public function isAlreadyEnrolled($userId, $courseOfferingId)
+    {
+        // Get student record from user_id
+        $db = \Config\Database::connect();
+        $student = $db->table('students')
+            ->where('user_id', $userId)
+            ->get()
+            ->getRowArray();
+        
+        if (!$student) {
+            return false;
+        }
+        
+        // Check if student is enrolled using student_id
+        return $this->isStudentEnrolled($student['id'], $courseOfferingId);
     }
 
     /**

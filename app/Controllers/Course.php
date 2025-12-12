@@ -298,14 +298,52 @@ class Course extends BaseController
                 'message' => 'You are already enrolled in this course offering.',
                 'error_code' => 'ALREADY_ENROLLED'
             ]);
-        }
-        
-        // Check if course offering has available slots
+        }          // Check if course offering has available slots
         if (!$this->courseOfferingModel->hasAvailableSlots($courseOfferingId)) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'This course offering is full. No available slots.',
-                'error_code' => 'OFFERING_FULL'
+                'error_code' => 'OFFERING_FULL',
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+          // Check if student meets prerequisites for this course
+        try {
+            log_message('debug', "Checking prerequisites for student {$studentId}, offering {$courseOfferingId}");
+            $prerequisiteCheck = $this->courseOfferingModel->checkPrerequisites($courseOfferingId, $studentId);
+            log_message('debug', "Prerequisite check result: " . json_encode($prerequisiteCheck));
+            
+            if (!$prerequisiteCheck['meets_prerequisites']) {
+                // Build missing courses text safely
+                $missingCourses = [];
+                foreach ($prerequisiteCheck['missing_prerequisites'] as $course) {
+                    if (isset($course['course_code']) && isset($course['title'])) {
+                        $missingCourses[] = $course['course_code'] . ' - ' . $course['title'];
+                    }
+                }
+                
+                $missingCoursesText = !empty($missingCourses) ? implode(', ', $missingCourses) : 'required courses';
+                
+                log_message('info', "Student {$studentId} failed prerequisite check for offering {$courseOfferingId}. Missing: {$missingCoursesText}");
+                
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'You must complete the following prerequisite course(s) before enrolling: ' . $missingCoursesText,
+                    'error_code' => 'PREREQUISITES_NOT_MET',
+                    'missing_prerequisites' => $prerequisiteCheck['missing_prerequisites'],
+                    'csrf_hash' => csrf_hash() // Include new CSRF token
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', "Error checking prerequisites: " . $e->getMessage());
+            log_message('error', "Stack trace: " . $e->getTraceAsString());
+            
+            // Return error if prerequisite check fails
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unable to verify course prerequisites. Please try again or contact support.',
+                'error_code' => 'PREREQUISITE_CHECK_ERROR',
+                'csrf_hash' => csrf_hash()
             ]);
         }
         
@@ -339,13 +377,32 @@ class Course extends BaseController
             
             if ($db->transStatus() === false) {
                 throw new \Exception('Transaction failed');
-            }
-              // Get course details for response
+            }              // Get course details for response
             $offeringDetails = $this->courseOfferingModel->getOfferingWithDetails($courseOfferingId);
             
             // Format enrollment date
             $enrollmentDate = $enrollmentData['enrollment_date'];
             $enrollmentDateFormatted = date('F j, Y', strtotime($enrollmentDate));
+            
+            // Send notification to student
+            $studentMessage = sprintf(
+                "You have successfully enrolled in %s (%s) - Section %s for %s %s. Enrollment Date: %s",
+                $offeringDetails['course_title'],
+                $offeringDetails['course_code'],
+                $offeringDetails['section'],
+                $offeringDetails['term_name'],
+                $offeringDetails['academic_year'],
+                $enrollmentDateFormatted
+            );
+            
+            $notificationModel = new \App\Models\NotificationModel();
+            $notificationModel->createNotification(
+                $userID,
+                $studentMessage,
+                'enrollment',
+                $courseOfferingId,
+                'course_offering'
+            );
             
             return $this->response->setJSON([
                 'success' => true,
@@ -371,6 +428,68 @@ class Course extends BaseController
                 'success' => false,
                 'message' => 'An error occurred while processing your enrollment. Please try again.',
                 'error_code' => 'ENROLLMENT_ERROR'
+            ]);
+        }
+    }
+
+    /**
+     * Search courses - AJAX endpoint
+     * Accepts GET or POST requests with search term
+     * Searches course_code, title, and description
+     */
+    public function search()
+    {
+        // Check if user is logged in and is admin
+        if ($this->session->get('isLoggedIn') !== true || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ]);
+        }
+
+        // Get search term from GET or POST
+        $searchTerm = $this->request->getGet('search') ?? $this->request->getPost('search');
+
+        if (empty($searchTerm)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Search term is required'
+            ]);
+        }
+
+        try {
+            // Search courses using Query Builder with LIKE queries
+            $results = $this->courseModel->select('
+                    courses.*,
+                    departments.department_name,
+                    categories.category_name,
+                    year_levels.level_name as year_level_name
+                ')
+                ->join('departments', 'departments.id = courses.department_id', 'left')
+                ->join('categories', 'categories.id = courses.category_id', 'left')
+                ->join('year_levels', 'year_levels.id = courses.year_level_id', 'left')
+                ->groupStart()
+                    ->like('courses.course_code', $searchTerm)
+                    ->orLike('courses.title', $searchTerm)
+                    ->orLike('courses.description', $searchTerm)
+                    ->orLike('departments.department_name', $searchTerm)
+                    ->orLike('categories.category_name', $searchTerm)
+                ->groupEnd()
+                ->orderBy('courses.course_code', 'ASC')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'count' => count($results),
+                'data' => $results,
+                'search_term' => $searchTerm
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Course search error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while searching courses'
             ]);
         }
     }

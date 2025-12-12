@@ -103,6 +103,39 @@
             </div>
         </div>
 
+        <!-- Search Box -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-search text-muted"></i>
+                                    </span>
+                                    <input type="text" 
+                                           id="termSearchInput" 
+                                           class="form-control border-start-0" 
+                                           placeholder="🔍 Search terms by name, academic year, or semester...">
+                                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                        <i class="fas fa-times"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-2 mt-md-0">
+                                <div class="text-muted">
+                                    <small>
+                                        <strong id="searchResultCount"><?= count($terms) ?></strong> term(s) found
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Create Term Form (shown when action=create) -->
         <?php if ($showCreateForm): ?>
         <div class="row mb-4">
@@ -346,10 +379,9 @@
                                 Total: <?= count($terms) ?> terms
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body pt-0">
+                    </div>                    <div class="card-body pt-0">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
+                            <table class="table table-hover align-middle mb-0" id="termsTable">
                                 <thead class="table-light">
                                     <tr>
                                         <th class="fw-semibold border-0 text-center">ID</th>
@@ -363,10 +395,13 @@
                                         <th class="fw-semibold border-0 text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="termTableBody">
                                     <?php if (!empty($terms)): ?>
                                         <?php foreach ($terms as $term): ?>
-                                        <tr class="border-bottom">
+                                        <tr class="term-row border-bottom"
+                                            data-term-name="<?= esc(strtolower($term['term_name'])) ?>"
+                                            data-academic-year="<?= esc(strtolower($term['year_name'])) ?>"
+                                            data-semester="<?= esc(strtolower($term['semester_name'])) ?>">
                                             <td class="text-center">
                                                 <span class="badge bg-light text-dark">#<?= $term['id'] ?></span>
                                             </td>
@@ -432,8 +467,15 @@
                                             </td>
                                         </tr>
                                         <?php endforeach; ?>
+                                        <tr id="noResultsRow" style="display: none;">
+                                            <td colspan="9" class="text-center text-muted py-4">
+                                                <i class="fas fa-search mb-2" style="font-size: 2rem;"></i>
+                                                <p class="mb-0">No terms match your search criteria.</p>
+                                                <small>Try adjusting your search terms.</small>
+                                            </td>
+                                        </tr>
                                     <?php else: ?>
-                                        <tr>
+                                        <tr id="noTermsRow">
                                             <td colspan="9" class="text-center py-5 text-muted">
                                                 <div class="display-1 mb-3">📅</div>
                                                 <h5>No terms found</h5>
@@ -521,5 +563,53 @@ document.addEventListener('DOMContentLoaded', function() {
             year: 'numeric' 
         });
     }
+});
+</script>
+
+<!-- Term Search JavaScript -->
+<script>
+$(document).ready(function() {
+    // Term search functionality
+    function filterTerms() {
+        const searchTerm = $('#termSearchInput').val().toLowerCase().trim();
+        let visibleCount = 0;
+        
+        $('.term-row').each(function() {
+            const termName = $(this).data('term-name') || '';
+            const academicYear = $(this).data('academic-year') || '';
+            const semester = $(this).data('semester') || '';
+            
+            const searchableText = termName + ' ' + academicYear + ' ' + semester;
+            
+            if (searchableText.includes(searchTerm)) {
+                $(this).show();
+                visibleCount++;
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        // Update count
+        $('#searchResultCount').text(visibleCount);
+        
+        // Show/hide no results message
+        if (visibleCount === 0 && $('.term-row').length > 0) {
+            $('#noResultsRow').show();
+        } else {
+            $('#noResultsRow').hide();
+        }
+    }
+    
+    // Search on keyup
+    $('#termSearchInput').on('keyup', function() {
+        filterTerms();
+    });
+    
+    // Clear search button
+    $('#clearSearch').on('click', function() {
+        $('#termSearchInput').val('');
+        filterTerms();
+        $('#termSearchInput').focus();
+    });
 });
 </script>

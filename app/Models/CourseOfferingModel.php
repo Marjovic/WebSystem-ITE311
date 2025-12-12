@@ -83,21 +83,21 @@ class CourseOfferingModel extends Model
     }
 
     /**
-     * Get available offerings for a specific student based on their program, department, and year level
-     * This filters courses to show only relevant offerings for the student
+     * Get available offerings for a specific student based on their program curriculum
+     * This filters courses to show only courses from the student's program curriculum
      * 
      * @param int $termId The current term ID
      * @param int $studentId The student's ID
      * @param array $enrolledOfferingIds Array of course offering IDs student is already enrolled in
-     * @return array Available course offerings filtered for the student
+     * @return array Available course offerings filtered for the student's program curriculum
      */
     public function getAvailableOfferingsForStudent($termId, $studentId, $enrolledOfferingIds = [])
     {
         $db = \Config\Database::connect();
         
-        // Get student details first
+        // Get student details including program_id
         $student = $db->table('students s')
-            ->select('s.*, p.program_name, d.department_name, yl.year_level_name, yl.year_level_order')
+            ->select('s.*, p.program_name, p.program_code, d.department_name, yl.year_level_name, yl.year_level_order')
             ->join('programs p', 'p.id = s.program_id', 'left')
             ->join('departments d', 'd.id = s.department_id', 'left')
             ->join('year_levels yl', 'yl.id = s.year_level_id', 'left')
@@ -106,12 +106,28 @@ class CourseOfferingModel extends Model
             ->getRow();
         
         if (!$student) {
+            log_message('debug', 'getAvailableOfferingsForStudent: Student not found');
             return [];
         }
-          // Build query for available offerings
+        
+        log_message('debug', 'getAvailableOfferingsForStudent: Student Program ID: ' . ($student->program_id ?? 'NULL'));
+        log_message('debug', 'getAvailableOfferingsForStudent: Student Year Level ID: ' . ($student->year_level_id ?? 'NULL'));
+        
+        // Get current term's semester_id for curriculum matching
+        $term = $db->table('terms')
+            ->select('semester_id')
+            ->where('id', $termId)
+            ->get()
+            ->getRow();
+        
+        $semesterId = $term ? $term->semester_id : null;
+        log_message('debug', 'getAvailableOfferingsForStudent: Term Semester ID: ' . ($semesterId ?? 'NULL'));
+        
+        // Build query for available offerings based on program curriculum
         $builder = $db->table('course_offerings co')
             ->select('
                 co.id,
+                co.course_id,
                 co.section,
                 co.max_students,
                 co.current_enrollment,
@@ -129,38 +145,69 @@ class CourseOfferingModel extends Model
                 yl.year_level_name,
                 yl.year_level_order,
                 t.term_name,
-                s.semester_name,
+                sem.semester_name,
                 ay.year_name as academic_year,
                 (co.max_students - co.current_enrollment) as available_slots,
-                cat.category_name
+                cat.category_name,
+                pc.course_type,
+                pc.year_level_id as curriculum_year_level_id,
+                pc.semester_id as curriculum_semester_id
             ')
             ->join('courses c', 'c.id = co.course_id')
             ->join('departments d', 'd.id = c.department_id', 'left')
             ->join('year_levels yl', 'yl.id = c.year_level_id', 'left')
             ->join('categories cat', 'cat.id = c.category_id', 'left')
             ->join('terms t', 't.id = co.term_id')
-            ->join('semesters s', 's.id = t.semester_id', 'left')
+            ->join('semesters sem', 'sem.id = t.semester_id', 'left')
             ->join('academic_years ay', 'ay.id = t.academic_year_id', 'left')
             ->where('co.term_id', $termId)
             ->where('co.status', 'open')
             ->where('c.is_active', 1)
             ->having('available_slots >', 0);
         
-        // Filter by student's department (show courses from student's department)
-        if (!empty($student->department_id)) {
-            $builder->groupStart()
-                ->where('c.department_id', $student->department_id)
-                ->orWhere('c.department_id IS NULL')
-                ->groupEnd();
-        }
-        
-        // Filter by year level - show courses for current year level or below
-        // (Students can take lower level courses but not higher level courses)
-        if (!empty($student->year_level_id)) {
-            $builder->groupStart()
-                ->where('yl.year_level_order <=', $student->year_level_order)
-                ->orWhere('c.year_level_id IS NULL')
-                ->groupEnd();
+        // Filter by program curriculum if student has a program
+        if (!empty($student->program_id)) {
+            // Join with program_curriculums to get courses in student's curriculum
+            $builder->join('program_curriculums pc', 'pc.course_id = c.id AND pc.program_id = ' . (int)$student->program_id, 'inner');
+            $builder->where('pc.is_active', 1);
+            
+            // Filter by year level - show courses for current year level or below
+            // Students can take courses from their year level or lower (e.g., 2nd year can take 1st & 2nd year courses)
+            if (!empty($student->year_level_id)) {
+                $builder->groupStart()
+                    ->where('pc.year_level_id <=', $student->year_level_id)
+                    ->groupEnd();
+            }
+            
+            // Optionally filter by semester (current term's semester)
+            // Comment this out if you want students to see all courses regardless of semester
+            // if (!empty($semesterId)) {
+            //     $builder->where('pc.semester_id', $semesterId);
+            // }
+            
+            log_message('debug', 'getAvailableOfferingsForStudent: Filtering by program curriculum for program_id: ' . $student->program_id);
+        } else {
+            // If student has no program, show general education courses or department courses
+            log_message('debug', 'getAvailableOfferingsForStudent: No program_id, using department filter');
+            
+            // Left join to show courses that may or may not be in curriculum
+            $builder->join('program_curriculums pc', 'pc.course_id = c.id', 'left');
+            
+            // Filter by department as fallback
+            if (!empty($student->department_id)) {
+                $builder->groupStart()
+                    ->where('c.department_id', $student->department_id)
+                    ->orWhere('c.department_id IS NULL')
+                    ->groupEnd();
+            }
+            
+            // Filter by year level
+            if (!empty($student->year_level_id)) {
+                $builder->groupStart()
+                    ->where('yl.year_level_order <=', $student->year_level_order)
+                    ->orWhere('c.year_level_id IS NULL')
+                    ->groupEnd();
+            }
         }
         
         // Exclude courses student is already enrolled in
@@ -172,6 +219,8 @@ class CourseOfferingModel extends Model
             ->orderBy('c.course_code', 'ASC')
             ->get()
             ->getResultArray();
+        
+        log_message('debug', 'getAvailableOfferingsForStudent: Found ' . count($offerings) . ' offerings');
         
         // Get instructors for each offering
         foreach ($offerings as &$offering) {
@@ -237,8 +286,7 @@ class CourseOfferingModel extends Model
         
         return $offerings;
     }
-    
-    /**
+      /**
      * Check if student meets prerequisites for a course offering
      * 
      * @param int $courseOfferingId Course offering ID
@@ -255,9 +303,9 @@ class CourseOfferingModel extends Model
             return ['meets_prerequisites' => false, 'missing_prerequisites' => []];
         }
         
-        // Get all prerequisites for this course
+        // Get all prerequisites for this course with type and minimum grade
         $prerequisites = $db->table('course_prerequisites cp')
-            ->select('cp.prerequisite_course_id, c.course_code, c.title')
+            ->select('cp.prerequisite_course_id, cp.prerequisite_type, cp.minimum_grade, c.course_code, c.title')
             ->join('courses c', 'c.id = cp.prerequisite_course_id')
             ->where('cp.course_id', $offering['course_id'])
             ->get()
@@ -266,28 +314,63 @@ class CourseOfferingModel extends Model
         if (empty($prerequisites)) {
             return ['meets_prerequisites' => true, 'missing_prerequisites' => []];
         }
-        
-        // Get student's completed courses (passed courses with grade)
+          // Get student's completed courses with their grades
+        // Note: If final_grade column doesn't exist yet, we'll check enrollment_status only
         $completedCourses = $db->table('enrollments e')
-            ->select('co.course_id')
+            ->select('co.course_id, e.enrollment_status')
             ->join('course_offerings co', 'co.id = e.course_offering_id')
             ->where('e.student_id', $studentId)
-            ->where('e.enrollment_status', 'completed')
-            ->whereIn('e.final_grade', ['1.0', '1.25', '1.5', '1.75', '2.0', '2.25', '2.5', '2.75', '3.0']) // Passing grades
+            ->whereIn('e.enrollment_status', ['completed', 'passed']) // Accept both completed and passed statuses
             ->get()
             ->getResultArray();
         
-        $completedCourseIds = array_column($completedCourses, 'course_id');
-        
-        // Check which prerequisites are missing
+        // Create a map of completed courses for easier lookup
+        // Since we don't have grades yet, we'll just track completed courses
+        $completedCoursesMap = [];
+        foreach ($completedCourses as $course) {
+            $completedCoursesMap[$course['course_id']] = true; // Mark as completed
+        }
+          // Check which prerequisites are missing or don't meet minimum grade
         $missingPrerequisites = [];
         foreach ($prerequisites as $prereq) {
-            if (!in_array($prereq['prerequisite_course_id'], $completedCourseIds)) {
+            $courseId = $prereq['prerequisite_course_id'];
+            $prerequisiteType = $prereq['prerequisite_type'] ?? 'required';
+            $minimumGrade = $prereq['minimum_grade'] ?? 75; // Default minimum grade is 75
+            
+            // Skip optional prerequisites if not completed (only check required ones)
+            if ($prerequisiteType === 'optional') {
+                continue;
+            }
+            
+            // Check if course is completed
+            if (!isset($completedCoursesMap[$courseId])) {
                 $missingPrerequisites[] = [
                     'course_code' => $prereq['course_code'],
-                    'title' => $prereq['title']
+                    'title' => $prereq['title'],
+                    'reason' => 'not_completed',
+                    'minimum_grade' => $minimumGrade
                 ];
+                continue;
             }
+            
+            // Note: Grade validation temporarily disabled until final_grade column is added to enrollments table
+            // When grades are implemented, uncomment the code below:
+            /*
+            // Check if grade meets minimum requirement  
+            $studentGrade = $completedCoursesMap[$courseId];
+            
+            if (is_numeric($studentGrade) && is_numeric($minimumGrade)) {
+                if ((float)$studentGrade < (float)$minimumGrade) {
+                    $missingPrerequisites[] = [
+                        'course_code' => $prereq['course_code'],
+                        'title' => $prereq['title'],
+                        'reason' => 'insufficient_grade',
+                        'student_grade' => $studentGrade,
+                        'minimum_grade' => $minimumGrade
+                    ];
+                }
+            }
+            */
         }
         
         return [

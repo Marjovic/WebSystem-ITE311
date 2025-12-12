@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+<head>    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= csrf_token() ?>">
     <meta name="csrf-hash" content="<?= csrf_hash() ?>">
+    <!-- Cache Control - Force fresh load -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title><?= $title ?? 'MGOD LMS' ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" 
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
@@ -96,9 +99,10 @@
                                         </a>
                                     </li>
                                 </ul>
-                            </li>                              <!-- Courses Dropdown -->
+                            </li>                            
+                            <!-- Courses Dropdown -->
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_courses') !== false || strpos($currentUri, 'admin/manage_prerequisite') !== false || strpos($currentUri, 'admin/manage_offerings') !== false || strpos($currentUri, 'admin/manage_course_instructors') !== false) ? 'active' : '' ?>" 
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_courses') !== false || strpos($currentUri, 'admin/manage_prerequisite') !== false || strpos($currentUri, 'admin/manage_offerings') !== false || strpos($currentUri, 'admin/manage_course_instructors') !== false || strpos($currentUri, 'admin/course/') !== false) ? 'active' : '' ?>" 
                                    href="#" 
                                    id="coursesDropdown" 
                                    role="button" 
@@ -118,13 +122,18 @@
                                            href="<?= base_url('admin/manage_prerequisites') ?>">
                                             <i class="fas fa-link me-2"></i>Manage Courses Prerequisite
                                         </a>
-                                    </li>
-                                    <li>
+                                    </li>                                    <li>
                                         <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_offerings') !== false) ? 'active fw-bold' : '' ?>" 
                                            href="<?= base_url('admin/manage_offerings') ?>">
                                             <i class="fas fa-calendar-check me-2"></i>Manage Course Offerings
                                         </a>
-                                    </li>                    
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/course/') !== false && strpos($currentUri, '/upload') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_offerings') ?>">
+                                            <i class="fas fa-folder-open me-2"></i>Course Materials
+                                        </a>
+                                    </li>
                                     <li>
                                         <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_courses_schedule') !== false) ? 'active fw-bold' : '' ?>" 
                                            href="<?= base_url('admin/manage_courses_schedule') ?>">
@@ -173,8 +182,7 @@
                                     </li>
                                 </ul>
                             </li>
-                            
-                            <!-- Assignments Dropdown -->
+                              <!-- Assignments Dropdown -->
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'admin/manage_assignment_types') !== false || strpos($currentUri, 'admin/manage_grading_periods') !== false || strpos($currentUri, 'admin/manage_grade_components') !== false) ? 'active' : '' ?>" 
                                    href="#" 
@@ -204,7 +212,10 @@
                                         </a>
                                     </li>
                                 </ul>
-                            </li>                        
+                            </li>
+
+                            
+                            
                             <?php elseif ($userRole === 'teacher'): ?>
                             <!-- Teacher Navigation -->
                             
@@ -217,8 +228,7 @@
                                    data-bs-toggle="dropdown" 
                                    aria-expanded="false">
                                     📚 Courses
-                                </a>
-                                <ul class="dropdown-menu shadow" aria-labelledby="teacherCoursesDropdown">
+                                </a>                                <ul class="dropdown-menu shadow" aria-labelledby="teacherCoursesDropdown">
                                     <li>
                                         <a class="dropdown-item <?= (strpos($currentUri, 'teacher/courses') !== false && strpos($currentUri, 'all_courses') === false) ? 'active fw-bold' : '' ?>" 
                                            href="<?= base_url('teacher/courses') ?>">
@@ -226,9 +236,9 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item <?= (strpos($currentUri, 'teacher/course_material') !== false) ? 'active fw-bold' : '' ?>" 
-                                           href="<?= base_url('teacher/course_material') ?>">
-                                            <i class="fas fa-mat me-2"></i>Materials for Courses
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'teacher/course/') !== false && strpos($currentUri, '/upload') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('teacher/courses') ?>">
+                                            <i class="fas fa-folder-open me-2"></i>Course Materials
                                         </a>
                                     </li>
                                 </ul>
@@ -284,20 +294,40 @@
                                     </li>
                                 </ul>
                             </li>
-                            
-                            <!-- Gradebook -->
+                              <!-- Gradebook -->
                             <li class="nav-item">
                                 <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'teacher/gradebook') !== false) ? 'active' : '' ?>" 
                                    href="<?= base_url('teacher/gradebook') ?>">
                                     📊 Gradebook
                                 </a>
-                            </li>                            
-                            <?php elseif ($userRole === 'student'): ?>
-                            <!-- Student Navigation -->
-                            <li class="nav-item">
-                                <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'student/courses') !== false) ? 'active' : '' ?>" href="<?= base_url('student/courses') ?>">
+                            </li>
+
+
+                                  <?php elseif ($userRole === 'student'): ?>
+                        <!-- Student Navigation -->                            <!-- My Courses Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3 fw-bold <?= (strpos($currentUri, 'student/courses') !== false || strpos($currentUri, 'student/materials') !== false || strpos($currentUri, 'student/course/') !== false) ? 'active' : '' ?>" 
+                                   href="#" 
+                                   id="studentCoursesDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
                                     📚 My Courses
                                 </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="studentCoursesDropdown">
+                                    <li>
+                                        <a class="dropdown-item <?= ($currentUri === 'student/courses') ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('student/courses') ?>">
+                                            <i class="fas fa-graduation-cap me-2"></i>Enrolled Courses
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'student/materials') !== false || strpos($currentUri, 'student/course/') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('student/materials') ?>">
+                                            <i class="fas fa-folder-open me-2"></i>Course Materials
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link px-3 fw-bold <?= (strpos($currentUri, 'student/assignments') !== false) ? 'active' : '' ?>" href="<?= base_url('student/assignments') ?>">

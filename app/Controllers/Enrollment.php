@@ -12,6 +12,8 @@ use App\Models\InstructorModel;
 use App\Models\CourseInstructorModel;
 use App\Models\ProgramModel;
 use App\Models\DepartmentModel;
+use App\Models\NotificationModel;
+use App\Models\UserModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class Enrollment extends BaseController
@@ -21,11 +23,13 @@ class Enrollment extends BaseController
     protected $courseOfferingModel;
     protected $yearLevelModel;
     protected $termModel;
-    protected $instructorModel;
-    protected $courseInstructorModel;
+    protected $instructorModel;    protected $courseInstructorModel;
     protected $programModel;
     protected $departmentModel;
+    protected $notificationModel;
+    protected $userModel;
     protected $session;
+    protected $db;
 
     public function __construct()
     {
@@ -38,7 +42,10 @@ class Enrollment extends BaseController
         $this->courseInstructorModel = new CourseInstructorModel();
         $this->programModel = new ProgramModel();
         $this->departmentModel = new DepartmentModel();
+        $this->notificationModel = new NotificationModel();
+        $this->userModel = new UserModel();
         $this->session = \Config\Services::session();
+        $this->db = \Config\Database::connect();
     }
 
     /**
@@ -731,12 +738,80 @@ class Enrollment extends BaseController
                 'enrollment_date' => $enrollmentDate,
                 'payment_status' => $paymentStatus,
                 'notes' => $notes
-            ];
-
-            if ($this->enrollmentModel->insert($enrollmentData)) {
+            ];            if ($this->enrollmentModel->insert($enrollmentData)) {
                 $successCount++;
+                
+                // Send notification to student
+                $student = $this->studentModel->find($studentId);
+                if ($student) {
+                    $studentUser = $this->userModel->find($student['user_id']);
+                    
+                    // Get course details
+                    $courseDetails = $this->db->table('course_offerings co')
+                        ->select('co.*, c.course_code, c.title as course_title, t.term_name, ay.year_name as academic_year')
+                        ->join('courses c', 'c.id = co.course_id')
+                        ->join('terms t', 't.id = co.term_id')
+                        ->join('academic_years ay', 'ay.id = t.academic_year_id')
+                        ->where('co.id', $courseOfferingId)
+                        ->get()
+                        ->getRowArray();
+                    
+                    // Get teacher info
+                    $teacherUserId = $this->session->get('userID');
+                    $teacherUser = $this->userModel->find($teacherUserId);
+                    
+                    if ($studentUser && $courseDetails && $teacherUser) {
+                        $studentMessage = sprintf(
+                            "You have been enrolled in %s (%s) - Section %s for %s %s by %s %s",
+                            $courseDetails['course_title'],
+                            $courseDetails['course_code'],
+                            $courseDetails['section'],
+                            $courseDetails['term_name'],
+                            $courseDetails['academic_year'],
+                            $teacherUser['first_name'],
+                            $teacherUser['last_name']
+                        );
+                        
+                        $this->notificationModel->createNotification(
+                            $student['user_id'],
+                            $studentMessage,
+                            'enrollment',
+                            $courseOfferingId,
+                            'course_offering'
+                        );
+                    }
+                }
             } else {
                 $failedCount++;
+            }
+        }
+        
+        // Send summary notification to teacher
+        if ($successCount > 0) {
+            $teacherUserId = $this->session->get('userID');
+            $courseDetails = $this->db->table('course_offerings co')
+                ->select('co.*, c.course_code, c.title as course_title')
+                ->join('courses c', 'c.id = co.course_id')
+                ->where('co.id', $courseOfferingId)
+                ->get()
+                ->getRowArray();
+            
+            if ($courseDetails) {
+                $teacherMessage = sprintf(
+                    "Successfully enrolled %d student(s) in %s (%s) - Section %s",
+                    $successCount,
+                    $courseDetails['course_title'],
+                    $courseDetails['course_code'],
+                    $courseDetails['section']
+                );
+                
+                $this->notificationModel->createNotification(
+                    $teacherUserId,
+                    $teacherMessage,
+                    'success',
+                    $courseOfferingId,
+                    'course_offering'
+                );
             }
         }
 
@@ -913,21 +988,79 @@ class Enrollment extends BaseController
                 'enrollment_date' => $enrollmentDate,
                 'payment_status' => $paymentStatus,
                 'notes' => $notes
-            ];
-
-            if ($this->enrollmentModel->insert($enrollmentData)) {
+            ];            if ($this->enrollmentModel->insert($enrollmentData)) {
                 $successCount++;
-                // Get student name for success reporting
-                $student = $this->studentModel
-                    ->select('CONCAT(u.first_name, " ", u.last_name) as full_name')
-                    ->join('users u', 'u.id = students.user_id')
-                    ->find($studentId);
+                
+                // Get student details
+                $student = $this->studentModel->find($studentId);
                 if ($student) {
-                    $enrolledStudents[] = $student['full_name'];
+                    // Get student user for name reporting
+                    $studentUser = $this->userModel->find($student['user_id']);
+                    if ($studentUser) {
+                        $enrolledStudents[] = $studentUser['first_name'] . ' ' . $studentUser['last_name'];
+                    }
+                    
+                    // Send notification to student
+                    $courseDetails = $this->db->table('course_offerings co')
+                        ->select('co.*, c.course_code, c.title as course_title, t.term_name, ay.year_name as academic_year')
+                        ->join('courses c', 'c.id = co.course_id')
+                        ->join('terms t', 't.id = co.term_id')
+                        ->join('academic_years ay', 'ay.id = t.academic_year_id')
+                        ->where('co.id', $courseOfferingId)
+                        ->get()
+                        ->getRowArray();
+                    
+                    // Get teacher info
+                    $teacherUserId = $this->session->get('userID');
+                    $teacherUser = $this->userModel->find($teacherUserId);
+                    
+                    if ($courseDetails && $teacherUser) {
+                        $studentMessage = sprintf(
+                            "You have been enrolled in %s (%s) - Section %s for %s %s by %s %s",
+                            $courseDetails['course_title'],
+                            $courseDetails['course_code'],
+                            $courseDetails['section'],
+                            $courseDetails['term_name'],
+                            $courseDetails['academic_year'],
+                            $teacherUser['first_name'],
+                            $teacherUser['last_name']
+                        );
+                        
+                        $this->notificationModel->createNotification(
+                            $student['user_id'],
+                            $studentMessage
+                        );
+                    }
                 }
             } else {
                 $failedCount++;
                 log_message('error', 'Failed to enroll student ID: ' . $studentId . '. Errors: ' . json_encode($this->enrollmentModel->errors()));
+            }
+        }
+        
+        // Send summary notification to teacher
+        if ($successCount > 0) {
+            $teacherUserId = $this->session->get('userID');
+            $courseDetails = $this->db->table('course_offerings co')
+                ->select('co.*, c.course_code, c.title as course_title')
+                ->join('courses c', 'c.id = co.course_id')
+                ->where('co.id', $courseOfferingId)
+                ->get()
+                ->getRowArray();
+            
+            if ($courseDetails) {
+                $teacherMessage = sprintf(
+                    "Successfully enrolled %d student(s) in %s (%s) - Section %s",
+                    $successCount,
+                    $courseDetails['course_title'],
+                    $courseDetails['course_code'],
+                    $courseDetails['section']
+                );
+                
+                $this->notificationModel->createNotification(
+                    $teacherUserId,
+                    $teacherMessage
+                );
             }
         }
 
@@ -972,12 +1105,13 @@ class Enrollment extends BaseController
 
     /**
      * Get teacher's assigned course offerings
-     */private function getTeacherAssignedCourseOfferings($instructorId)
+     */    private function getTeacherAssignedCourseOfferings($instructorId)
     {
         return $this->courseInstructorModel
             ->select('
                 co.id,
                 co.course_id,
+                co.section,
                 c.course_code,
                 c.title as course_title,
                 t.term_name,
@@ -994,10 +1128,12 @@ class Enrollment extends BaseController
             ->from('course_instructors ci')
             ->join('course_offerings co', 'co.id = ci.course_offering_id')
             ->join('courses c', 'c.id = co.course_id')
-            ->join('terms t', 't.id = co.term_id')            ->join('academic_years ay', 'ay.id = t.academic_year_id', 'left')
+            ->join('terms t', 't.id = co.term_id')
+            ->join('academic_years ay', 'ay.id = t.academic_year_id', 'left')
             ->join('departments d', 'd.id = c.department_id', 'left')
             ->where('ci.instructor_id', $instructorId)
             ->where('co.status', 'open')
+            ->groupBy('co.id')  // GROUP BY to prevent duplicates when course has multiple instructors
             ->orderBy('ay.year_name', 'DESC')
             ->orderBy('c.course_code', 'ASC')
             ->findAll();
@@ -1094,12 +1230,11 @@ class Enrollment extends BaseController
         ];
 
         return view('teacher/enrolled_students', $data);
-    }
-
-    /**
+    }    /**
      * Get enrolled students for teacher's courses
      */    private function getTeacherEnrolledStudents($instructorId, $courseOfferingId = null, $enrollmentStatus = null)
     {        $query = $this->enrollmentModel
+            ->distinct()
             ->select('
                 e.id as enrollment_id,
                 e.enrollment_status,
@@ -1110,6 +1245,8 @@ class Enrollment extends BaseController
                 s.id as student_id,
                 s.student_id_number,
                 CONCAT(u.first_name, " ", COALESCE(u.middle_name, ""), " ", u.last_name) as full_name,
+                u.first_name,
+                u.last_name,
                 u.email,
                 c.course_code,
                 c.title as course_title,

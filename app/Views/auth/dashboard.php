@@ -386,12 +386,10 @@
                               <!-- Quick Actions -->
                             <div class="mt-4">
                                 <h6 class="fw-semibold mb-3">🚀 Quick Actions</h6>
-                                <div class="d-flex flex-wrap gap-2">                                    <a href="<?= base_url('teacher/courses') ?>" class="btn btn-outline-primary btn-sm">
+                                <div class="d-flex flex-wrap gap-2">                                    
+                                    <a href="<?= base_url('teacher/courses') ?>" class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-book me-1"></i>View My Courses
                                     </a>
-                                    <button class="btn btn-outline-info btn-sm" disabled>
-                                        <i class="fas fa-chart-bar me-1"></i>Course Analytics
-                                    </button>
                                     <a href="<?= base_url('teacher/courses') ?>" class="btn btn-outline-success btn-sm">
                                         <i class="fas fa-upload me-1"></i>Upload Materials
                                     </a>
@@ -401,45 +399,7 @@
                     </div>
                 </div>
                 
-                <!-- Recent Activity Section -->
-                <div class="col-md-4 mb-4">
-                    <div class="card border-0 shadow-sm rounded-3 h-100">
-                        <div class="card-header bg-white border-0 pb-0">
-                            <h5 class="mb-0 fw-bold text-dark">🔔 Recent Activity</h5>
-                            <small class="text-muted">Latest course activities</small>
-                        </div>
-                        <div class="card-body pt-3">
-                            <div class="activity-list">
-                                <?php if (!empty($assignment_activities)): ?>
-                                    <?php foreach (array_slice($assignment_activities, 0, 3) as $activity): ?>
-                                        <div class="d-flex align-items-start mb-3">
-                                            <div class="me-3">
-                                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" 
-                                                     style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                                    <?= $activity['icon'] ?? '📚' ?>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="fw-semibold small"><?= esc($activity['title'] ?? 'Course Activity') ?></div>
-                                                <div class="text-muted small"><?= esc($activity['description'] ?? 'Course-related activity') ?></div>
-                                                <div class="text-muted" style="font-size: 0.75rem;">
-                                                    <?= date('M j, g:i A', strtotime($activity['time'] ?? 'now')) ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="text-center py-4">
-                                        <div class="text-muted mb-2">
-                                            <i class="fas fa-clock" style="font-size: 2rem;"></i>
-                                        </div>
-                                        <p class="text-muted small mb-0">No recent activities yet.<br>Start managing courses to see activities here.</p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div><!-- STUDENT ADDITIONAL CONTENT -->
+                <!-- STUDENT ADDITIONAL CONTENT -->
             <?php elseif ($user['role'] === 'student'): ?>
                 <!-- Enrolled Courses Section -->
                 <div class="col-12 mb-4">                    
@@ -515,7 +475,7 @@
                     <div class="card border-0 shadow-sm rounded-3">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="mb-0 fw-bold text-dark">🎯 Available Courses</h5>
-                            <small class="text-muted">Discover new learning opportunities</small>
+                            <small class="text-muted">Courses from your program curriculum</small>
                         </div>
                         <div class="card-body pt-3">
                             <?php if (!empty($availableCoursesData)): ?>
@@ -526,10 +486,30 @@
                                                 <div class="card-body">
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                                         <h6 class="card-title fw-bold text-dark mb-0"><?= esc($course['course_title'] ?? $course['title'] ?? 'Untitled Course') ?></h6>
-                                                        <span class="badge bg-info rounded-pill small"><?= ucfirst($course['status'] ?? 'open') ?></span>
+                                                        <?php 
+                                                        // Course type badge color
+                                                        $typeColors = [
+                                                            'major' => 'primary',
+                                                            'minor' => 'secondary',
+                                                            'general_education' => 'success'
+                                                        ];
+                                                        $courseType = $course['course_type'] ?? 'major';
+                                                        $badgeColor = $typeColors[$courseType] ?? 'info';
+                                                        $typeLabels = [
+                                                            'major' => 'Major',
+                                                            'minor' => 'Minor',
+                                                            'general_education' => 'GE'
+                                                        ];
+                                                        $typeLabel = $typeLabels[$courseType] ?? ucfirst($courseType);
+                                                        ?>
+                                                        <span class="badge bg-<?= $badgeColor ?> rounded-pill small"><?= $typeLabel ?></span>
                                                     </div>
-                                                    <p class="text-muted small mb-2"><?= esc($course['course_code'] ?? '') ?> • <?= esc($course['instructor_name'] ?? 'TBA') ?></p>
-                                                    <p class="card-text text-muted small mb-3"><?= esc(substr($course['description'] ?? '', 0, 100)) ?>...</p>
+                                                    <p class="text-muted small mb-2">
+                                                        <?= esc($course['course_code'] ?? '') ?> 
+                                                        <?php if (!empty($course['section'])): ?>• Sec <?= esc($course['section']) ?><?php endif; ?>
+                                                        • <?= esc($course['instructor_name'] ?? 'TBA') ?>
+                                                    </p>
+                                                    <p class="card-text text-muted small mb-3"><?= esc(substr($course['description'] ?? '', 0, 80)) ?>...</p>
                                                     
                                                     <!-- Course Details -->
                                                     <div class="mb-3">
@@ -540,14 +520,23 @@
                                                             </div>
                                                             <div class="col-4">
                                                                 <small class="text-muted d-block">Slots</small>
-                                                                <strong class="small"><?= $course['available_slots'] ?? 0 ?></strong>
+                                                                <strong class="small text-<?= ($course['available_slots'] ?? 0) > 5 ? 'success' : 'warning' ?>"><?= $course['available_slots'] ?? 0 ?></strong>
                                                             </div>
                                                             <div class="col-4">
-                                                                <small class="text-muted d-block">Max</small>
-                                                                <strong class="small"><?= $course['max_students'] ?? 0 ?></strong>
+                                                                <small class="text-muted d-block">Year</small>
+                                                                <strong class="small"><?= $course['year_level_name'] ?? 'N/A' ?></strong>
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    
+                                                    <!-- Schedule if available -->
+                                                    <?php if (!empty($course['schedule_display']) && $course['schedule_display'] !== 'TBA'): ?>
+                                                        <div class="mb-2">
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-clock"></i> <?= esc($course['schedule_display']) ?>
+                                                            </small>
+                                                        </div>
+                                                    <?php endif; ?>
                                                     
                                                     <!-- Course Dates -->
                                                     <?php if (!empty($course['start_date'])): ?>
@@ -572,14 +561,23 @@
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
-                                </div>
-                            <?php else: ?>
+                                </div>                            <?php else: ?>
                                 <div class="text-center py-4">
                                     <div class="mb-3">
                                         <span style="font-size: 3rem; opacity: 0.3;">🎯</span>
                                     </div>
-                                    <p class="mb-0">No available courses at the moment</p>
-                                    <small class="text-muted">Check back later for new learning opportunities!</small>
+                                    <p class="mb-2 fw-bold">No available courses at the moment</p>
+                                    <small class="text-muted d-block mb-2">
+                                        <?php if (!empty($studentInfo['program_id'])): ?>
+                                            No course offerings from your program curriculum are currently available for enrollment.
+                                        <?php else: ?>
+                                            Please make sure your program is assigned in your student profile.
+                                        <?php endif; ?>
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Course offerings are based on your program: <strong><?= esc($studentInfo['program_name'] ?? 'Not Assigned') ?></strong>
+                                    </small>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -637,29 +635,47 @@
 <!-- Student Dashboard AJAX Enrollment Script -->
 <?php if ($user['role'] === 'student'): ?>
 <script>
+// Version: 4.0 - FIXED - <?= time() ?>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Dashboard enrollment script loaded - v4.0 [<?= time() ?>]');
+    
     // Get all enrollment buttons
     const enrollButtons = document.querySelectorAll('.enroll-btn');
     const enrollmentModal = new bootstrap.Modal(document.getElementById('enrollmentModal'));
     const modalBody = document.getElementById('enrollmentModalBody');
     const modalTitle = document.getElementById('enrollmentModalLabel');
+    
+    // Track courses being enrolled to prevent duplicate requests
+    const enrollmentInProgress = new Set();
 
     enrollButtons.forEach(button => {
         button.addEventListener('click', function() {
             const courseId = this.dataset.courseId;
             const courseTitle = this.dataset.courseTitle;
             const originalButton = this;
+            
+            // Prevent duplicate enrollment attempts
+            if (enrollmentInProgress.has(courseId)) {
+                console.log('⚠️ Enrollment already in progress for course:', courseId);
+                return;
+            }
+            
+            // Mark enrollment as in progress
+            enrollmentInProgress.add(courseId);
+            console.log('🔄 Starting enrollment for course:', courseId);
 
             // Disable button and show loading state
             originalButton.disabled = true;
-            originalButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Enrolling...';            // Get CSRF tokens from meta tags
+            originalButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Enrolling...';
+
+            // Get CSRF tokens from meta tags
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             const csrfHash = document.querySelector('meta[name="csrf-hash"]').getAttribute('content');
 
             // Prepare the enrollment request with CSRF protection
             const formData = new FormData();
             formData.append('course_id', courseId);
-            formData.append(csrfToken, csrfHash); // Add CSRF token to form data
+            formData.append(csrfToken, csrfHash);
 
             // Make AJAX request with CSRF headers
             fetch('<?= base_url('/course/enroll') ?>', {
@@ -667,16 +683,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfHash // CSRF token to headers as well
+                    'X-CSRF-TOKEN': csrfHash
                 }
-            })            .then(response => response.json())
+            })
+            .then(response => {
+                console.log('📦 Response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('📦 Response data:', data);
+                
                 // Update CSRF token if provided in response
                 if (data.csrf_hash) {
                     document.querySelector('meta[name="csrf-hash"]').setAttribute('content', data.csrf_hash);
+                    console.log('🔐 CSRF token updated');
                 }
                 
                 if (data.success) {
+                    console.log('✅ Enrollment successful!');
+                    
                     // Success: Show success modal and update UI
                     modalTitle.textContent = 'Enrollment Successful!';
                     modalBody.innerHTML = `
@@ -719,7 +744,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     `;
-                      // Update the course card to show enrolled status
+                    
+                    // Update the course card to show enrolled status
                     const courseCard = originalButton.closest('.course-card');
                     if (courseCard) {
                         // Update the badge to show enrolled status
@@ -741,50 +767,189 @@ document.addEventListener('DOMContentLoaded', function() {
                         courseCard.style.border = '2px solid #198754';
                         courseCard.style.borderRadius = '0.375rem';
                     }
-                      // Show success modal
-                    enrollmentModal.show();
                     
-                    // Note: Page refresh removed for testing purposes
-                    // The course will remain visible even after enrollment
+                    // Show success modal
+                    enrollmentModal.show();
                     
                 } else {
                     // Error: Show error modal
-                    modalTitle.textContent = 'Enrollment Failed';
-                    let errorMessage = data.message || 'An unexpected error occurred.';
+                    console.log('❌ Enrollment failed:', data.error_code);
+                    console.log('Error message:', data.message);
                     
-                    // Handle specific error types
-                    if (data.error_code === 'ALREADY_ENROLLED') {
-                        modalBody.innerHTML = `
-                            <div class="text-center">
-                                <div class="mb-3">
-                                    <i class="fas fa-info-circle text-warning" style="font-size: 3rem;"></i>
+                    try {
+                        modalTitle.textContent = 'Enrollment Failed';
+                        let errorMessage = data.message || 'An unexpected error occurred.';
+                        
+                        // Handle specific error types
+                        if (data.error_code === 'ALREADY_ENROLLED') {
+                            console.log('⚠️ Handling ALREADY_ENROLLED error');
+                            
+                            modalBody.innerHTML = `
+                                <div class="text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-info-circle text-warning" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5 class="text-warning">Already Enrolled</h5>
+                                    <p class="text-muted">${errorMessage}</p>
                                 </div>
-                                <h5 class="text-warning">Already Enrolled</h5>
-                                <p class="text-muted">${errorMessage}</p>
-                            </div>
-                        `;
-                    } else {
+                            `;
+                            
+                            enrollmentModal.show();
+                            
+                            // Update button to show already enrolled (don't allow retry)
+                            originalButton.disabled = true;
+                            originalButton.classList.remove('btn-primary');
+                            originalButton.classList.add('btn-secondary');
+                            originalButton.innerHTML = '<i class="fas fa-check-circle me-1"></i>Already Enrolled';
+                            
+                        } else if (data.error_code === 'PREREQUISITES_NOT_MET') {
+                            console.log('🔒 Handling PREREQUISITES_NOT_MET error');
+                            console.log('Missing prerequisites:', data.missing_prerequisites);
+                            
+                            // Build prerequisite list with detailed information
+                            let prereqList = '';
+                            if (data.missing_prerequisites && Array.isArray(data.missing_prerequisites) && data.missing_prerequisites.length > 0) {
+                                prereqList = '<div class="bg-light rounded p-3 mt-3 mb-3">';
+                                prereqList += '<p class="mb-2 text-start"><strong>Required Course(s):</strong></p>';
+                                prereqList += '<ul class="list-unstyled text-start mb-0">';
+                                
+                                data.missing_prerequisites.forEach(course => {
+                                    let reason = '';
+                                    if (course.reason === 'not_completed') {
+                                        reason = '<span class="badge bg-danger ms-2">Not Completed</span>';
+                                    } else if (course.reason === 'insufficient_grade') {
+                                        reason = `<span class="badge bg-warning text-dark ms-2">Grade: ${course.student_grade}% (Need: ${course.minimum_grade}%)</span>`;
+                                    }
+                                    
+                                    prereqList += `
+                                        <li class="mb-2 d-flex align-items-center">
+                                            <i class="fas fa-book text-danger me-2"></i>
+                                            <div>
+                                                <strong>${course.course_code || 'N/A'}</strong> - ${course.title || 'Course'}
+                                                ${reason}
+                                                ${course.minimum_grade ? `<br><small class="text-muted">Minimum passing grade: ${course.minimum_grade}%</small>` : ''}
+                                            </div>
+                                        </li>
+                                    `;
+                                });
+                                
+                                prereqList += '</ul></div>';
+                            } else {
+                                prereqList = '<p class="text-muted">No prerequisite details available.</p>';
+                            }
+                            
+                            modalBody.innerHTML = `
+                                <div class="text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-lock text-danger" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5 class="text-danger">⚠️ Prerequisites Not Met</h5>
+                                    <p class="text-muted mb-2">You cannot enroll in <strong>${courseTitle}</strong> yet.</p>
+                                    ${prereqList}
+                                    <div class="alert alert-info mt-3 mb-0 text-start">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>What you need to do:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li>Complete the required prerequisite course(s)</li>
+                                            <li>Pass with the minimum required grade</li>
+                                            <li>Wait for your instructor to finalize your grades</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            console.log('🎭 Showing prerequisite modal');
+                            enrollmentModal.show();
+                            
+                            // Update button to locked state (don't allow retry for prerequisites)
+                            originalButton.disabled = true;
+                            originalButton.classList.remove('btn-primary');
+                            originalButton.classList.add('btn-secondary');
+                            originalButton.innerHTML = '<i class="fas fa-lock me-1"></i>Prerequisites Required';
+                            
+                            // Update course card styling
+                            const courseCard = originalButton.closest('.course-card');
+                            if (courseCard) {
+                                courseCard.style.opacity = '0.7';
+                                const badge = courseCard.querySelector('.badge');
+                                if (badge) {
+                                    badge.className = 'badge bg-warning text-dark rounded-pill small';
+                                    badge.textContent = 'Prerequisites Required';
+                                }
+                            }
+                            
+                        } else if (data.error_code === 'OFFERING_FULL') {
+                            console.log('⚠️ Handling OFFERING_FULL error');
+                            
+                            modalBody.innerHTML = `
+                                <div class="text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-users text-danger" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5 class="text-danger">Course Full</h5>
+                                    <p class="text-muted">${errorMessage}</p>
+                                    <small class="text-muted">Please try another section or check back later.</small>
+                                </div>
+                            `;
+                            
+                            enrollmentModal.show();
+                            
+                            // Allow retry for course full (might refresh and try again)
+                            originalButton.disabled = false;
+                            originalButton.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Enroll in Course';
+                            
+                        } else {
+                            // Generic error handler with more details if available
+                            console.log('⚠️ Handling generic error:', data.error_code);
+                            
+                            let errorDetails = '';
+                            if (data.error_code) {
+                                errorDetails = `<div class="alert alert-secondary mt-3 mb-0"><small><strong>Error Code:</strong> ${data.error_code}</small></div>`;
+                            }
+                            
+                            modalBody.innerHTML = `
+                                <div class="text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5 class="text-danger">Enrollment Error</h5>
+                                    <p class="text-muted">${errorMessage}</p>
+                                    ${errorDetails}
+                                    <small class="text-muted d-block mt-3">Please try again later or contact support if the problem persists.</small>
+                                </div>
+                            `;
+                            
+                            enrollmentModal.show();
+                            
+                            // Allow retry for generic errors
+                            originalButton.disabled = false;
+                            originalButton.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Enroll in Course';
+                        }
+                        
+                    } catch (error) {
+                        console.error('💥 Error in error handling:', error);
+                        console.error('Stack trace:', error.stack);
+                        
+                        // Fallback error display
+                        modalTitle.textContent = 'Enrollment Failed';
                         modalBody.innerHTML = `
                             <div class="text-center">
                                 <div class="mb-3">
                                     <i class="fas fa-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
                                 </div>
-                                <h5 class="text-danger">Enrollment Error</h5>
-                                <p class="text-muted">${errorMessage}</p>
-                                <small class="text-muted">Please try again later or contact support if the problem persists.</small>
+                                <h5 class="text-danger">Error</h5>
+                                <p class="text-muted">${data.message || 'An error occurred during enrollment.'}</p>
                             </div>
                         `;
+                        
+                        enrollmentModal.show();
+                        originalButton.disabled = false;
+                        originalButton.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Enroll in Course';
                     }
-                    
-                    enrollmentModal.show();
-                    
-                    // Reset button state
-                    originalButton.disabled = false;
-                    originalButton.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Enroll in Course';
                 }
             })
             .catch(error => {
-                console.error('Enrollment error:', error);
+                console.error('💥 Network/Fetch error:', error);
                 
                 // Network or other error
                 modalTitle.textContent = 'Connection Error';
@@ -800,17 +965,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 enrollmentModal.show();
                 
-                // Reset button state
+                // Reset button state for network errors (allow retry)
                 originalButton.disabled = false;
                 originalButton.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Enroll in Course';
+            })
+            .finally(() => {
+                // Always remove from in-progress set
+                enrollmentInProgress.delete(courseId);
+                console.log('🏁 Enrollment process completed for course:', courseId);
+                
+                // Safety net: ensure button is never stuck in loading state
+                if (originalButton && originalButton.innerHTML && originalButton.innerHTML.includes('Enrolling')) {
+                    console.log('⚠️ Safety net triggered - button still in loading state!');
+                    originalButton.disabled = false;
+                    originalButton.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Enroll in Course';
+                }
             });
         });
-    });    // Note: Auto-refresh disabled for testing purposes
-    // document.getElementById('enrollmentModal').addEventListener('hidden.bs.modal', function() {
-    //     if (modalTitle.textContent === 'Enrollment Successful!') {
-    //         window.location.reload();
-    //     }
-    // });
-});
+    });
+    console.log('✅ Enrollment handlers attached to', enrollButtons.length, 'buttons');
 </script>
 <?php endif; ?>

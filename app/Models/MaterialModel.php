@@ -157,9 +157,7 @@ class MaterialModel extends Model
         $bytes /= (1 << (10 * $pow));
         
         return round($bytes, 2) . ' ' . $units[$pow];
-    }
-
-    /**
+    }    /**
      * Get materials count by offering
      */
     public function countMaterials($offeringId)
@@ -167,5 +165,41 @@ class MaterialModel extends Model
         return $this->where('course_offering_id', $offeringId)
                     ->where('is_active', 1)
                     ->countAllResults();
+    }
+
+    /**
+     * Get materials by course_offering_id (for backward compatibility with controller)
+     */
+    public function getMaterialsByCourse($offeringId)
+    {
+        return $this->getOfferingMaterials($offeringId);
+    }    /**
+     * Insert material (for backward compatibility with controller)
+     */
+    public function insertMaterial($data)
+    {
+        // Map course_id to course_offering_id if needed
+        if (isset($data['course_id']) && !isset($data['course_offering_id'])) {
+            $data['course_offering_id'] = $data['course_id'];
+            unset($data['course_id']);
+        }
+
+        // Add default values if not set
+        if (!isset($data['title'])) {
+            $data['title'] = $data['file_name'] ?? 'Untitled';
+        }
+        if (!isset($data['file_size']) && isset($data['file_path'])) {
+            $fullPath = WRITEPATH . $data['file_path'];
+            $data['file_size'] = file_exists($fullPath) ? filesize($fullPath) : 0;
+        }
+        if (!isset($data['file_type'])) {
+            $extension = pathinfo($data['file_name'] ?? '', PATHINFO_EXTENSION);
+            $data['file_type'] = $extension;
+        }
+        if (!isset($data['is_active'])) {
+            $data['is_active'] = 1;
+        }
+
+        return $this->insert($data) ? $this->getInsertID() : false;
     }
 }

@@ -2,22 +2,54 @@
 
 <!-- Material Upload View - File upload functionality for teachers and admins -->
 <div class="bg-light min-vh-100">
-    <div class="container py-4">
-        <!-- Header Section -->
+    <div class="container py-4">        
+    <!-- Header Section -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3">
                     <div class="card-body bg-success text-white p-4 rounded-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h2 class="mb-2 fw-bold">📁 Upload Course Materials</h2>
-                                <p class="mb-1 opacity-75">Course: <strong><?= esc($course['title']) ?></strong></p>
-                                <p class="mb-0 opacity-75">Share learning resources with students in this course</p>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                            <div class="mb-3 mb-md-0">
+                                <h2 class="mb-2 fw-bold">
+                                    <i class="fas fa-folder-open me-2"></i>Course Materials
+                                </h2>
+                                <p class="mb-1 opacity-75">
+                                    <i class="fas fa-book-open me-1"></i> 
+                                    <strong><?= esc($course['title'] ?? $course['course_name'] ?? 'N/A') ?></strong>
+                                </p>
+                                <p class="mb-0 opacity-75">
+                                    <small>
+                                        <i class="fas fa-code me-1"></i><?= esc($course['course_code']) ?>
+                                        <?php if (isset($course['credits'])): ?>
+                                            <span class="mx-2">|</span>
+                                            <i class="fas fa-graduation-cap me-1"></i><?= $course['credits'] ?> Credits
+                                        <?php endif; ?>
+                                    </small>
+                                </p>
                             </div>
-                            <div>
-                                <a href="<?= base_url('dashboard') ?>" class="btn btn-light btn-sm">
-                                    ← Back to Dashboard
-                                </a>
+                            <div class="text-md-end">
+                                <div class="badge bg-light text-success fs-5 mb-2 px-4 py-2">
+                                    <i class="fas fa-files me-2"></i> 
+                                    <strong><?= count($materials ?? []) ?></strong> Material<?= count($materials ?? []) !== 1 ? 's' : '' ?>
+                                </div>
+                                <?php if (isset($course['status'])): ?>
+                                    <div class="mt-2">
+                                        <?php
+                                        $statusStyles = [
+                                            'draft' => ['color' => 'warning', 'icon' => 'fa-pencil-alt', 'text' => 'Draft'],
+                                            'open' => ['color' => 'success', 'icon' => 'fa-check-circle', 'text' => 'Open'],
+                                            'active' => ['color' => 'success', 'icon' => 'fa-check-circle', 'text' => 'Active'],
+                                            'closed' => ['color' => 'danger', 'icon' => 'fa-lock', 'text' => 'Closed'],
+                                            'completed' => ['color' => 'info', 'icon' => 'fa-flag-checkered', 'text' => 'Completed'],
+                                            'cancelled' => ['color' => 'dark', 'icon' => 'fa-times-circle', 'text' => 'Cancelled']
+                                        ];
+                                        $style = $statusStyles[$course['status']] ?? ['color' => 'secondary', 'icon' => 'fa-question-circle', 'text' => 'Unknown'];
+                                        ?>
+                                        <span class="badge bg-<?= $style['color'] ?> rounded-pill px-3 py-2">
+                                            <i class="fas <?= $style['icon'] ?> me-1"></i><?= $style['text'] ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -59,22 +91,37 @@
                     <div class="card-header bg-success text-white border-0">
                         <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Upload New Material</h5>
                     </div>
-                    <div class="card-body p-4">
-                        <form method="post" action="<?= base_url(($user['role'] === 'admin' ? 'admin' : 'teacher') . '/course/' . $course['id'] . '/upload') ?>" 
+                    <div class="card-body p-4">                        <form method="post" action="<?= base_url(($user['role'] === 'admin' ? 'admin' : 'teacher') . '/course/' . $course_id . '/upload') ?>" 
                               enctype="multipart/form-data" id="uploadForm">
                             <?= csrf_field() ?>
                               <div class="row">
                                 <div class="col-md-8">
                                     <div class="mb-3">
                                         <label for="material_file" class="form-label fw-semibold">
-                                            <i class="fas fa-file-upload me-2"></i>Select File to Upload
+                                            <i class="fas fa-file-pdf text-danger me-1"></i>
+                                            <i class="fas fa-file-powerpoint text-warning me-2"></i>
+                                            Select File to Upload
                                         </label>
                                         <input type="file" class="form-control form-control-lg" id="material_file" 
                                                name="material_file" required 
-                                               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mov">
+                                               accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation">
                                         <div class="form-text">
-                                            <strong>Allowed file types:</strong> PDF, Word, Excel, PowerPoint, Text files, Images, Videos
-                                            <br><strong>Maximum file size:</strong> 10MB
+                                            <i class="fas fa-info-circle text-primary"></i>
+                                            <strong>Allowed file types:</strong> PDF, PowerPoint (PPT/PPTX) only
+                                            <br>
+                                            <i class="fas fa-weight-hanging text-primary"></i>
+                                            <strong>Maximum file size:</strong> 10 MB
+                                        </div>
+                                        <!-- File Preview -->
+                                        <div id="filePreview" class="mt-3 d-none">
+                                            <div class="alert alert-info d-flex align-items-center">
+                                                <i class="fas fa-file fa-2x me-3"></i>
+                                                <div>
+                                                    <strong id="fileName"></strong>
+                                                    <br>
+                                                    <small id="fileSize" class="text-muted"></small>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -86,48 +133,24 @@
                                         </button>
                                     </div>
                                 </div>
-                            </div></form>
+                            </div>
+
+                            <!-- Upload Guidelines -->
+                            <div class="alert alert-light border mt-3">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-clipboard-check text-primary"></i> Upload Guidelines
+                                </h6>
+                                <ul class="mb-0 small">
+                                    <li><strong>Supported formats:</strong> PDF, PowerPoint (PPT/PPTX)</li>
+                                    <li><strong>Maximum file size:</strong> 10 MB</li>
+                                    <li><strong>File naming:</strong> Use descriptive names for easy identification</li>
+                                    <li><strong>Content:</strong> Ensure materials are relevant to the course</li>
+                                </ul>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </div>
-        </div>        
-        <!-- Course Information Card -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-header bg-primary text-white border-0">
-                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Course Information</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="mb-2"><strong>Course Title:</strong> <?= esc($course['title']) ?></p>
-                                <p class="mb-2"><strong>Course Code:</strong> <?= esc($course['course_code']) ?></p>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="mb-2"><strong>Status:</strong> 
-                                    <?php
-                                    $statusStyles = [
-                                        'draft' => ['color' => 'warning', 'icon' => '📝'],
-                                        'active' => ['color' => 'success', 'icon' => '✅'],
-                                        'completed' => ['color' => 'secondary', 'icon' => '🎯'],
-                                        'cancelled' => ['color' => 'danger', 'icon' => '❌']
-                                    ];
-                                    $style = $statusStyles[$course['status']] ?? ['color' => 'secondary', 'icon' => '❓'];
-                                    ?>
-                                    <span class="badge bg-<?= $style['color'] ?> rounded-pill">
-                                        <?= $style['icon'] ?> <?= ucfirst($course['status']) ?>
-                                    </span>
-                                </p>
-                                <p class="mb-2"><strong>Total Materials:</strong> 
-                                    <span class="badge bg-info rounded-pill"><?= count($materials) ?></span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </div>        </div>        
 
         <!-- Existing Materials List -->
         <div class="row">
@@ -212,23 +235,34 @@
                                                     <?= date('M j, Y', strtotime($material['created_at'])) ?><br>
                                                     <span class="text-muted"><?= date('g:i A', strtotime($material['created_at'])) ?></span>
                                                 </small>
-                                            </td>
-                                            <td class="text-center">
+                                            </td>                                            <td class="text-center">
                                                 <div class="btn-group btn-group-sm" role="group">
+                                                    <!-- View Button (for PDF files) -->
+                                                    <?php if ($extension === 'pdf'): ?>
+                                                        <a href="<?= base_url('material/view/' . $material['id']) ?>" 
+                                                           class="btn btn-outline-primary btn-sm" 
+                                                           title="View Material"
+                                                           target="_blank">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    
                                                     <!-- Download Button -->
                                                     <a href="<?= base_url('material/download/' . $material['id']) ?>" 
-                                                       class="btn btn-outline-success btn-sm me-1" 
+                                                       class="btn btn-outline-success btn-sm" 
                                                        title="Download Material">
                                                         <i class="fas fa-download"></i>
                                                     </a>
                                                     
-                                                    <!-- Delete Button -->
-                                                    <a href="<?= base_url('material/delete/' . $material['id']) ?>" 
-                                                       class="btn btn-outline-danger btn-sm" 
-                                                       onclick="return confirm('Are you sure you want to delete this material?\n\nFile: <?= esc($material['file_name']) ?>\n\nThis action cannot be undone and students will no longer be able to access this file!')"
-                                                       title="Delete Material">
-                                                        <i class="fas fa-trash"></i>
-                                                    </a>
+                                                    <!-- Delete Button (Admin Only) -->
+                                                    <?php if ($user['role'] === 'admin'): ?>
+                                                        <button type="button"
+                                                                class="btn btn-outline-danger btn-sm" 
+                                                                onclick="confirmDelete(<?= $material['id'] ?>, '<?= esc($material['file_name'], 'js') ?>')"
+                                                                title="Delete Material">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>
@@ -350,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function preventDefaults(e) {
-        e.preventDefault();
+            e.preventDefault();
         e.stopPropagation();
     }
 
@@ -384,7 +418,56 @@ document.addEventListener('DOMContentLoaded', function() {
             fileInput.dispatchEvent(event);
         }
     }
+
+    // File input preview
+    document.getElementById('material_file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('filePreview');
+        
+        if (file) {
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            
+            fileName.textContent = file.name;
+            fileSize.textContent = `Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            
+            preview.classList.remove('d-none');
+            
+            // Validate file size
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size exceeds 10MB limit!');
+                e.target.value = '';
+                preview.classList.add('d-none');
+            }
+            
+            // Validate file type (PDF and PPT only)
+            const allowedExtensions = ['pdf', 'ppt', 'pptx'];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (!allowedExtensions.includes(fileExtension)) {
+                alert('Only PDF and PowerPoint (PPT/PPTX) files are allowed!');
+                e.target.value = '';
+                preview.classList.add('d-none');
+            }
+        } else {
+            preview.classList.add('d-none');
+        }
+    });
+
+    // Upload form loading state
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        const btn = document.getElementById('uploadBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Uploading...';
+    });
 });
+
+// Delete confirmation function
+function confirmDelete(materialId, fileName) {
+    if (confirm('Are you sure you want to delete this material?\n\nFile: ' + fileName + '\n\nThis action cannot be undone and students will no longer be able to access this file!')) {
+        window.location.href = '<?= base_url('material/delete/') ?>' + materialId;
+    }
+}
+
 </script>
 
 <style>

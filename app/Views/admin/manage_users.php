@@ -97,6 +97,39 @@
             </div>
         </div>
 
+        <!-- Search Box -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-search text-muted"></i>
+                                    </span>
+                                    <input type="text" 
+                                           id="userSearchInput" 
+                                           class="form-control border-start-0" 
+                                           placeholder="🔍 Search users by name, email, user code, student ID, employee ID, role, program, or department...">
+                                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                        <i class="fas fa-times"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-2 mt-md-0">
+                                <div class="text-muted">
+                                    <small>
+                                        <strong id="searchResultCount"><?= count($users) ?></strong> user(s) found
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Create User Form (shown when action=create) -->
         <?php if ($showCreateForm): ?>
         <div class="row mb-4">
@@ -425,10 +458,9 @@
                                 Total: <?= count($users) ?> users
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body pt-0">
+                    </div>                    <div class="card-body pt-0">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">                                <thead class="table-light">
+                            <table class="table table-hover align-middle mb-0" id="usersTable">                                <thead class="table-light">
                                     <tr>
                                         <th class="fw-semibold border-0 text-center">ID</th>
                                         <th class="fw-semibold border-0">User</th>
@@ -439,7 +471,7 @@
                                         <th class="fw-semibold border-0 text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="userTableBody">
                                     <?php if (!empty($users)): ?>
                                         <?php 
                                         // Sort users by ID in ascending order (1, 2, 3, etc.)
@@ -450,14 +482,23 @@
                                         <?php 
                                         $isInactive = ($user['is_active'] == 0);
                                         $rowClass = $isInactive ? 'border-bottom table-secondary opacity-75' : 'border-bottom';
+                                        $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['middle_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
                                         ?>
-                                        <tr class="<?= $rowClass ?>">
+                                        <tr class="user-row <?= $rowClass ?>"
+                                            data-first-name="<?= esc(strtolower($user['first_name'] ?? '')) ?>"
+                                            data-last-name="<?= esc(strtolower($user['last_name'] ?? '')) ?>"
+                                            data-email="<?= esc(strtolower($user['email'])) ?>"
+                                            data-user-code="<?= esc(strtolower($user['user_code'] ?? '')) ?>"
+                                            data-student-id="<?= esc(strtolower($user['student_id'] ?? '')) ?>"
+                                            data-employee-id="<?= esc(strtolower($user['employee_id'] ?? '')) ?>"
+                                            data-role="<?= esc(strtolower($user['role_name'] ?? '')) ?>"
+                                            data-program="<?= esc(strtolower($user['program_name'] ?? '')) ?>"
+                                            data-department="<?= esc(strtolower($user['department_name'] ?? '')) ?>">
                                             <td class="text-center">
                                                 <span class="badge bg-secondary rounded-pill px-2 py-1"><?= $user['id'] ?></span>
                                             </td>                                            <td>
                                                 <div class="d-flex align-items-center">
                                                     <?php 
-                                                    $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['middle_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
                                                     $initial = strtoupper(substr($user['first_name'] ?? 'U', 0, 1));
                                                     $avatarClass = $isInactive ? 'bg-secondary' : 'bg-primary';
                                                     ?>
@@ -475,7 +516,7 @@
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="text-muted"><?= esc($user['email']) ?></td>                                            <td class="text-center">
+                                            <td class="text-muted"><?= esc($user['email']) ?></td><td class="text-center">
                                                 <?php
                                                 $roleStyles = [
                                                     'admin' => ['color' => 'danger', 'icon' => '👑'],
@@ -563,12 +604,18 @@
                                                         </button>
                                                     <?php endif; ?>                                                
                                                 </div>
+                                            </td>                                        </tr>
+                                        <?php endforeach; ?>
+                                        <tr id="noResultsRow" style="display: none;">
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                <i class="fas fa-search mb-2" style="font-size: 2rem;"></i>
+                                                <p class="mb-0">No users match your search criteria.</p>
+                                                <small>Try adjusting your search terms.</small>
                                             </td>
                                         </tr>
-                                        <?php endforeach; ?>
                                     <?php else: ?>
-                                        <tr>
-                                            <td colspan="6" class="text-center py-5 text-muted">
+                                        <tr id="noUsersRow">
+                                            <td colspan="7" class="text-center py-5 text-muted">
                                                 <div class="mb-3">
                                                     <span style="font-size: 3rem; opacity: 0.3;">👥</span>
                                                 </div>
@@ -852,6 +899,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.target.classList.remove('is-valid', 'is-invalid');
             }
         });
+    });
+
+    // User search functionality
+    function filterUsers() {
+        const searchTerm = $('#userSearchInput').val().toLowerCase().trim();
+        let visibleCount = 0;
+        
+        $('.user-row').each(function() {
+            const firstName = $(this).data('first-name') || '';
+            const lastName = $(this).data('last-name') || '';
+            const email = $(this).data('email') || '';
+            const userCode = $(this).data('user-code') || '';
+            const studentId = $(this).data('student-id') || '';
+            const employeeId = $(this).data('employee-id') || '';
+            const role = $(this).data('role') || '';
+            const program = $(this).data('program') || '';
+            const department = $(this).data('department') || '';
+            
+            const searchableText = firstName + ' ' + lastName + ' ' + email + ' ' + 
+                                 userCode + ' ' + studentId + ' ' + employeeId + ' ' + 
+                                 role + ' ' + program + ' ' + department;
+            
+            if (searchableText.includes(searchTerm)) {
+                $(this).show();
+                visibleCount++;
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        // Update count
+        $('#searchResultCount').text(visibleCount);
+        
+        // Show/hide no results message
+        if (visibleCount === 0 && $('.user-row').length > 0) {
+            $('#noResultsRow').show();
+        } else {
+            $('#noResultsRow').hide();
+        }
+    }
+    
+    // Search on keyup
+    $('#userSearchInput').on('keyup', function() {
+        filterUsers();
+    });
+    
+    // Clear search button
+    $('#clearSearch').on('click', function() {
+        $('#userSearchInput').val('');
+        filterUsers();
+        $('#userSearchInput').focus();
     });
 });
 </script>

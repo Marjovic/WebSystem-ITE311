@@ -665,7 +665,7 @@ class Auth extends BaseController
                             
                             foreach ($assignments as $assignment) {
                                 $submission = $submissionModel->where('assignment_id', $assignment['id'])
-                                                              ->where('student_id', $studentId)
+                                                              ->where('enrollment_id', $enrollment['id'])
                                                               ->first();
                                 
                                 if ($submission && in_array($submission['status'], ['submitted', 'graded'])) {

@@ -211,6 +211,14 @@
                                             <i class="fas fa-chart-bar me-2"></i>Manage Grade Components
                                         </a>
                                     </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item <?= (strpos($currentUri, 'admin/manage_assignments') !== false) ? 'active fw-bold' : '' ?>" 
+                                           href="<?= base_url('admin/manage_assignments') ?>">
+                                            <i class="fas fa-tasks me-2"></i>Manage Assignments
+                                        </a>
+                                    </li>
+                                    
                                 </ul>
                             </li>
 

@@ -567,3 +567,742 @@ ERROR - 2025-12-13 16:14:41 --> Stack trace: #0 C:\xampp\htdocs\ITE311-ALEJADO\s
 #11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
 #12 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
 #13 {main}
+ERROR - 2025-12-13 16:45:55 --> mysqli_sql_exception: Unknown column 's.score' in 'field list' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `a`.*, `...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `a`.*, `...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `a`.*, `...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `a`.*, `...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Submission.php(56): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Submission->studentAssignments()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#11 {main}
+CRITICAL - 2025-12-13 16:45:55 --> CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 's.score' in 'field list'
+[Method: GET, Route: student/assignments]
+in SYSTEMPATH\Database\BaseConnection.php on line 684.
+ 1 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `a`.*, `c`.`course_code`, `c`.`title` as `course_title`, `co`.`section`, `at`.`type_name`, `gp`.`period_name`, `s`.`id` as `submission_id`, `s`.`status` as `submission_status`, `s`.`score`, `s`.`submitted_at`, `s`.`is_late`, `e`.`id` as `enrollment_id`
+FROM `assignments` `a`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+JOIN `enrollments` `e` ON `e`.`course_offering_id` = `co`.`id`
+LEFT JOIN `assignment_types` `at` ON `at`.`id` = `a`.`assignment_type_id`
+LEFT JOIN `grading_periods` `gp` ON `gp`.`id` = `a`.`grading_period_id`
+LEFT JOIN `submissions` `s` ON `s`.`assignment_id` = `a`.`id` AND `s`.`enrollment_id` = `e`.`id`
+WHERE `e`.`student_id` = :e.student_id:
+AND `e`.`enrollment_status` = :e.enrollment_status:
+AND `a`.`is_active` = :a.is_active:
+AND `a`.`is_published` = :a.is_published:
+ORDER BY `a`.`due_date` ASC', [...], false)
+ 2 APPPATH\Controllers\Submission.php(56): CodeIgniter\Database\BaseBuilder->get()
+ 3 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->studentAssignments()
+ 4 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+ 5 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 16:45:55 --> [Caused by] CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 's.score' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 332.
+ 1 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `a`.*, `c`.`course_code`, `c`.`title` as `course_title`, `co`.`section`, `at`.`type_name`, `gp`.`period_name`, `s`.`id` as `submission_id`, `s`.`status` as `submission_status`, `s`.`score`, `s`.`submitted_at`, `s`.`is_late`, `e`.`id` as `enrollment_id`
+FROM `assignments` `a`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+JOIN `enrollments` `e` ON `e`.`course_offering_id` = `co`.`id`
+LEFT JOIN `assignment_types` `at` ON `at`.`id` = `a`.`assignment_type_id`
+LEFT JOIN `grading_periods` `gp` ON `gp`.`id` = `a`.`grading_period_id`
+LEFT JOIN `submissions` `s` ON `s`.`assignment_id` = `a`.`id` AND `s`.`enrollment_id` = `e`.`id`
+WHERE `e`.`student_id` = \'2\'
+AND `e`.`enrollment_status` = \'enrolled\'
+AND `a`.`is_active` = 1
+AND `a`.`is_published` = 1
+ORDER BY `a`.`due_date` ASC')
+ 2 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `a`.*, `c`.`course_code`, `c`.`title` as `course_title`, `co`.`section`, `at`.`type_name`, `gp`.`period_name`, `s`.`id` as `submission_id`, `s`.`status` as `submission_status`, `s`.`score`, `s`.`submitted_at`, `s`.`is_late`, `e`.`id` as `enrollment_id`
+FROM `assignments` `a`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+JOIN `enrollments` `e` ON `e`.`course_offering_id` = `co`.`id`
+LEFT JOIN `assignment_types` `at` ON `at`.`id` = `a`.`assignment_type_id`
+LEFT JOIN `grading_periods` `gp` ON `gp`.`id` = `a`.`grading_period_id`
+LEFT JOIN `submissions` `s` ON `s`.`assignment_id` = `a`.`id` AND `s`.`enrollment_id` = `e`.`id`
+WHERE `e`.`student_id` = \'2\'
+AND `e`.`enrollment_status` = \'enrolled\'
+AND `a`.`is_active` = 1
+AND `a`.`is_published` = 1
+ORDER BY `a`.`due_date` ASC')
+ 3 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `a`.*, `c`.`course_code`, `c`.`title` as `course_title`, `co`.`section`, `at`.`type_name`, `gp`.`period_name`, `s`.`id` as `submission_id`, `s`.`status` as `submission_status`, `s`.`score`, `s`.`submitted_at`, `s`.`is_late`, `e`.`id` as `enrollment_id`
+FROM `assignments` `a`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+JOIN `enrollments` `e` ON `e`.`course_offering_id` = `co`.`id`
+LEFT JOIN `assignment_types` `at` ON `at`.`id` = `a`.`assignment_type_id`
+LEFT JOIN `grading_periods` `gp` ON `gp`.`id` = `a`.`grading_period_id`
+LEFT JOIN `submissions` `s` ON `s`.`assignment_id` = `a`.`id` AND `s`.`enrollment_id` = `e`.`id`
+WHERE `e`.`student_id` = :e.student_id:
+AND `e`.`enrollment_status` = :e.enrollment_status:
+AND `a`.`is_active` = :a.is_active:
+AND `a`.`is_published` = :a.is_published:
+ORDER BY `a`.`due_date` ASC', [...], false)
+ 4 APPPATH\Controllers\Submission.php(56): CodeIgniter\Database\BaseBuilder->get()
+ 5 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->studentAssignments()
+ 6 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+ 7 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 8 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+10 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 16:45:55 --> [Caused by] mysqli_sql_exception: Unknown column 's.score' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 327.
+ 1 SYSTEMPATH\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `a`.*, `c`.`course_code`, `c`.`title` as `course_title`, `co`.`section`, `at`.`type_name`, `gp`.`period_name`, `s`.`id` as `submission_id`, `s`.`status` as `submission_status`, `s`.`score`, `s`.`submitted_at`, `s`.`is_late`, `e`.`id` as `enrollment_id`
+FROM `assignments` `a`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+JOIN `enrollments` `e` ON `e`.`course_offering_id` = `co`.`id`
+LEFT JOIN `assignment_types` `at` ON `at`.`id` = `a`.`assignment_type_id`
+LEFT JOIN `grading_periods` `gp` ON `gp`.`id` = `a`.`grading_period_id`
+LEFT JOIN `submissions` `s` ON `s`.`assignment_id` = `a`.`id` AND `s`.`enrollment_id` = `e`.`id`
+WHERE `e`.`student_id` = \'2\'
+AND `e`.`enrollment_status` = \'enrolled\'
+AND `a`.`is_active` = 1
+AND `a`.`is_published` = 1
+ORDER BY `a`.`due_date` ASC', 0)
+ 2 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `a`.*, `c`.`course_code`, `c`.`title` as `course_title`, `co`.`section`, `at`.`type_name`, `gp`.`period_name`, `s`.`id` as `submission_id`, `s`.`status` as `submission_status`, `s`.`score`, `s`.`submitted_at`, `s`.`is_late`, `e`.`id` as `enrollment_id`
+FROM `assignments` `a`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+JOIN `enrollments` `e` ON `e`.`course_offering_id` = `co`.`id`
+LEFT JOIN `assignment_types` `at` ON `at`.`id` = `a`.`assignment_type_id`
+LEFT JOIN `grading_periods` `gp` ON `gp`.`id` = `a`.`grading_period_id`
+LEFT JOIN `submissions` `s` ON `s`.`assignment_id` = `a`.`id` AND `s`.`enrollment_id` = `e`.`id`
+WHERE `e`.`student_id` = \'2\'
+AND `e`.`enrollment_status` = \'enrolled\'
+AND `a`.`is_active` = 1
+AND `a`.`is_published` = 1
+ORDER BY `a`.`due_date` ASC')
+ 3 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `a`.*, `c`.`course_code`, `c`.`title` as `course_title`, `co`.`section`, `at`.`type_name`, `gp`.`period_name`, `s`.`id` as `submission_id`, `s`.`status` as `submission_status`, `s`.`score`, `s`.`submitted_at`, `s`.`is_late`, `e`.`id` as `enrollment_id`
+FROM `assignments` `a`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+JOIN `enrollments` `e` ON `e`.`course_offering_id` = `co`.`id`
+LEFT JOIN `assignment_types` `at` ON `at`.`id` = `a`.`assignment_type_id`
+LEFT JOIN `grading_periods` `gp` ON `gp`.`id` = `a`.`grading_period_id`
+LEFT JOIN `submissions` `s` ON `s`.`assignment_id` = `a`.`id` AND `s`.`enrollment_id` = `e`.`id`
+WHERE `e`.`student_id` = \'2\'
+AND `e`.`enrollment_status` = \'enrolled\'
+AND `a`.`is_active` = 1
+AND `a`.`is_published` = 1
+ORDER BY `a`.`due_date` ASC')
+ 4 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `a`.*, `c`.`course_code`, `c`.`title` as `course_title`, `co`.`section`, `at`.`type_name`, `gp`.`period_name`, `s`.`id` as `submission_id`, `s`.`status` as `submission_status`, `s`.`score`, `s`.`submitted_at`, `s`.`is_late`, `e`.`id` as `enrollment_id`
+FROM `assignments` `a`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+JOIN `enrollments` `e` ON `e`.`course_offering_id` = `co`.`id`
+LEFT JOIN `assignment_types` `at` ON `at`.`id` = `a`.`assignment_type_id`
+LEFT JOIN `grading_periods` `gp` ON `gp`.`id` = `a`.`grading_period_id`
+LEFT JOIN `submissions` `s` ON `s`.`assignment_id` = `a`.`id` AND `s`.`enrollment_id` = `e`.`id`
+WHERE `e`.`student_id` = :e.student_id:
+AND `e`.`enrollment_status` = :e.enrollment_status:
+AND `a`.`is_active` = :a.is_active:
+AND `a`.`is_published` = :a.is_published:
+ORDER BY `a`.`due_date` ASC', [...], false)
+ 5 APPPATH\Controllers\Submission.php(56): CodeIgniter\Database\BaseBuilder->get()
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->studentAssignments()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 16:47:49 --> CodeIgniter\Exceptions\BadMethodCallException: Call to undefined method App\Models\CourseInstructorModel::getInstructorCourses
+[Method: GET, Route: teacher/assignments]
+in SYSTEMPATH\Model.php on line 927.
+ 1 APPPATH\Controllers\Assignment.php(78): CodeIgniter\Model->__call('getInstructorCourses', [...])
+ 2 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->teacherAssignments()
+ 3 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+ 4 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 5 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 7 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 17:19:43 --> ErrorException: Undefined array key "course_offering_id"
+[Method: GET, Route: teacher/submissions]
+in APPPATH\Controllers\Assignment.php on line 302.
+ 1 APPPATH\Controllers\Assignment.php(302): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array key "course_offering_id"', 'C:\\xampp\\htdocs\\ITE311-ALEJADO\\app\\Controllers\\Assignment.php', 302)
+ 2 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->viewSubmissions()
+ 3 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+ 4 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 5 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 7 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-12-13 17:25:42 --> mysqli_sql_exception: Unknown column 'student_id' in 'where clause' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT *\nFROM `...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT *\nFROM `...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT *\nFROM `...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT *\nFROM `...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\system\Model.php(330): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\BaseModel.php(715): CodeIgniter\Model->doFirst()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(669): CodeIgniter\BaseModel->first()
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->dashboard()
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+ERROR - 2025-12-13 17:25:42 --> Student dashboard error: Unknown column 'student_id' in 'where clause'
+CRITICAL - 2025-12-13 17:25:50 --> ErrorException: Undefined array key "course_offering_id"
+[Method: GET, Route: teacher/submissions]
+in APPPATH\Controllers\Assignment.php on line 302.
+ 1 APPPATH\Controllers\Assignment.php(302): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array key "course_offering_id"', 'C:\\xampp\\htdocs\\ITE311-ALEJADO\\app\\Controllers\\Assignment.php', 302)
+ 2 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->viewSubmissions()
+ 3 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+ 4 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 5 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 7 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-12-13 17:27:54 --> mysqli_sql_exception: Unknown column 'u.name' in 'field list' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `s`.*, `...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `s`.*, `...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `s`.*, `...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `s`.*, `...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Assignment.php(322): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Assignment->viewSubmissions()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#11 {main}
+CRITICAL - 2025-12-13 17:27:54 --> CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 'u.name' in 'field list'
+[Method: GET, Route: teacher/submissions]
+in SYSTEMPATH\Database\BaseConnection.php on line 684.
+ 1 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `s`.*, `u`.`name` as `student_name`, `u`.`user_code` as `student_code`, `e`.`id` as `enrollment_id`
+FROM `submissions` `s`
+JOIN `enrollments` `e` ON `e`.`id` = `s`.`enrollment_id`
+JOIN `users` `u` ON `u`.`id` = `e`.`student_id`
+WHERE `s`.`assignment_id` = :s.assignment_id:
+ORDER BY `s`.`submitted_at` DESC', [...], false)
+ 2 APPPATH\Controllers\Assignment.php(322): CodeIgniter\Database\BaseBuilder->get()
+ 3 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->viewSubmissions()
+ 4 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+ 5 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 17:27:54 --> [Caused by] CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 'u.name' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 332.
+ 1 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `s`.*, `u`.`name` as `student_name`, `u`.`user_code` as `student_code`, `e`.`id` as `enrollment_id`
+FROM `submissions` `s`
+JOIN `enrollments` `e` ON `e`.`id` = `s`.`enrollment_id`
+JOIN `users` `u` ON `u`.`id` = `e`.`student_id`
+WHERE `s`.`assignment_id` = \'2\'
+ORDER BY `s`.`submitted_at` DESC')
+ 2 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `s`.*, `u`.`name` as `student_name`, `u`.`user_code` as `student_code`, `e`.`id` as `enrollment_id`
+FROM `submissions` `s`
+JOIN `enrollments` `e` ON `e`.`id` = `s`.`enrollment_id`
+JOIN `users` `u` ON `u`.`id` = `e`.`student_id`
+WHERE `s`.`assignment_id` = \'2\'
+ORDER BY `s`.`submitted_at` DESC')
+ 3 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `s`.*, `u`.`name` as `student_name`, `u`.`user_code` as `student_code`, `e`.`id` as `enrollment_id`
+FROM `submissions` `s`
+JOIN `enrollments` `e` ON `e`.`id` = `s`.`enrollment_id`
+JOIN `users` `u` ON `u`.`id` = `e`.`student_id`
+WHERE `s`.`assignment_id` = :s.assignment_id:
+ORDER BY `s`.`submitted_at` DESC', [...], false)
+ 4 APPPATH\Controllers\Assignment.php(322): CodeIgniter\Database\BaseBuilder->get()
+ 5 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->viewSubmissions()
+ 6 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+ 7 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 8 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+10 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 17:27:54 --> [Caused by] mysqli_sql_exception: Unknown column 'u.name' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 327.
+ 1 SYSTEMPATH\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `s`.*, `u`.`name` as `student_name`, `u`.`user_code` as `student_code`, `e`.`id` as `enrollment_id`
+FROM `submissions` `s`
+JOIN `enrollments` `e` ON `e`.`id` = `s`.`enrollment_id`
+JOIN `users` `u` ON `u`.`id` = `e`.`student_id`
+WHERE `s`.`assignment_id` = \'2\'
+ORDER BY `s`.`submitted_at` DESC', 0)
+ 2 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `s`.*, `u`.`name` as `student_name`, `u`.`user_code` as `student_code`, `e`.`id` as `enrollment_id`
+FROM `submissions` `s`
+JOIN `enrollments` `e` ON `e`.`id` = `s`.`enrollment_id`
+JOIN `users` `u` ON `u`.`id` = `e`.`student_id`
+WHERE `s`.`assignment_id` = \'2\'
+ORDER BY `s`.`submitted_at` DESC')
+ 3 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `s`.*, `u`.`name` as `student_name`, `u`.`user_code` as `student_code`, `e`.`id` as `enrollment_id`
+FROM `submissions` `s`
+JOIN `enrollments` `e` ON `e`.`id` = `s`.`enrollment_id`
+JOIN `users` `u` ON `u`.`id` = `e`.`student_id`
+WHERE `s`.`assignment_id` = \'2\'
+ORDER BY `s`.`submitted_at` DESC')
+ 4 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `s`.*, `u`.`name` as `student_name`, `u`.`user_code` as `student_code`, `e`.`id` as `enrollment_id`
+FROM `submissions` `s`
+JOIN `enrollments` `e` ON `e`.`id` = `s`.`enrollment_id`
+JOIN `users` `u` ON `u`.`id` = `e`.`student_id`
+WHERE `s`.`assignment_id` = :s.assignment_id:
+ORDER BY `s`.`submitted_at` DESC', [...], false)
+ 5 APPPATH\Controllers\Assignment.php(322): CodeIgniter\Database\BaseBuilder->get()
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->viewSubmissions()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 17:31:25 --> ErrorException: Undefined array key "course_offering_id"
+[Method: GET, Route: teacher/submissions]
+in APPPATH\Controllers\Assignment.php on line 309.
+ 1 APPPATH\Controllers\Assignment.php(309): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array key "course_offering_id"', 'C:\\xampp\\htdocs\\ITE311-ALEJADO\\app\\Controllers\\Assignment.php', 309)
+ 2 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->viewSubmissions()
+ 3 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+ 4 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 5 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 7 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-12-13 17:35:17 --> mysqli_sql_exception: Unknown column 'student_id' in 'where clause' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT *\nFROM `...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT *\nFROM `...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT *\nFROM `...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT *\nFROM `...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\system\Model.php(330): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\BaseModel.php(715): CodeIgniter\Model->doFirst()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(669): CodeIgniter\BaseModel->first()
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->dashboard()
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+ERROR - 2025-12-13 17:35:17 --> Student dashboard error: Unknown column 'student_id' in 'where clause'
+ERROR - 2025-12-13 17:35:18 --> mysqli_sql_exception: Unknown column 'student_id' in 'where clause' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT *\nFROM `...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT *\nFROM `...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT *\nFROM `...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT *\nFROM `...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\system\Model.php(330): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\BaseModel.php(715): CodeIgniter\Model->doFirst()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(669): CodeIgniter\BaseModel->first()
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->dashboard()
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+ERROR - 2025-12-13 17:35:18 --> Student dashboard error: Unknown column 'student_id' in 'where clause'
+CRITICAL - 2025-12-13 17:41:59 --> ErrorException: Undefined property: App\Controllers\Submission::$studentModel
+[Method: GET, Route: student/assignments]
+in APPPATH\Controllers\Submission.php on line 37.
+ 1 APPPATH\Controllers\Submission.php(37): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined property: App\\Controllers\\Submission::$studentModel', 'C:\\xampp\\htdocs\\ITE311-ALEJADO\\app\\Controllers\\Submission.php', 37)
+ 2 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->studentAssignments()
+ 3 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+ 4 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 5 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 7 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 17:45:50 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "templates/footer.php"
+[Method: GET, Route: student/assignment/2]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(214): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('templates/footer.php')
+ 2 SYSTEMPATH\View\View.php(475): CodeIgniter\View\View->render('templates/footer', null, true)
+ 3 APPPATH\Views\student\assignment_detail.php(268): CodeIgniter\View\View->include('templates/footer')
+ 4 SYSTEMPATH\View\View.php(226): include('C:\\xampp\\htdocs\\ITE311-ALEJADO\\app\\Views\\student\\assignment_detail.php')
+ 5 SYSTEMPATH\View\View.php(229): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 6 SYSTEMPATH\Common.php(1167): CodeIgniter\View\View->render('student/assignment_detail', [], true)
+ 7 APPPATH\Controllers\Submission.php(162): view('student/assignment_detail', [...])
+ 8 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->viewAssignment('2')
+ 9 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+10 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+11 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+12 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+13 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-12-13 17:47:47 --> mysqli_sql_exception: Unknown column 's.name' in 'field list' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `submiss...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submiss...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submiss...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submiss...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\system\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\BaseModel.php(611): CodeIgniter\Model->doFind(true, '1')
+#6 C:\xampp\htdocs\ITE311-ALEJADO\app\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('1')
+#7 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Assignment.php(388): App\Models\SubmissionModel->getSubmissionWithDetails('1')
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Assignment->gradeSubmission()
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#12 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#13 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#14 {main}
+CRITICAL - 2025-12-13 17:47:47 --> CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 's.name' in 'field list'
+[Method: POST, Route: teacher/grade_submission]
+in SYSTEMPATH\Database\BaseConnection.php on line 684.
+ 1 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 2 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 3 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '1')
+ 4 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('1')
+ 5 APPPATH\Controllers\Assignment.php(388): App\Models\SubmissionModel->getSubmissionWithDetails('1')
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->gradeSubmission()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 17:47:47 --> [Caused by] CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 's.name' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 332.
+ 1 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'1\'')
+ 2 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'1\'')
+ 3 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 4 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 5 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '1')
+ 6 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('1')
+ 7 APPPATH\Controllers\Assignment.php(388): App\Models\SubmissionModel->getSubmissionWithDetails('1')
+ 8 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->gradeSubmission()
+ 9 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+10 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+11 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+12 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+13 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 17:47:47 --> [Caused by] mysqli_sql_exception: Unknown column 's.name' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 327.
+ 1 SYSTEMPATH\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'1\'', 0)
+ 2 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'1\'')
+ 3 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'1\'')
+ 4 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 5 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 6 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '1')
+ 7 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('1')
+ 8 APPPATH\Controllers\Assignment.php(388): App\Models\SubmissionModel->getSubmissionWithDetails('1')
+ 9 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->gradeSubmission()
+10 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+11 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+12 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+13 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+14 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-12-13 18:03:55 --> mysqli_sql_exception: Unknown column 's.name' in 'field list' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `submiss...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submiss...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submiss...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submiss...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\system\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\BaseModel.php(611): CodeIgniter\Model->doFind(true, '3')
+#6 C:\xampp\htdocs\ITE311-ALEJADO\app\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('3')
+#7 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Submission.php(380): App\Models\SubmissionModel->getSubmissionWithDetails('3')
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Submission->downloadSubmission('3')
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#12 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#13 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#14 {main}
+CRITICAL - 2025-12-13 18:03:55 --> CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 's.name' in 'field list'
+[Method: GET, Route: submission/download/3]
+in SYSTEMPATH\Database\BaseConnection.php on line 684.
+ 1 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 2 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 3 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '3')
+ 4 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('3')
+ 5 APPPATH\Controllers\Submission.php(380): App\Models\SubmissionModel->getSubmissionWithDetails('3')
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->downloadSubmission('3')
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 18:03:55 --> [Caused by] CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 's.name' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 332.
+ 1 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'')
+ 2 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'')
+ 3 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 4 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 5 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '3')
+ 6 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('3')
+ 7 APPPATH\Controllers\Submission.php(380): App\Models\SubmissionModel->getSubmissionWithDetails('3')
+ 8 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->downloadSubmission('3')
+ 9 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+10 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+11 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+12 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+13 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 18:03:55 --> [Caused by] mysqli_sql_exception: Unknown column 's.name' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 327.
+ 1 SYSTEMPATH\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'', 0)
+ 2 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'')
+ 3 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'')
+ 4 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 5 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 6 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '3')
+ 7 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('3')
+ 8 APPPATH\Controllers\Submission.php(380): App\Models\SubmissionModel->getSubmissionWithDetails('3')
+ 9 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->downloadSubmission('3')
+10 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+11 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+12 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+13 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+14 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-12-13 18:05:22 --> mysqli_sql_exception: Unknown column 's.name' in 'field list' in C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `submiss...', 0)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submiss...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submiss...')
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submiss...', Array, false)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\system\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\BaseModel.php(611): CodeIgniter\Model->doFind(true, '3')
+#6 C:\xampp\htdocs\ITE311-ALEJADO\app\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('3')
+#7 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Submission.php(383): App\Models\SubmissionModel->getSubmissionWithDetails('3')
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Submission->downloadSubmission('3')
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#11 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#12 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#13 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#14 {main}
+CRITICAL - 2025-12-13 18:05:22 --> CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 's.name' in 'field list'
+[Method: GET, Route: submission/download/3]
+in SYSTEMPATH\Database\BaseConnection.php on line 684.
+ 1 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 2 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 3 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '3')
+ 4 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('3')
+ 5 APPPATH\Controllers\Submission.php(383): App\Models\SubmissionModel->getSubmissionWithDetails('3')
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->downloadSubmission('3')
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 18:05:22 --> [Caused by] CodeIgniter\Database\Exceptions\DatabaseException: Unknown column 's.name' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 332.
+ 1 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'')
+ 2 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'')
+ 3 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 4 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 5 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '3')
+ 6 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('3')
+ 7 APPPATH\Controllers\Submission.php(383): App\Models\SubmissionModel->getSubmissionWithDetails('3')
+ 8 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->downloadSubmission('3')
+ 9 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+10 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+11 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+12 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+13 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 18:05:22 --> [Caused by] mysqli_sql_exception: Unknown column 's.name' in 'field list'
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 327.
+ 1 SYSTEMPATH\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'', 0)
+ 2 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'')
+ 3 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = \'3\'')
+ 4 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `submissions`.*, `a`.`title` as `assignment_title`, `a`.`max_score`, `a`.`due_date`, `s`.`name` as `student_name`, `s`.`user_code` as `student_code`, `g`.`name` as `grader_name`, `c`.`course_code`, `c`.`title` as `course_title`
+FROM `submissions`
+JOIN `assignments` `a` ON `a`.`id` = `submissions`.`assignment_id`
+JOIN `users` `s` ON `s`.`id` = `submissions`.`student_id`
+LEFT JOIN `users` `g` ON `g`.`id` = `submissions`.`graded_by`
+JOIN `course_offerings` `co` ON `co`.`id` = `a`.`course_offering_id`
+JOIN `courses` `c` ON `c`.`id` = `co`.`course_id`
+WHERE `submissions`.`id` = :submissions.id:', [...], false)
+ 5 SYSTEMPATH\Model.php(210): CodeIgniter\Database\BaseBuilder->get()
+ 6 SYSTEMPATH\BaseModel.php(611): CodeIgniter\Model->doFind(true, '3')
+ 7 APPPATH\Models\SubmissionModel.php(98): CodeIgniter\BaseModel->find('3')
+ 8 APPPATH\Controllers\Submission.php(383): App\Models\SubmissionModel->getSubmissionWithDetails('3')
+ 9 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Submission->downloadSubmission('3')
+10 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Submission))
+11 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+12 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+13 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+14 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 18:09:25 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "templates/footer.php"
+[Method: GET, Route: admin/manage_assignments]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(214): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('templates/footer.php')
+ 2 SYSTEMPATH\View\View.php(475): CodeIgniter\View\View->render('templates/footer', null, true)
+ 3 APPPATH\Views\admin\manage_assignments.php(144): CodeIgniter\View\View->include('templates/footer')
+ 4 SYSTEMPATH\View\View.php(226): include('C:\\xampp\\htdocs\\ITE311-ALEJADO\\app\\Views\\admin\\manage_assignments.php')
+ 5 SYSTEMPATH\View\View.php(229): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 6 SYSTEMPATH\Common.php(1167): CodeIgniter\View\View->render('admin/manage_assignments', [], true)
+ 7 APPPATH\Controllers\Assignment.php(495): view('admin/manage_assignments', [...])
+ 8 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->manageAssignments()
+ 9 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+10 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+11 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+12 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+13 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-12-13 18:10:28 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "templates/footer.php"
+[Method: GET, Route: admin/edit_assignment/1]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(214): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('templates/footer.php')
+ 2 SYSTEMPATH\View\View.php(475): CodeIgniter\View\View->render('templates/footer', null, true)
+ 3 APPPATH\Views\admin\edit_assignment.php(213): CodeIgniter\View\View->include('templates/footer')
+ 4 SYSTEMPATH\View\View.php(226): include('C:\\xampp\\htdocs\\ITE311-ALEJADO\\app\\Views\\admin\\edit_assignment.php')
+ 5 SYSTEMPATH\View\View.php(229): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 6 SYSTEMPATH\Common.php(1167): CodeIgniter\View\View->render('admin/edit_assignment', [], true)
+ 7 APPPATH\Controllers\Assignment.php(660): view('admin/edit_assignment', [...])
+ 8 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Assignment->adminEditAssignment('1')
+ 9 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Assignment))
+10 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+11 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+12 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+13 FCPATH\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))

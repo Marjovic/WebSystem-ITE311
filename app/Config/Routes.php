@@ -49,6 +49,15 @@ $routes->get(from: '/admin/manage_courses', to: 'Course::manageCourses');
 $routes->post(from: '/admin/manage_courses', to: 'Course::manageCourses');
 $routes->get(from: '/admin/manage_prerequisites', to: 'CoursePrerequisite::managePrerequisites');
 $routes->post(from: '/admin/manage_prerequisites', to: 'CoursePrerequisite::managePrerequisites');
+
+// Admin Assignment Management routes
+$routes->get('/admin/manage_assignments', 'Assignment::manageAssignments');
+$routes->get('/admin/view_assignment/(:num)', 'Assignment::adminViewAssignment/$1');
+$routes->get('/admin/create_assignment', 'Assignment::adminCreateAssignment');
+$routes->post('/admin/store_assignment', 'Assignment::adminStoreAssignment');
+$routes->get('/admin/edit_assignment/(:num)', 'Assignment::adminEditAssignment/$1');
+$routes->post('/admin/update_assignment/(:num)', 'Assignment::adminUpdateAssignment/$1');
+$routes->get('/admin/delete_assignment/(:num)', 'Assignment::adminDeleteAssignment/$1');
 $routes->get(from: '/admin/manage_offerings', to: 'CourseOfferings::manageOfferings');
 $routes->post(from: '/admin/manage_offerings', to: 'CourseOfferings::manageOfferings');
 $routes->get(from: '/admin/manage_courses_schedule', to: 'CourseSchedules::manageSchedules');
@@ -120,6 +129,19 @@ $routes->post('/notifications/mark_all_read', 'Notifications::markAllAsRead');
 $routes->post('/notifications/hide/(:num)', 'Notifications::hide/$1');
 $routes->post('/notifications/clear_all', 'Notifications::clearAll');
 $routes->post('/notifications/create', 'Notifications::create');
+
+// Teacher Assignment routes
+$routes->get('/teacher/assignments', 'Assignment::teacherAssignments');
+$routes->post('/teacher/assignments', 'Assignment::teacherAssignments');
+$routes->get('/teacher/submissions', 'Assignment::viewSubmissions');
+$routes->post('/teacher/grade_submission', 'Assignment::gradeSubmission');
+
+// Student Assignment and Submission routes
+$routes->get('/student/assignments', 'Submission::studentAssignments');
+$routes->get('/student/assignment/(:num)', 'Submission::viewAssignment/$1');
+$routes->post('/student/submit_assignment', 'Submission::submit');
+$routes->get('/student/download_attachment/(:num)', 'Submission::downloadAttachment/$1');
+$routes->get('/submission/download/(:num)', 'Submission::downloadSubmission/$1');
 
 // API routes for dynamic data
 $routes->get('/api/programs/by-department/(:num)', 'User::getProgramsByDepartment/$1');

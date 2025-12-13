@@ -14,15 +14,17 @@ class SubmissionModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'assignment_id',
-        'student_id',
+        'enrollment_id',
         'submission_text',
         'file_path',
         'submitted_at',
+        'attempt_number',
+        'is_late',
+        'status',
         'score',
         'feedback',
         'graded_by',
-        'graded_at',
-        'status'
+        'graded_at'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -37,14 +39,12 @@ class SubmissionModel extends Model
     // Validation
     protected $validationRules = [
         'assignment_id'   => 'required|integer',
-        'student_id'      => 'required|integer',
+        'enrollment_id'   => 'required|integer',
         'submission_text' => 'permit_empty|string',
-        'file_path'       => 'permit_empty|string|max_length[255]',
+        'file_path'       => 'permit_empty|string|max_length[500]',
         'submitted_at'    => 'permit_empty|valid_date',
-        'score'           => 'permit_empty|decimal',
-        'feedback'        => 'permit_empty|string',
-        'graded_by'       => 'permit_empty|integer',
-        'graded_at'       => 'permit_empty|valid_date',
+        'attempt_number'  => 'permit_empty|integer',
+        'is_late'         => 'permit_empty|in_list[0,1]',
         'status'          => 'required|in_list[draft,submitted,graded,returned]'
     ];
 
@@ -52,8 +52,8 @@ class SubmissionModel extends Model
         'assignment_id' => [
             'required' => 'Assignment is required'
         ],
-        'student_id' => [
-            'required' => 'Student is required'
+        'enrollment_id' => [
+            'required' => 'Enrollment is required'
         ]
     ];
 
@@ -84,14 +84,15 @@ class SubmissionModel extends Model
                 a.title as assignment_title,
                 a.max_score,
                 a.due_date,
-                s.name as student_name,
-                s.user_code as student_code,
-                g.name as grader_name,
+                CONCAT(u.first_name, " ", COALESCE(u.middle_name, ""), " ", u.last_name) as student_name,
+                u.user_code as student_code,
+                CONCAT(g.first_name, " ", COALESCE(g.middle_name, ""), " ", g.last_name) as grader_name,
                 c.course_code,
                 c.title as course_title
             ')
             ->join('assignments a', 'a.id = submissions.assignment_id')
-            ->join('users s', 's.id = submissions.student_id')
+            ->join('enrollments e', 'e.id = submissions.enrollment_id')
+            ->join('users u', 'u.id = e.student_id')
             ->join('users g', 'g.id = submissions.graded_by', 'left')
             ->join('course_offerings co', 'co.id = a.course_offering_id')
             ->join('courses c', 'c.id = co.course_id')

@@ -104,6 +104,7 @@ class CourseInstructorModel extends Model
                 co.status,
                 co.current_enrollment,
                 co.max_students,
+                co.term_id,
                 c.course_code,
                 c.title as course_title,
                 t.term_name

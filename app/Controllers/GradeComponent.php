@@ -113,6 +113,7 @@ class GradeComponent extends BaseController
 
         if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validation->getErrors());
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->back()->withInput();
         }
 
@@ -231,6 +232,7 @@ class GradeComponent extends BaseController
 
             if (!$this->validate($rules, $messages)) {
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->back()->withInput();
             }
 

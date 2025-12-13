@@ -60,6 +60,33 @@
             </div>
         </div>
 
+        <!-- Flash Messages -->
+        <?php if (session()->getFlashdata('success')): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>Success!</strong> <?= session()->getFlashdata('success') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Error!</strong> <?= session()->getFlashdata('error') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('errors')): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Validation Errors:</strong>
+                <ul class="mb-0 mt-2">
+                    <?php foreach (session()->getFlashdata('errors') as $error): ?>
+                        <li><?= esc($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- Action Buttons -->
         <div class="row mb-4">
             <div class="col-12">
@@ -129,8 +156,8 @@
                                                pattern="[A-Z0-9\-]+" 
                                                title="Department code must contain only uppercase letters, numbers, and hyphens"
                                                minlength="2" maxlength="20"
-                                               placeholder="e.g., CS, IT, ENG">
-                                        <small class="text-muted">Unique code (uppercase letters, numbers, hyphens only)</small>
+                                               placeholder="e.g., DEPT-101, CS, IT-DEPT">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Format: XX-000 (e.g., DEPT-101) or uppercase letters/hyphens (e.g., CS, IT-DEPT)</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -140,6 +167,7 @@
                                                value="<?= old('department_name') ?>" required 
                                                minlength="3" maxlength="150"
                                                placeholder="e.g., Computer Science">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters and spaces only. No numbers or special characters.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -202,6 +230,7 @@
                                                pattern="[A-Z0-9\-]+" 
                                                title="Department code must contain only uppercase letters, numbers, and hyphens"
                                                minlength="2" maxlength="20">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Format: XX-000 (e.g., DEPT-101) or uppercase letters/hyphens (e.g., CS, IT-DEPT)</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -210,6 +239,7 @@
                                         <input type="text" class="form-control" id="department_name" name="department_name" 
                                                value="<?= old('department_name', $editDepartment['department_name']) ?>" required 
                                                minlength="3" maxlength="150">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters and spaces only. No numbers or special characters.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -336,13 +366,15 @@
                                                         <?= $department['is_active'] ? '🔒' : '🔓' ?>
                                                     </a>
                                                     
-                                                    <!-- Delete Button -->
+                                                    <!-- Deactivate Button (Soft Delete) -->
+                                                    <?php if ($department['is_active']): ?>
                                                     <a href="<?= base_url('admin/manage_departments?action=delete&id=' . $department['id']) ?>" 
                                                        class="btn btn-outline-danger btn-sm" 
-                                                       onclick="return confirm('Are you sure you want to delete this department?\n\nDepartment: <?= esc($department['department_name']) ?>\n\nThis action cannot be undone!')"
-                                                       title="Delete Department">
-                                                        🗑️
+                                                       onclick="return confirm('Are you sure you want to deactivate this department?\n\nDepartment: <?= esc($department['department_name']) ?>\n\nNote: This will only deactivate the department, not permanently delete it.')"
+                                                       title="Deactivate Department">
+                                                        ⛔ Deactivate
                                                     </a>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>                                        </tr>
                                         <?php endforeach; ?>
@@ -363,7 +395,8 @@
                                                 </div>
                                             </td>
                                         </tr>
-                                    <?php endif; ?>                                </tbody>
+                                    <?php endif; ?>                                
+                                </tbody>
                             </table>
                         </div>
                     </div>

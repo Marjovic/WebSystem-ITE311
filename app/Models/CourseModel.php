@@ -34,8 +34,8 @@ class CourseModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';    // Validation
     protected $validationRules = [
-        'course_code'   => 'required|string|max_length[20]|is_unique[courses.course_code,id,{id}]',
-        'title'         => 'required|string|max_length[255]',
+        'course_code'   => 'required|string|min_length[2]|max_length[20]|is_unique[courses.course_code,id,{id}]|regex_match[/^[A-Z]{2,10}-[0-9]{1,5}$/]',
+        'title'         => 'required|string|min_length[3]|max_length[255]|regex_match[/^[a-zA-ZñÑ0-9\s]+$/u]',
         'description'   => 'permit_empty|string',
         'credits'       => 'required|integer',
         'lecture_hours' => 'permit_empty|decimal',
@@ -48,11 +48,17 @@ class CourseModel extends Model
 
     protected $validationMessages = [
         'course_code' => [
-            'required'  => 'Course code is required',
-            'is_unique' => 'This course code already exists'
+            'required'    => 'Course code is required.',
+            'min_length'  => 'Course code must be at least 2 characters.',
+            'max_length'  => 'Course code must not exceed 20 characters.',
+            'is_unique'   => 'This course code already exists.',
+            'regex_match' => 'Course code must follow the format: XX-000 (e.g., CC-101, IT-201, BSIT-301). Use uppercase letters, hyphen, then numbers.'
         ],
         'title' => [
-            'required' => 'Course title is required'
+            'required'    => 'Course title is required.',
+            'min_length'  => 'Course title must be at least 3 characters.',
+            'max_length'  => 'Course title must not exceed 255 characters.',
+            'regex_match' => 'Course title can only contain letters (including Ñ/ñ), numbers, and spaces. No special characters allowed.'
         ]
     ];
 

@@ -106,7 +106,7 @@ class CoursePrerequisite extends BaseController
 
         if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validator->getErrors());
-            $this->session->setFlashdata('error', 'Please fix the errors below.');
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->to(base_url('admin/manage_prerequisites?action=create'))->withInput();
         }
 
@@ -180,7 +180,7 @@ class CoursePrerequisite extends BaseController
 
             if (!$this->validate($rules, $messages)) {
                 $this->session->setFlashdata('errors', $this->validator->getErrors());
-                $this->session->setFlashdata('error', 'Please fix the errors below.');
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->to(base_url('admin/manage_prerequisites?action=edit&id=' . $prerequisiteID))->withInput();
             }
 

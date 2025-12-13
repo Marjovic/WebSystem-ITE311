@@ -41,6 +41,23 @@
             </div>
         <?php endif; ?>
 
+        <!-- Pending Approvals Section -->
+        <div class="row mb-4" id="pendingApprovalsSection" style="display: none;">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm border-warning">
+                    <div class="card-body p-4">
+                        <h3 class="mb-3 fw-bold text-warning">
+                            <i class="fas fa-clock me-2"></i>Pending Enrollment Approvals
+                        </h3>
+                        <p class="text-muted mb-3">The following student enrollments require your approval:</p>
+                        <div id="pendingApprovalsList">
+                            <!-- Pending approvals will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-4 mb-3">
@@ -395,6 +412,9 @@
 <!-- JavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Load pending enrollments
+    loadPendingEnrollments();
+    
     // Auto-submit filter form when selections change
     const courseSelect = document.getElementById('course_offering_id');
     const statusSelect = document.getElementById('enrollment_status');
@@ -411,4 +431,128 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function loadPendingEnrollments() {
+    fetch('<?= base_url("/enrollment/pending") ?>', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.pending_enrollments && data.pending_enrollments.length > 0) {
+            displayPendingEnrollments(data.pending_enrollments);
+            document.getElementById('pendingApprovalsSection').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading pending enrollments:', error);
+    });
+}
+
+function displayPendingEnrollments(enrollments) {
+    const container = document.getElementById('pendingApprovalsList');
+    container.innerHTML = '';
+    
+    enrollments.forEach(enrollment => {
+        const enrollmentCard = `
+            <div class="card mb-3 border-warning">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="card-title mb-1">
+                                ${enrollment.student_name} (${enrollment.student_id_number})
+                            </h6>
+                            <p class="text-muted mb-1">
+                                <small>
+                                    <i class="fas fa-book me-1"></i>${enrollment.course_code} - ${enrollment.course_title} | 
+                                    <i class="fas fa-graduation-cap me-1"></i>${enrollment.credits} credits | 
+                                    <i class="fas fa-calendar me-1"></i>${enrollment.term_name} ${enrollment.academic_year}
+                                </small>
+                            </p>
+                            <p class="text-muted mb-0">
+                                <small>
+                                    <i class="fas fa-clock me-1"></i>Enrollment Date: ${new Date(enrollment.enrollment_date).toLocaleDateString()}
+                                    ${enrollment.notes ? '<br><i class="fas fa-sticky-note me-1"></i>Notes: ' + enrollment.notes : ''}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-success btn-sm me-2" onclick="respondToEnrollment(${enrollment.enrollment_id}, 'accept')">
+                                <i class="fas fa-check me-1"></i>Accept
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="respondToEnrollment(${enrollment.enrollment_id}, 'reject')">
+                                <i class="fas fa-times me-1"></i>Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += enrollmentCard;
+    });
+}
+
+function respondToEnrollment(enrollmentId, action) {
+    if (!confirm(`Are you sure you want to ${action} this enrollment?`)) {
+        return;
+    }
+    
+    // Use FormData for proper POST handling
+    const formData = new FormData();
+    formData.append('enrollment_id', enrollmentId);
+    formData.append('action', action);
+    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    
+    fetch('<?= base_url("/enrollment/respond") ?>', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload pending enrollments
+            loadPendingEnrollments();
+            // Show success message
+            showAlert(data.message, 'success');
+            // Reload page after a short delay to update enrolled students list
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error responding to enrollment:', error);
+        showAlert('An error occurred. Please try again.', 'danger');
+    });
+}
+
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insert alert at the top of the container
+    const container = document.querySelector('.container');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
 </script>

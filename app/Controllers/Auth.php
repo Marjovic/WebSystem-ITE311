@@ -1015,19 +1015,7 @@ class Auth extends BaseController
 
         return redirect()->to(base_url('verify-otp'));
     }
-      /**
-     * Student Courses View - Display enrolled courses with downloadable materials
-     * 
-     * Step 6: Display Downloadable Materials for Students
-     * - Fetches materials for courses the student is enrolled in
-     * - Lists materials with file name and download button
-     * - Download links point to Material::download() method with enrollment verification
-     * 
-     * Step 7: Download Method Implementation (in Material Controller)
-     * - Checks if user is logged in and enrolled in the course
-     * - Retrieves file path from database
-     * - Uses Response class to force secure file download
-     */
+
     public function studentCourses()
     {
         // 1. AUTHENTICATION CHECK

@@ -189,10 +189,11 @@
                                                value="<?= old('term_name') ?>" required 
                                                minlength="3" maxlength="100"
                                                placeholder="e.g., Fall 2024, Spring 2025">
-                                        <small class="text-muted">Descriptive name for the term</small>
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters, numbers, and spaces only. No special characters.</small>
                                     </div>
                                 </div>
-                            </div>                            <div class="row">
+                            </div>                            
+                            <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="start_date" class="form-label fw-semibold">Start Date</label>
@@ -300,6 +301,7 @@
                                                value="<?= old('term_name', $editTerm['term_name']) ?>" required 
                                                minlength="3" maxlength="100"
                                                placeholder="e.g., Fall 2024, Spring 2025">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters, numbers, and spaces only. No special characters.</small>
                                     </div>
                                 </div>
                             </div>                            <div class="row">

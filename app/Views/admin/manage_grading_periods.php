@@ -148,7 +148,7 @@
                                                value="<?= old('period_name') ?>" required 
                                                minlength="2" maxlength="50"
                                                placeholder="e.g., Prelim, Midterm, Finals">
-                                        <small class="text-muted">Descriptive name for the grading period</small>
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters (including Ñ/ñ), numbers, and spaces only. No special characters.</small>
                                     </div>
                                 </div>
                             </div>
@@ -253,7 +253,7 @@
                                         <input type="text" class="form-control" id="edit_period_name" name="period_name" 
                                                value="<?= old('period_name', $editGradingPeriod['period_name']) ?>" required 
                                                minlength="2" maxlength="50">
-                                        <small class="text-muted">Descriptive name for the grading period</small>
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters (including Ñ/ñ), numbers, and spaces only. No special characters.</small>
                                     </div>
                                 </div>
                             </div>

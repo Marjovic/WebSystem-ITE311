@@ -46,6 +46,7 @@ class MainSeeder extends Seeder
         $this->call('UserSeeder');
         $this->call('DepartmentSeeder');
         $this->call('ProgramSeeder');
+        $this->call('CourseSeeder');
 
         echo "\n✅ All seeders completed successfully!\n";
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";

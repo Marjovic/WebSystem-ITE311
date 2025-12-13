@@ -89,7 +89,7 @@ class ProgramModel extends Model
                 programs.*,
                 departments.department_name,
                 departments.department_code,
-                (SELECT COUNT(*) FROM program_curriculoms WHERE program_id = programs.id) as course_count,
+                (SELECT COUNT(*) FROM program_curriculums WHERE program_id = programs.id) as course_count,
                 (SELECT COUNT(DISTINCT s.id) FROM students s JOIN users u ON u.id = s.user_id WHERE s.program_id = programs.id AND u.is_active = 1) as student_count
             ')
             ->join('departments', 'departments.id = programs.department_id', 'left')
@@ -105,7 +105,7 @@ class ProgramModel extends Model
         return $this->select('
                 programs.*,
                 departments.department_name,
-                (SELECT COUNT(*) FROM program_curriculoms WHERE program_id = programs.id) as course_count
+                (SELECT COUNT(*) FROM program_curriculums WHERE program_id = programs.id) as course_count
             ')
             ->join('departments', 'departments.id = programs.department_id', 'left')
             ->where('programs.department_id', $departmentId)
@@ -122,7 +122,7 @@ class ProgramModel extends Model
         return $this->select('
                 programs.*,
                 departments.department_name,
-                (SELECT COUNT(*) FROM program_curriculoms WHERE program_id = programs.id) as course_count
+                (SELECT COUNT(*) FROM program_curriculums WHERE program_id = programs.id) as course_count
             ')
             ->join('departments', 'departments.id = programs.department_id', 'left')
             ->where('programs.degree_type', $degreeType)
@@ -156,8 +156,8 @@ class ProgramModel extends Model
             SELECT 
                 p.*,
                 d.department_name,
-                (SELECT COUNT(*) FROM program_curriculoms WHERE program_id = p.id) as total_courses,                (SELECT SUM(c.credits) 
-                 FROM program_curriculoms pc 
+                (SELECT COUNT(*) FROM program_curriculums WHERE program_id = p.id) as total_courses,                (SELECT SUM(c.credits) 
+                 FROM program_curriculums pc 
                  JOIN courses c ON c.id = pc.course_id 
                  WHERE pc.program_id = p.id) as total_credits,
                 (SELECT COUNT(DISTINCT s.id) 
@@ -165,7 +165,7 @@ class ProgramModel extends Model
                  JOIN users u ON u.id = s.user_id
                  WHERE s.program_id = p.id AND u.is_active = 1) as enrolled_students,
                 (SELECT COUNT(DISTINCT pc.year_level_id) 
-                 FROM program_curriculoms pc 
+                 FROM program_curriculums pc 
                  WHERE pc.program_id = p.id) as total_year_levels
             FROM programs p
             LEFT JOIN departments d ON d.id = p.department_id
@@ -192,23 +192,42 @@ class ProgramModel extends Model
     }
 
     /**
-     * Delete program with validation (check for dependencies)
+     * Delete program with validation (Soft Delete - check for dependencies)
      */
     public function deleteProgram($programId)
     {
         $db = \Config\Database::connect();
         
+        // Get program info
+        $program = $this->find($programId);
+        if (!$program) {
+            return [
+                'success' => false,
+                'message' => 'Program not found.'
+            ];
+        }
+
+        // Check if program is already inactive
+        if ($program['is_active'] == 0) {
+            return [
+                'success' => false,
+                'message' => 'This program is already deactivated.'
+            ];
+        }
+        
         // Check if program has curriculum
-        $curriculumCount = $db->table('program_curriculoms')
+        $curriculumCount = $db->table('program_curriculums')
             ->where('program_id', $programId)
             ->countAllResults();
         
         if ($curriculumCount > 0) {
             return [
                 'success' => false,
-                'message' => 'Cannot delete program with existing curriculum. Please remove all courses first.'
+                'message' => 'Cannot delete program "' . $program['program_name'] . '". It has ' . $curriculumCount . ' course(s) in curriculum. Please remove curriculum entries first or deactivate instead.'
             ];
-        }          // Check if program has enrolled students
+        }
+
+        // Check if program has enrolled students
         $studentCount = $db->table('students')
             ->join('users', 'users.id = students.user_id')
             ->where('students.program_id', $programId)
@@ -218,21 +237,21 @@ class ProgramModel extends Model
         if ($studentCount > 0) {
             return [
                 'success' => false,
-                'message' => 'Cannot delete program with enrolled students.'
+                'message' => 'Cannot delete program "' . $program['program_name'] . '". It has ' . $studentCount . ' enrolled student(s). Please deactivate instead.'
             ];
         }
         
-        // Safe to delete
-        if ($this->delete($programId)) {
+        // Soft delete: Set is_active to 0
+        if ($this->update($programId, ['is_active' => 0])) {
             return [
                 'success' => true,
-                'message' => 'Program deleted successfully.'
+                'message' => 'Program "' . $program['program_name'] . '" has been deactivated successfully!'
             ];
         }
         
         return [
             'success' => false,
-            'message' => 'Failed to delete program.'
+            'message' => 'Failed to deactivate program.'
         ];
     }
 

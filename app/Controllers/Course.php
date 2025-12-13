@@ -179,7 +179,7 @@ class Course extends BaseController
             return view('admin/manage_courses', $data);
         }
         
-        // ===== DELETE COURSE =====
+        // ===== DELETE COURSE (Soft Delete) =====
         if ($action === 'delete' && $courseID) {
             $courseToDelete = $this->courseModel->find($courseID);
 
@@ -188,10 +188,38 @@ class Course extends BaseController
                 return redirect()->to(base_url('admin/manage_courses'));
             }
 
-            if ($this->courseModel->delete($courseID)) {
-                $this->session->setFlashdata('success', 'Course deleted successfully!');
+            // Check if course is already inactive
+            if ($courseToDelete['is_active'] == 0) {
+                $this->session->setFlashdata('error', 'This course is already deactivated.');
+                return redirect()->to(base_url('admin/manage_courses'));
+            }
+
+            // Check referential integrity - Course Offerings
+            $offeringsCount = $this->courseOfferingModel->where('course_id', $courseID)->countAllResults();
+            if ($offeringsCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot delete course "' . esc($courseToDelete['title']) . '". It has ' . $offeringsCount . ' course offering(s). Please deactivate instead or remove the offerings first.');
+                return redirect()->to(base_url('admin/manage_courses'));
+            }
+
+            // Check referential integrity - Program Curriculum
+            $curriculumCount = $this->db->table('program_curriculums')->where('course_id', $courseID)->countAllResults();
+            if ($curriculumCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot delete course "' . esc($courseToDelete['title']) . '". It is part of ' . $curriculumCount . ' program curriculum(s). Please remove from curriculum first or deactivate instead.');
+                return redirect()->to(base_url('admin/manage_courses'));
+            }
+
+            // Check referential integrity - Prerequisites (as prerequisite)
+            $prerequisiteCount = $this->coursePrerequisiteModel->where('prerequisite_course_id', $courseID)->countAllResults();
+            if ($prerequisiteCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot delete course "' . esc($courseToDelete['title']) . '". It is a prerequisite for ' . $prerequisiteCount . ' other course(s). Please remove the prerequisite requirements first or deactivate instead.');
+                return redirect()->to(base_url('admin/manage_courses'));
+            }
+
+            // Soft delete: Set is_active to 0
+            if ($this->courseModel->update($courseID, ['is_active' => 0])) {
+                $this->session->setFlashdata('success', 'Course "' . esc($courseToDelete['title']) . '" has been deactivated successfully!');
             } else {
-                $this->session->setFlashdata('error', 'Failed to delete course. Please try again.');
+                $this->session->setFlashdata('error', 'Failed to deactivate course. Please try again.');
             }
 
             return redirect()->to(base_url('admin/manage_courses'));
@@ -224,8 +252,15 @@ class Course extends BaseController
      */
     public function enroll()
     {
+        // Debug logging
+        log_message('debug', '=== ENROLL REQUEST ===');
+        log_message('debug', 'Method: ' . $this->request->getMethod());
+        log_message('debug', 'Is AJAX: ' . ($this->request->isAJAX() ? 'Yes' : 'No'));
+        log_message('debug', 'POST data: ' . json_encode($this->request->getPost()));
+        
         // Check if request is AJAX
         if (!$this->request->isAJAX()) {
+            log_message('warning', 'Enroll request rejected - not AJAX');
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Invalid request method'
@@ -286,16 +321,17 @@ class Course extends BaseController
             ]);
         }
         
-        // Check if student is already enrolled
+        // Check if student is already enrolled (only check for active enrollments)
         $existingEnrollment = $this->enrollmentModel
             ->where('student_id', $studentId)
             ->where('course_offering_id', $courseOfferingId)
+            ->whereIn('enrollment_status', ['enrolled', 'pending_student_approval', 'pending_teacher_approval'])
             ->first();
         
         if ($existingEnrollment) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'You are already enrolled in this course offering.',
+                'message' => 'You already have a pending or active enrollment for this course offering.',
                 'error_code' => 'ALREADY_ENROLLED'
             ]);
         }          // Check if course offering has available slots
@@ -347,12 +383,12 @@ class Course extends BaseController
             ]);
         }
         
-        // Create enrollment
+        // Create enrollment with pending teacher approval
         $enrollmentData = [
             'student_id' => $studentId,
             'course_offering_id' => $courseOfferingId,
             'enrollment_date' => date('Y-m-d'),
-            'enrollment_status' => 'enrolled',
+            'enrollment_status' => 'pending_teacher_approval', // Student self-enrollment needs teacher approval
             'enrollment_type' => 'regular',
             'year_level_id' => $student['year_level_id'],
             'payment_status' => 'unpaid',
@@ -363,15 +399,17 @@ class Course extends BaseController
         $db->transStart();
         
         try {
+            // Log enrollment data for debugging
+            log_message('debug', 'Enrollment data: ' . json_encode($enrollmentData));
+            
             // Insert enrollment
             if (!$this->enrollmentModel->insert($enrollmentData)) {
-                throw new \Exception('Failed to create enrollment record');
+                $errors = $this->enrollmentModel->errors();
+                log_message('error', 'Enrollment validation errors: ' . json_encode($errors));
+                throw new \Exception('Failed to create enrollment record: ' . json_encode($errors));
             }
             
-            // Increment enrollment count in course offering
-            if (!$this->courseOfferingModel->incrementEnrollment($courseOfferingId)) {
-                throw new \Exception('Failed to update enrollment count');
-            }
+            // Note: Don't increment enrollment count yet - only increment when enrollment is approved
             
             $db->transComplete();
             
@@ -386,7 +424,7 @@ class Course extends BaseController
             
             // Send notification to student
             $studentMessage = sprintf(
-                "You have successfully enrolled in %s (%s) - Section %s for %s %s. Enrollment Date: %s",
+                "Your enrollment request for %s (%s) - Section %s for %s %s has been submitted. Awaiting teacher approval. Enrollment Date: %s",
                 $offeringDetails['course_title'],
                 $offeringDetails['course_code'],
                 $offeringDetails['section'],
@@ -406,7 +444,7 @@ class Course extends BaseController
             
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Successfully enrolled in ' . $offeringDetails['course_code'] . ' - ' . $offeringDetails['course_title'],
+                'message' => 'Enrollment request submitted for ' . $offeringDetails['course_code'] . ' - ' . $offeringDetails['course_title'] . '. Awaiting teacher approval.',
                 'data' => [
                     'course_code' => $offeringDetails['course_code'],
                     'course_title' => $offeringDetails['course_title'],
@@ -414,7 +452,7 @@ class Course extends BaseController
                     'term' => $offeringDetails['term_name'],
                     'enrollment_date' => $enrollmentDate,
                     'enrollment_date_formatted' => $enrollmentDateFormatted,
-                    'enrollment_status' => 'enrolled',
+                    'enrollment_status' => 'pending_teacher_approval',
                     'credits' => $offeringDetails['credits']
                 ],
                 'csrf_hash' => csrf_hash() // Return new CSRF token

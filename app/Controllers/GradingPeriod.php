@@ -84,7 +84,7 @@ class GradingPeriod extends BaseController
         // Validation rules
         $rules = [
             'term_id'           => 'required|integer',
-            'period_name'       => 'required|min_length[2]|max_length[50]',
+            'period_name'       => 'required|min_length[2]|max_length[50]|regex_match[/^[a-zA-ZñÑ0-9\s]+$/u]',
             'period_order'      => 'required|integer|greater_than[0]',
             'weight_percentage' => 'required|decimal|greater_than[0]|less_than_equal_to[100]',
             'start_date'        => 'permit_empty|valid_date',
@@ -97,9 +97,10 @@ class GradingPeriod extends BaseController
                 'integer'  => 'Invalid term selected.'
             ],
             'period_name' => [
-                'required'   => 'Period name is required.',
-                'min_length' => 'Period name must be at least 2 characters.',
-                'max_length' => 'Period name must not exceed 50 characters.'
+                'required'    => 'Period name is required.',
+                'min_length'  => 'Period name must be at least 2 characters.',
+                'max_length'  => 'Period name must not exceed 50 characters.',
+                'regex_match' => 'Period name can only contain letters (including Ñ/ñ), numbers, and spaces. No special characters allowed.'
             ],
             'period_order' => [
                 'required'      => 'Period order is required.',
@@ -118,8 +119,11 @@ class GradingPeriod extends BaseController
             'end_date' => [
                 'valid_date' => 'Please provide a valid end date.'
             ]
-        ];        if (!$this->validate($rules, $messages)) {
+        ];
+
+        if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validation->getErrors());
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->back()->withInput();
         }
 
@@ -202,7 +206,7 @@ class GradingPeriod extends BaseController
         if ($this->request->getMethod() === 'POST') {
             $rules = [
                 'term_id'           => 'required|integer',
-                'period_name'       => 'required|min_length[2]|max_length[50]',
+                'period_name'       => 'required|min_length[2]|max_length[50]|regex_match[/^[a-zA-ZñÑ0-9\s]+$/u]',
                 'period_order'      => 'required|integer|greater_than[0]',
                 'weight_percentage' => 'required|decimal|greater_than[0]|less_than_equal_to[100]',
                 'start_date'        => 'permit_empty|valid_date',
@@ -213,9 +217,10 @@ class GradingPeriod extends BaseController
                     'integer'  => 'Invalid term selected.'
                 ],
                 'period_name' => [
-                    'required'   => 'Period name is required.',
-                    'min_length' => 'Period name must be at least 2 characters.',
-                    'max_length' => 'Period name must not exceed 50 characters.'
+                    'required'    => 'Period name is required.',
+                    'min_length'  => 'Period name must be at least 2 characters.',
+                    'max_length'  => 'Period name must not exceed 50 characters.',
+                    'regex_match' => 'Period name can only contain letters (including Ñ/ñ), numbers, and spaces. No special characters allowed.'
                 ],
                 'period_order' => [
                     'required'     => 'Period order is required.',
@@ -238,6 +243,7 @@ class GradingPeriod extends BaseController
 
             if (!$this->validate($rules, $messages)) {
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->back()->withInput();
             }
 

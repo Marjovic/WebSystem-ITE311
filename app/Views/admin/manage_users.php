@@ -148,6 +148,7 @@
                                                pattern="[A-Za-zñÑ\s\-\.]+" 
                                                title="First name can only contain letters, spaces, hyphens, and periods"
                                                minlength="2" maxlength="100">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters and spaces only.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -158,6 +159,7 @@
                                                pattern="[A-Za-zñÑ\s\-\.]+" 
                                                title="Middle name can only contain letters, spaces, hyphens, and periods"
                                                maxlength="100">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters and spaces only.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -168,6 +170,7 @@
                                                pattern="[A-Za-zñÑ\s\-\.]+" 
                                                title="Last name can only contain letters, spaces, hyphens, and periods"
                                                minlength="2" maxlength="100">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters and spaces only.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -198,7 +201,7 @@
                                 <div class="col-md-6" id="year_level_container" style="display: none;">
                                     <div class="mb-3">
                                         <label for="year_level_id" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="year_level_id" name="year_level_id">
+                                        <select class="form-select" id="year_level_id" name="year_level_id" disabled>
                                             <option value="">Select Year Level</option>
                                             <?php foreach ($yearLevels as $level): ?>
                                                 <option value="<?= $level['id'] ?>" <?= old('year_level_id') == $level['id'] ? 'selected' : '' ?>>
@@ -212,7 +215,7 @@
                                 <div class="col-md-6" id="department_container" style="display: none;">
                                     <div class="mb-3">
                                         <label for="department_id" class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="department_id" name="department_id">
+                                        <select class="form-select" id="department_id" name="department_id" disabled>
                                             <option value="">Select Department</option>
                                             <?php if (isset($departments)): ?>
                                                 <?php foreach ($departments as $dept): ?>
@@ -228,7 +231,7 @@
                                 <div class="col-md-6" id="program_container" style="display: none;">
                                     <div class="mb-3">
                                         <label for="program_id" class="form-label fw-semibold">Program <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="program_id" name="program_id">
+                                        <select class="form-select" id="program_id" name="program_id" disabled>
                                             <option value="">Select Program</option>
                                             <?php if (isset($programs)): ?>
                                                 <?php foreach ($programs as $prog): ?>

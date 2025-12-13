@@ -87,16 +87,17 @@ class Program extends BaseController
         }
 
         // Handle POST requests for other CRUD operations (delete, toggle_status)
-        if ($this->request->getMethod() === 'post') {
-            $action = $this->request->getPost('action');
+        if ($this->request->getMethod() === 'POST') {
+            $postAction = $this->request->getPost('action');
 
-            switch ($action) {
+            switch ($postAction) {
                 case 'delete':
                     return $this->deleteProgram();
                 case 'toggle_status':
                     return $this->toggleStatus();
                 default:
-                    $this->session->setFlashdata('error', 'Invalid action.');
+                    $this->session->setFlashdata('error', 'Invalid action: ' . ($postAction ?? 'none'));
+                    return redirect()->to('/admin/manage_programs');
             }
         }
 
@@ -139,8 +140,8 @@ class Program extends BaseController
      */
     private function validateProgramName($name)
     {
-        // Must be letters and spaces only, no numbers or special symbols
-        if (!preg_match('/^[A-Za-z\s]+$/', $name)) {
+        // Must be letters (including Ññ) and spaces only, no numbers or special symbols
+        if (!preg_match('/^[A-Za-zñÑ\s]+$/u', $name)) {
             return false;
         }
         return true;
@@ -163,7 +164,7 @@ class Program extends BaseController
 
         // Custom validation for program name format
         if (!$this->validateProgramName($programName)) {
-            $this->session->setFlashdata('error', 'Program name must contain letters and spaces only (e.g., Bachelor of Science in Information Technology). No numbers or special characters allowed.');
+            $this->session->setFlashdata('error', 'Program name must contain letters (including Ñ/ñ) and spaces only (e.g., Bachelor of Science in Information Technology). No numbers or special characters allowed.');
             return redirect()->back()->withInput();
         }
 
@@ -260,7 +261,7 @@ class Program extends BaseController
 
         // Custom validation for program name format
         if (!$this->validateProgramName($programName)) {
-            $this->session->setFlashdata('error', 'Program name must contain letters and spaces only (e.g., Bachelor of Science in Information Technology). No numbers or special characters allowed.');
+            $this->session->setFlashdata('error', 'Program name must contain letters (including Ñ/ñ) and spaces only (e.g., Bachelor of Science in Information Technology). No numbers or special characters allowed.');
             return redirect()->back()->withInput();
         }
 
@@ -348,7 +349,7 @@ class Program extends BaseController
         if ($result['success']) {
             $this->session->setFlashdata('success', $result['message']);
         } else {
-            $this->session->setFlashdata('warning', $result['message']);
+            $this->session->setFlashdata('error', $result['message']);
         }
 
         return redirect()->to('/admin/manage_programs');
@@ -366,8 +367,42 @@ class Program extends BaseController
             return redirect()->to('/admin/manage_programs');
         }
 
-        if ($this->programModel->toggleActiveStatus($programId)) {
-            $this->session->setFlashdata('success', 'Program status updated successfully!');
+        $program = $this->programModel->find($programId);
+        if (!$program) {
+            $this->session->setFlashdata('error', 'Program not found.');
+            return redirect()->to('/admin/manage_programs');
+        }
+
+        $newStatus = $program['is_active'] ? 0 : 1;
+
+        // If deactivating, check for constraints first
+        if ($newStatus === 0) {
+            $db = \Config\Database::connect();
+
+            // Check if program has curriculum entries
+            $curriculumCount = $db->table('program_curriculums')
+                ->where('program_id', $programId)
+                ->countAllResults();
+            if ($curriculumCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot deactivate program "' . $program['program_name'] . '". It has ' . $curriculumCount . ' course(s) in curriculum. Please remove curriculum entries first.');
+                return redirect()->to('/admin/manage_programs');
+            }
+
+            // Check if program has enrolled students
+            $studentCount = $db->table('students')
+                ->join('users', 'users.id = students.user_id')
+                ->where('students.program_id', $programId)
+                ->where('users.is_active', 1)
+                ->countAllResults();
+            if ($studentCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot deactivate program "' . $program['program_name'] . '". It has ' . $studentCount . ' enrolled student(s). Please reassign students first.');
+                return redirect()->to('/admin/manage_programs');
+            }
+        }
+
+        if ($this->programModel->update($programId, ['is_active' => $newStatus])) {
+            $statusText = $newStatus ? 'activated' : 'deactivated';
+            $this->session->setFlashdata('success', 'Program "' . $program['program_name'] . '" ' . $statusText . ' successfully!');
         } else {
             $this->session->setFlashdata('error', 'Failed to update program status.');
         }
@@ -440,7 +475,7 @@ class Program extends BaseController
         }
 
         // Handle POST requests for other CRUD operations (delete, toggle_status)
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->getMethod() === 'POST') {
             $postAction = $this->request->getPost('action');
 
             switch ($postAction) {
@@ -449,7 +484,8 @@ class Program extends BaseController
                 case 'toggle_status':
                     return $this->toggleCurriculumStatus();
                 default:
-                    $this->session->setFlashdata('error', 'Invalid action.');
+                    $this->session->setFlashdata('error', 'Invalid action: ' . ($postAction ?? 'none'));
+                    return redirect()->to('/admin/manage_curriculum');
             }
         }
 

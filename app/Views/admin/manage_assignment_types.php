@@ -123,8 +123,8 @@
                                                pattern="[A-Z0-9_]+" 
                                                title="Type code must contain only uppercase letters, numbers, and underscores"
                                                minlength="2" maxlength="20"
-                                               placeholder="e.g., QUIZ, EXAM, PROJECT">
-                                        <small class="text-muted">Unique code (uppercase letters, numbers, underscores only)</small>
+                                               placeholder="e.g., AT-101, QUIZ, EXAM_TYPE">
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Format: XX-000 (e.g., AT-101) or UPPERCASE_CODE (e.g., QUIZ, EXAM_TYPE)</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -134,7 +134,7 @@
                                                value="<?= old('type_name') ?>" required 
                                                minlength="2" maxlength="50"
                                                placeholder="e.g., Quiz, Midterm Exam">
-                                        <small class="text-muted">Descriptive name for the assignment type</small>
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters (including Ñ/ñ) and spaces only. No numbers or special characters.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -193,7 +193,7 @@
                                                pattern="[A-Z0-9_]+" 
                                                title="Type code must contain only uppercase letters, numbers, and underscores"
                                                minlength="2" maxlength="20">
-                                        <small class="text-muted">Unique code (uppercase letters, numbers, underscores only)</small>
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Format: XX-000 (e.g., AT-101) or UPPERCASE_CODE (e.g., QUIZ, EXAM_TYPE)</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -202,7 +202,7 @@
                                         <input type="text" class="form-control" id="edit_type_name" name="type_name" 
                                                value="<?= old('type_name', $editAssignmentType['type_name']) ?>" required 
                                                minlength="2" maxlength="50">
-                                        <small class="text-muted">Descriptive name for the assignment type</small>
+                                        <small class="text-info"><i class="fas fa-info-circle me-1"></i>Letters (including Ñ/ñ) and spaces only. No numbers or special characters.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">

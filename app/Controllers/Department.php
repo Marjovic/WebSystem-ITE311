@@ -86,8 +86,8 @@ class Department extends BaseController
     {
         // Validation rules
         $rules = [
-            'department_code' => 'required|min_length[2]|max_length[20]|is_unique[departments.department_code]|regex_match[/^[A-Z0-9\-]+$/]',
-            'department_name' => 'required|min_length[3]|max_length[150]',
+            'department_code' => 'required|min_length[2]|max_length[20]|is_unique[departments.department_code]|regex_match[/^[A-Z]{2,10}-[0-9]{1,5}$|^[A-Z0-9\-]+$/]',
+            'department_name' => 'required|min_length[3]|max_length[150]|regex_match[/^[a-zA-ZñÑ\s]+$/u]',
             'description'     => 'permit_empty|max_length[500]',
             'head_user_id'    => 'permit_empty|integer'
         ];
@@ -98,12 +98,13 @@ class Department extends BaseController
                 'min_length'  => 'Department code must be at least 2 characters.',
                 'max_length'  => 'Department code must not exceed 20 characters.',
                 'is_unique'   => 'This department code already exists.',
-                'regex_match' => 'Department code must contain only uppercase letters, numbers, and hyphens.'
+                'regex_match' => 'Department code must follow format: XX-000 (e.g., DEPT-101) or use uppercase letters, numbers, and hyphens (e.g., CS-DEPT).'
             ],
             'department_name' => [
-                'required'   => 'Department name is required.',
-                'min_length' => 'Department name must be at least 3 characters.',
-                'max_length' => 'Department name must not exceed 150 characters.'
+                'required'    => 'Department name is required.',
+                'min_length'  => 'Department name must be at least 3 characters.',
+                'max_length'  => 'Department name must not exceed 150 characters.',
+                'regex_match' => 'Department name can only contain letters (including Ñ/ñ) and spaces. No numbers or special characters allowed.'
             ],
             'description' => [
                 'max_length' => 'Description must not exceed 500 characters.'
@@ -112,6 +113,7 @@ class Department extends BaseController
 
         if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validation->getErrors());
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->back()->withInput();
         }
 
@@ -167,8 +169,8 @@ class Department extends BaseController
         // Handle POST request
         if ($this->request->getMethod() === 'POST') {
             $rules = [
-                'department_code' => "required|min_length[2]|max_length[20]|is_unique[departments.department_code,id,{$departmentID}]|regex_match[/^[A-Z0-9\-]+$/]",
-                'department_name' => 'required|min_length[3]|max_length[150]',
+                'department_code' => "required|min_length[2]|max_length[20]|is_unique[departments.department_code,id,{$departmentID}]|regex_match[/^[A-Z]{2,10}-[0-9]{1,5}$|^[A-Z0-9\-]+$/]",
+                'department_name' => 'required|min_length[3]|max_length[150]|regex_match[/^[a-zA-ZñÑ\s]+$/u]',
                 'description'     => 'permit_empty|max_length[500]',
                 'head_user_id'    => 'permit_empty|integer'
             ];
@@ -177,15 +179,17 @@ class Department extends BaseController
                 'department_code' => [
                     'required'    => 'Department code is required.',
                     'is_unique'   => 'This department code already exists.',
-                    'regex_match' => 'Department code must contain only uppercase letters, numbers, and hyphens.'
+                    'regex_match' => 'Department code must follow format: XX-000 (e.g., DEPT-101) or use uppercase letters, numbers, and hyphens (e.g., CS-DEPT).'
                 ],
                 'department_name' => [
-                    'required' => 'Department name is required.'
+                    'required'    => 'Department name is required.',
+                    'regex_match' => 'Department name can only contain letters (including Ñ/ñ) and spaces. No numbers or special characters allowed.'
                 ]
             ];
 
             if (!$this->validate($rules, $messages)) {
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->back()->withInput();
             }
 
@@ -256,27 +260,60 @@ class Department extends BaseController
             return redirect()->to(base_url('admin/manage_departments'));
         }
 
-        // Check if department has students, instructors, or courses
-        if ($this->departmentModel->hasStudents($departmentID)) {
-            $this->session->setFlashdata('error', 'Cannot delete department. It has enrolled students.');
+        // Check if department is already inactive
+        if ($departmentToDelete['is_active'] == 0) {
+            $this->session->setFlashdata('error', 'This department is already deactivated.');
             return redirect()->to(base_url('admin/manage_departments'));
         }
 
-        if ($this->departmentModel->hasInstructors($departmentID)) {
-            $this->session->setFlashdata('error', 'Cannot delete department. It has assigned instructors.');
+        // Check referential integrity - Students (via Manage Users)
+        $studentsCount = $this->db->table('students s')
+            ->join('users u', 'u.id = s.user_id')
+            ->where('s.department_id', $departmentID)
+            ->where('u.is_active', 1)
+            ->countAllResults();
+        if ($studentsCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot deactivate department "' . esc($departmentToDelete['department_name']) . '". It has ' . $studentsCount . ' active student(s) assigned. Please reassign students first.');
             return redirect()->to(base_url('admin/manage_departments'));
         }
 
-        if ($this->departmentModel->hasCourses($departmentID)) {
-            $this->session->setFlashdata('error', 'Cannot delete department. It has associated courses.');
+        // Check referential integrity - Instructors (via Manage Users)
+        $instructorsCount = $this->db->table('instructors i')
+            ->join('users u', 'u.id = i.user_id')
+            ->where('i.department_id', $departmentID)
+            ->where('u.is_active', 1)
+            ->countAllResults();
+        if ($instructorsCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot deactivate department "' . esc($departmentToDelete['department_name']) . '". It has ' . $instructorsCount . ' active instructor(s) assigned. Please reassign instructors first.');
             return redirect()->to(base_url('admin/manage_departments'));
         }
 
+        // Check referential integrity - Courses (via Manage Courses)
+        $coursesCount = $this->db->table('courses')
+            ->where('department_id', $departmentID)
+            ->where('is_active', 1)
+            ->countAllResults();
+        if ($coursesCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot deactivate department "' . esc($departmentToDelete['department_name']) . '". It has ' . $coursesCount . ' active course(s) assigned. Please reassign or deactivate courses first.');
+            return redirect()->to(base_url('admin/manage_departments'));
+        }
+
+        // Check referential integrity - Programs (via Manage Programs)
+        $programsCount = $this->db->table('programs')
+            ->where('department_id', $departmentID)
+            ->where('is_active', 1)
+            ->countAllResults();
+        if ($programsCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot deactivate department "' . esc($departmentToDelete['department_name']) . '". It has ' . $programsCount . ' active program(s) assigned. Please reassign or deactivate programs first.');
+            return redirect()->to(base_url('admin/manage_departments'));
+        }
+
+        // Soft delete: Set is_active to 0
         $this->db->transStart();
         
         try {
-            if (!$this->departmentModel->delete($departmentID)) {
-                throw new \Exception('Failed to delete department.');
+            if (!$this->departmentModel->update($departmentID, ['is_active' => 0])) {
+                throw new \Exception('Failed to deactivate department.');
             }
 
             $this->db->transComplete();
@@ -285,12 +322,12 @@ class Department extends BaseController
                 throw new \Exception('Transaction failed.');
             }
 
-            $this->session->setFlashdata('success', 'Department "' . esc($departmentToDelete['department_name']) . '" deleted successfully!');
+            $this->session->setFlashdata('success', 'Department "' . esc($departmentToDelete['department_name']) . '" has been deactivated successfully!');
 
         } catch (\Exception $e) {
             $this->db->transRollback();
-            log_message('error', 'Department deletion failed: ' . $e->getMessage());
-            $this->session->setFlashdata('error', 'Failed to delete department: ' . $e->getMessage());
+            log_message('error', 'Department deactivation failed: ' . $e->getMessage());
+            $this->session->setFlashdata('error', 'Failed to deactivate department: ' . $e->getMessage());
         }
 
         return redirect()->to(base_url('admin/manage_departments'));
@@ -308,8 +345,54 @@ class Department extends BaseController
             return redirect()->to(base_url('admin/manage_departments'));
         }
 
+        $newStatus = $department['is_active'] ? 0 : 1;
+
+        // If deactivating, check for constraints first
+        if ($newStatus === 0) {
+            // Check referential integrity - Students
+            $studentsCount = $this->db->table('students s')
+                ->join('users u', 'u.id = s.user_id')
+                ->where('s.department_id', $departmentID)
+                ->where('u.is_active', 1)
+                ->countAllResults();
+            if ($studentsCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot deactivate department "' . esc($department['department_name']) . '". It has ' . $studentsCount . ' active student(s) assigned. Please reassign students first.');
+                return redirect()->to(base_url('admin/manage_departments'));
+            }
+
+            // Check referential integrity - Instructors
+            $instructorsCount = $this->db->table('instructors i')
+                ->join('users u', 'u.id = i.user_id')
+                ->where('i.department_id', $departmentID)
+                ->where('u.is_active', 1)
+                ->countAllResults();
+            if ($instructorsCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot deactivate department "' . esc($department['department_name']) . '". It has ' . $instructorsCount . ' active instructor(s) assigned. Please reassign instructors first.');
+                return redirect()->to(base_url('admin/manage_departments'));
+            }
+
+            // Check referential integrity - Courses
+            $coursesCount = $this->db->table('courses')
+                ->where('department_id', $departmentID)
+                ->where('is_active', 1)
+                ->countAllResults();
+            if ($coursesCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot deactivate department "' . esc($department['department_name']) . '". It has ' . $coursesCount . ' active course(s) assigned. Please reassign or deactivate courses first.');
+                return redirect()->to(base_url('admin/manage_departments'));
+            }
+
+            // Check referential integrity - Programs
+            $programsCount = $this->db->table('programs')
+                ->where('department_id', $departmentID)
+                ->where('is_active', 1)
+                ->countAllResults();
+            if ($programsCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot deactivate department "' . esc($department['department_name']) . '". It has ' . $programsCount . ' active program(s) assigned. Please reassign or deactivate programs first.');
+                return redirect()->to(base_url('admin/manage_departments'));
+            }
+        }
+
         try {
-            $newStatus = $department['is_active'] ? 0 : 1;
             $this->departmentModel->update($departmentID, ['is_active' => $newStatus]);
 
             $statusText = $newStatus ? 'activated' : 'deactivated';

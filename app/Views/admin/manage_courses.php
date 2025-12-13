@@ -157,11 +157,12 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="course_code" class="form-label fw-semibold">Course Code <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="course_code" name="course_code" 
+                                            <input type="text" class="form-control text-uppercase" id="course_code" name="course_code" 
                                                    value="<?= old('course_code') ?>" required 
-                                                   maxlength="20" 
-                                                   placeholder="e.g., CS101, MATH201">
-                                            <div class="form-text">Unique course identifier</div>
+                                                   minlength="2" maxlength="20"
+                                                   pattern="[A-Z]{2,10}-[0-9]{1,5}"
+                                                   placeholder="e.g., CC-101, IT-201, BSIT-301">
+                                            <div class="form-text text-info"><i class="fas fa-info-circle me-1"></i>Format: Uppercase letters, hyphen, then numbers (e.g., CC-101, IT-201)</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -169,9 +170,9 @@
                                             <label for="title" class="form-label fw-semibold">Course Title <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="title" name="title" 
                                                    value="<?= old('title') ?>" required 
-                                                   maxlength="255" 
+                                                   minlength="3" maxlength="255" 
                                                    placeholder="e.g., Introduction to Programming">
-                                            <div class="form-text">Full course title</div>
+                                            <div class="form-text text-info"><i class="fas fa-info-circle me-1"></i>Letters (including Ñ/ñ), numbers, and spaces only. No special characters.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -337,10 +338,11 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="edit_course_code" class="form-label fw-semibold">Course Code <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="edit_course_code" name="course_code" 
+                                            <input type="text" class="form-control text-uppercase" id="edit_course_code" name="course_code" 
                                                    value="<?= old('course_code', $editCourse['course_code']) ?>" required 
-                                                   maxlength="20">
-                                            <div class="form-text">Unique course identifier</div>
+                                                   minlength="2" maxlength="20"
+                                                   pattern="[A-Z]{2,10}-[0-9]{1,5}">
+                                            <div class="form-text text-info"><i class="fas fa-info-circle me-1"></i>Format: Uppercase letters, hyphen, then numbers (e.g., CC-101, IT-201)</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -348,8 +350,8 @@
                                             <label for="edit_title" class="form-label fw-semibold">Course Title <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="edit_title" name="title" 
                                                    value="<?= old('title', $editCourse['title']) ?>" required 
-                                                   maxlength="255">
-                                            <div class="form-text">Full course title</div>
+                                                   minlength="3" maxlength="255">
+                                            <div class="form-text text-info"><i class="fas fa-info-circle me-1"></i>Letters (including Ñ/ñ), numbers, and spaces only. No special characters.</div>
                                         </div>
                                     </div>
                                 </div>

@@ -75,6 +75,10 @@ $routes->get(from: '/teacher/enrolled_students', to: 'Enrollment::teacherEnrolle
 // AJAX endpoint for teacher bulk enrollment
 $routes->post('/teacher/ajax_enroll_students', 'Enrollment::ajaxEnrollStudents');
 
+// Enrollment approval routes
+$routes->post('/enrollment/respond', 'Enrollment::respondToEnrollment');
+$routes->get('/enrollment/pending', 'Enrollment::getPendingEnrollments');
+
 // AJAX course search routes
 $routes->post('/student/search_courses', 'Auth::searchStudentCourses');
 $routes->get('/student/search_courses', 'Auth::searchStudentCourses');

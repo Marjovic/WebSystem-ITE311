@@ -110,7 +110,7 @@ class Enrollment extends BaseController
         }
 
         // Handle POST requests for other CRUD operations (delete, update_status)
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->getMethod() === 'POST') {
             $postAction = $this->request->getPost('action');
 
             switch ($postAction) {
@@ -283,7 +283,7 @@ class Enrollment extends BaseController
             'student_id'         => 'required|integer',
             'course_offering_id' => 'required|integer',
             'enrollment_date'    => 'required|valid_date',
-            'enrollment_status'  => 'required|in_list[pending,enrolled,dropped,withdrawn,completed]',
+            'enrollment_status'  => 'required|in_list[pending,pending_student_approval,pending_teacher_approval,enrolled,rejected,dropped,withdrawn,completed]',
             'enrollment_type'    => 'required|in_list[regular,irregular,retake,cross_enroll,special]',
             'payment_status'     => 'required|in_list[unpaid,partial,paid,scholarship,waived]'
         ];
@@ -383,7 +383,7 @@ class Enrollment extends BaseController
             'student_id'         => 'required|integer',
             'course_offering_id' => 'required|integer',
             'enrollment_date'    => 'required|valid_date',
-            'enrollment_status'  => 'required|in_list[pending,enrolled,dropped,withdrawn,completed]',
+            'enrollment_status'  => 'required|in_list[pending,pending_student_approval,pending_teacher_approval,enrolled,rejected,dropped,withdrawn,completed]',
             'enrollment_type'    => 'required|in_list[regular,irregular,retake,cross_enroll,special]',
             'payment_status'     => 'required|in_list[unpaid,partial,paid,scholarship,waived]'
         ];
@@ -451,7 +451,7 @@ class Enrollment extends BaseController
     }
 
     /**
-     * Delete enrollment
+     * Delete enrollment (Soft Delete - Cancel Enrollment)
      */
     private function deleteEnrollment()
     {
@@ -463,10 +463,46 @@ class Enrollment extends BaseController
             return redirect()->to('/admin/manage_enrollments');
         }
 
-        if ($this->enrollmentModel->delete($enrollmentId)) {
-            $this->session->setFlashdata('success', 'Enrollment deleted successfully!');
+        $enrollment = $this->enrollmentModel->find($enrollmentId);
+        if (!$enrollment) {
+            $this->session->setFlashdata('error', 'Enrollment not found.');
+            return redirect()->to('/admin/manage_enrollments' . ($termId ? '?term_id=' . $termId : ''));
+        }
+
+        // Check if enrollment already cancelled/dropped
+        if (in_array($enrollment['enrollment_status'], ['cancelled', 'dropped'])) {
+            $this->session->setFlashdata('error', 'This enrollment is already cancelled/dropped.');
+            return redirect()->to('/admin/manage_enrollments' . ($termId ? '?term_id=' . $termId : ''));
+        }
+
+        // Check referential integrity - Grades (only if table exists)
+        if ($this->db->tableExists('grades')) {
+            $gradesCount = $this->db->table('grades')->where('enrollment_id', $enrollmentId)->countAllResults();
+            if ($gradesCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot delete this enrollment. It has ' . $gradesCount . ' grade record(s). Please change the status to "Dropped" or "Cancelled" instead.');
+                return redirect()->to('/admin/manage_enrollments' . ($termId ? '?term_id=' . $termId : ''));
+            }
+        }
+
+        // Check referential integrity - Attendance (only if table exists)
+        if ($this->db->tableExists('attendances')) {
+            $attendanceCount = $this->db->table('attendances')->where('enrollment_id', $enrollmentId)->countAllResults();
+            if ($attendanceCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot delete this enrollment. It has ' . $attendanceCount . ' attendance record(s). Please change the status to "Dropped" or "Cancelled" instead.');
+                return redirect()->to('/admin/manage_enrollments' . ($termId ? '?term_id=' . $termId : ''));
+            }
+        }
+
+        // Soft delete: Change status to 'cancelled'
+        $updateData = [
+            'enrollment_status' => 'cancelled',
+            'status_changed_at' => date('Y-m-d H:i:s')
+        ];
+
+        if ($this->enrollmentModel->update($enrollmentId, $updateData)) {
+            $this->session->setFlashdata('success', 'Enrollment has been cancelled successfully!');
         } else {
-            $this->session->setFlashdata('error', 'Failed to delete enrollment.');
+            $this->session->setFlashdata('error', 'Failed to cancel enrollment.');
         }
 
         return redirect()->to('/admin/manage_enrollments' . ($termId ? '?term_id=' . $termId : ''));
@@ -517,7 +553,7 @@ class Enrollment extends BaseController
         }
 
         $instructorId = $instructor['id'];        // Handle POST request - Process enrollment
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->getMethod() === 'POST') {
             log_message('debug', '=== POST REQUEST RECEIVED ===');
             log_message('debug', 'Instructor ID: ' . $instructorId);
             log_message('debug', 'Request Method: ' . $this->request->getMethod());
@@ -585,7 +621,6 @@ class Enrollment extends BaseController
     {
         $rules = [
             'course_offering_id' => 'required|integer',
-            'enrollment_status' => 'required|in_list[pending,enrolled]',
             'enrollment_type' => 'required|in_list[regular,irregular,retake,cross_enroll,special]',
             'payment_status' => 'required|in_list[unpaid,partial,paid]',
             'enrollment_date' => 'required|valid_date'
@@ -628,19 +663,20 @@ class Enrollment extends BaseController
             return redirect()->back()->withInput()->with('error', 'Course offering has reached maximum capacity.');
         }
 
-        // Create enrollment
+        // Create enrollment with approval status
         $enrollmentData = [
             'student_id' => $studentId,
             'course_offering_id' => $courseOfferingId,
-            'enrollment_status' => $this->request->getPost('enrollment_status'),
+            'enrollment_status' => 'pending_student_approval', // Teacher enrollment needs student approval
             'enrollment_type' => $this->request->getPost('enrollment_type'),
             'enrollment_date' => $this->request->getPost('enrollment_date'),
             'payment_status' => $this->request->getPost('payment_status'),
+            'enrolled_by' => $this->session->get('userID'), // Teacher who enrolled
             'notes' => $this->request->getPost('notes')
         ];
 
         if ($this->enrollmentModel->insert($enrollmentData)) {
-            return redirect()->to('/teacher/enroll_student')->with('success', 'Student enrolled successfully!');
+            return redirect()->to('/teacher/enroll_student')->with('success', 'Student enrolled successfully! Awaiting student approval.');
         } else {
             return redirect()->back()->withInput()->with('error', 'Failed to enroll student. Please try again.');
         }
@@ -653,7 +689,6 @@ class Enrollment extends BaseController
     {
         $rules = [
             'course_offering_id' => 'required|integer',
-            'enrollment_status' => 'required|in_list[pending,enrolled]',
             'enrollment_type' => 'required|in_list[regular,irregular,retake,cross_enroll,special]',
             'payment_status' => 'required|in_list[unpaid,partial,paid]',
             'enrollment_date' => 'required|valid_date'
@@ -690,7 +725,6 @@ class Enrollment extends BaseController
         }
 
         // Common enrollment data
-        $enrollmentStatus = $this->request->getPost('enrollment_status');
         $enrollmentType = $this->request->getPost('enrollment_type');
         $enrollmentDate = $this->request->getPost('enrollment_date');
         $paymentStatus = $this->request->getPost('payment_status');
@@ -729,14 +763,15 @@ class Enrollment extends BaseController
                 continue;
             }
 
-            // Create enrollment
+            // Create enrollment with approval status
             $enrollmentData = [
                 'student_id' => $studentId,
                 'course_offering_id' => $courseOfferingId,
-                'enrollment_status' => $enrollmentStatus,
+                'enrollment_status' => 'pending_student_approval', // Teacher enrollment needs student approval
                 'enrollment_type' => $enrollmentType,
                 'enrollment_date' => $enrollmentDate,
                 'payment_status' => $paymentStatus,
+                'enrolled_by' => $this->session->get('userID'), // Teacher who enrolled
                 'notes' => $notes
             ];            if ($this->enrollmentModel->insert($enrollmentData)) {
                 $successCount++;
@@ -1281,5 +1316,182 @@ class Enrollment extends BaseController
             ->orderBy('e.enrollment_date', 'DESC')
             ->orderBy('u.last_name', 'ASC')
             ->findAll();
+    }
+
+    /**
+     * Accept or reject enrollment (for both students and teachers)
+     */
+    public function respondToEnrollment()
+    {
+        if ($this->request->getMethod() !== 'post' && $this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request method.'
+            ]);
+        }
+
+        $enrollmentId = $this->request->getPost('enrollment_id');
+        $action = $this->request->getPost('action'); // 'accept' or 'reject'
+        $userRole = $this->session->get('role');
+        $userId = $this->session->get('userID');
+
+        if (!$enrollmentId || !in_array($action, ['accept', 'reject'])) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid parameters.'
+            ]);
+        }
+
+        // Get enrollment details
+        $enrollment = $this->enrollmentModel->find($enrollmentId);
+        if (!$enrollment) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Enrollment not found.'
+            ]);
+        }
+
+        // Check if user can respond to this enrollment
+        $canRespond = false;
+        $newStatus = null;
+
+        if ($userRole === 'student') {
+            // Student can respond to pending_student_approval
+            if ($enrollment['enrollment_status'] === 'pending_student_approval') {
+                $student = $this->studentModel->where('user_id', $userId)->first();
+                if ($student && $student['id'] == $enrollment['student_id']) {
+                    $canRespond = true;
+                    $newStatus = $action === 'accept' ? 'enrolled' : 'rejected';
+                }
+            }
+        } elseif ($userRole === 'teacher') {
+            // Teacher can respond to pending_teacher_approval
+            if ($enrollment['enrollment_status'] === 'pending_teacher_approval') {
+                $instructor = $this->instructorModel->where('user_id', $userId)->first();
+                if ($instructor) {
+                    // Check if teacher is assigned to this course
+                    $isAssigned = $this->courseInstructorModel
+                        ->where('instructor_id', $instructor['id'])
+                        ->where('course_offering_id', $enrollment['course_offering_id'])
+                        ->first();
+                    
+                    if ($isAssigned) {
+                        $canRespond = true;
+                        $newStatus = $action === 'accept' ? 'enrolled' : 'rejected';
+                    }
+                }
+            }
+        }
+
+        if (!$canRespond) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'You are not authorized to respond to this enrollment.'
+            ]);
+        }
+
+        // Update enrollment status
+        $updateData = [
+            'enrollment_status' => $newStatus,
+            'status_changed_at' => date('Y-m-d H:i:s')
+        ];
+
+        if ($this->enrollmentModel->update($enrollmentId, $updateData)) {
+            // If accepted, increment course offering enrollment count
+            if ($newStatus === 'enrolled') {
+                $this->courseOfferingModel->incrementEnrollment($enrollment['course_offering_id']);
+            }
+
+            // Send notification (optional - can be implemented later)
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Enrollment ' . $action . 'ed successfully!'
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to update enrollment. Please try again.'
+            ]);
+        }
+    }
+
+    /**
+     * Get pending enrollments for dashboard
+     */
+    public function getPendingEnrollments()
+    {
+        $userRole = $this->session->get('role');
+        $userId = $this->session->get('userID');
+        
+        // Debug logging
+        log_message('debug', 'getPendingEnrollments - Role: ' . $userRole . ', UserID: ' . $userId);
+        
+        $pendingEnrollments = [];
+
+        if ($userRole === 'student') {
+            // Get enrollments pending student approval
+            $student = $this->studentModel->where('user_id', $userId)->first();
+            if ($student) {
+                $pendingEnrollments = $this->db->table('enrollments e')
+                    ->select('
+                        e.id as enrollment_id,
+                        e.enrollment_date,
+                        co.section,
+                        c.course_code,
+                        c.title as course_title,
+                        c.credits,
+                        t.term_name,
+                        ay.year_name as academic_year,
+                        CONCAT(u.first_name, " ", u.last_name) as enrolled_by_name
+                    ')
+                    ->join('course_offerings co', 'co.id = e.course_offering_id')
+                    ->join('courses c', 'c.id = co.course_id')
+                    ->join('terms t', 't.id = co.term_id')
+                    ->join('academic_years ay', 'ay.id = t.academic_year_id')
+                    ->join('users u', 'u.id = e.enrolled_by')
+                    ->where('e.student_id', $student['id'])
+                    ->where('e.enrollment_status', 'pending_student_approval')
+                    ->orderBy('e.enrollment_date', 'DESC')
+                    ->get()
+                    ->getResultArray();
+            }
+        } elseif ($userRole === 'teacher') {
+            // Get ALL enrollments pending teacher approval (temporary solution)
+            // TODO: Filter by teacher's assigned courses once course_instructors is properly populated
+            log_message('debug', 'Fetching all pending enrollments for teacher approval');
+            
+            $pendingEnrollments = $this->db->table('enrollments e')
+                ->select('
+                    e.id as enrollment_id,
+                    e.enrollment_date,
+                    e.notes,
+                    co.section,
+                    c.course_code,
+                    c.title as course_title,
+                    c.credits,
+                    t.term_name,
+                    ay.year_name as academic_year,
+                    s.student_id_number,
+                    CONCAT(stu.first_name, " ", stu.last_name) as student_name
+                ')
+                ->join('course_offerings co', 'co.id = e.course_offering_id')
+                ->join('courses c', 'c.id = co.course_id')
+                ->join('terms t', 't.id = co.term_id')
+                ->join('academic_years ay', 'ay.id = t.academic_year_id')
+                ->join('students s', 's.id = e.student_id')
+                ->join('users stu', 'stu.id = s.user_id')
+                ->where('e.enrollment_status', 'pending_teacher_approval')
+                ->orderBy('e.enrollment_date', 'DESC')
+                ->get()
+                ->getResultArray();
+            
+            log_message('debug', 'Pending enrollments found: ' . count($pendingEnrollments));
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'pending_enrollments' => $pendingEnrollments
+        ]);
     }
 }

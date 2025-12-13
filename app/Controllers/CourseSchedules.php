@@ -104,7 +104,7 @@ class CourseSchedules extends BaseController
 
         if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validator->getErrors());
-            $this->session->setFlashdata('error', 'Please fix the errors below.');
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->to(base_url('admin/manage_courses_schedule?action=create&offering_id=' . $this->request->getPost('course_offering_id')))->withInput();
         }
 
@@ -321,7 +321,7 @@ class CourseSchedules extends BaseController
 
             if (!$this->validate($rules, $messages)) {
                 $this->session->setFlashdata('errors', $this->validator->getErrors());
-                $this->session->setFlashdata('error', 'Please fix the errors below.');
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->to(base_url('admin/manage_courses_schedule?action=edit&id=' . $scheduleID))->withInput();
             }
 

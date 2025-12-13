@@ -252,7 +252,7 @@ class ProgramCurriculumModel extends Model
             SELECT COUNT(*) as count
             FROM enrollments e
             JOIN course_offerings co ON co.id = e.course_offering_id
-            JOIN program_curriculoms pc ON pc.course_id = co.course_id
+            JOIN program_curriculums pc ON pc.course_id = co.course_id
             WHERE pc.id = ? AND e.enrollment_status = 'enrolled'
         ", [$curriculumId])->getRow()->count;
         

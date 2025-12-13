@@ -122,7 +122,7 @@ class CourseOfferings extends BaseController
 
         if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validator->getErrors());
-            $this->session->setFlashdata('error', 'Please fix the errors below.');
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->to(base_url('admin/manage_offerings?action=create'))->withInput();
         }
 
@@ -247,7 +247,7 @@ class CourseOfferings extends BaseController
 
             if (!$this->validate($rules, $messages)) {
                 $this->session->setFlashdata('errors', $this->validator->getErrors());
-                $this->session->setFlashdata('error', 'Please fix the errors below.');
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->to(base_url('admin/manage_offerings?action=edit&id=' . $offeringID))->withInput();
             }            // Additional validation: Check dates are within Term range
             $errors = [];
@@ -352,15 +352,34 @@ class CourseOfferings extends BaseController
             return redirect()->to(base_url('admin/manage_offerings'));
         }
 
-        // Check if there are enrollments
-        if ($offeringToDelete['current_enrollment'] > 0) {
-            $this->session->setFlashdata('error', 'Cannot delete offering with active enrollments. Please remove all enrollments first.');
+        // Check if there are active enrollments by querying the enrollments table directly
+        $enrollmentCount = $this->db->table('enrollments')
+            ->where('course_offering_id', $offeringID)
+            ->where('enrollment_status', 'enrolled')
+            ->countAllResults();
+
+        if ($enrollmentCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot delete offering with ' . $enrollmentCount . ' active student(s) enrolled. Please remove all enrollments first.');
             return redirect()->to(base_url('admin/manage_offerings?term_id=' . $offeringToDelete['term_id']));
+        }
+
+        // Also check for related records that might cause issues
+        $hasSchedules = $this->db->table('course_schedules')
+            ->where('course_offering_id', $offeringID)
+            ->countAllResults() > 0;
+
+        $hasInstructors = $this->db->table('course_instructors')
+            ->where('course_offering_id', $offeringID)
+            ->countAllResults() > 0;
+
+        // If there are schedules or instructors, warn user but allow deletion
+        if ($hasSchedules || $hasInstructors) {
+            $this->session->setFlashdata('warning', 'Note: This course offering has associated schedules and/or instructors that will also be removed.');
         }
 
         $termId = $offeringToDelete['term_id'];
 
-        // Delete offering
+        // Delete offering (cascade delete will handle related records)
         if ($this->offeringModel->delete($offeringID)) {
             $this->session->setFlashdata('success', 'Course offering deleted successfully!');
         } else {

@@ -35,7 +35,7 @@ class EnrollmentModel extends Model
         'student_id'         => 'required|integer',
         'course_offering_id' => 'required|integer',
         'enrollment_date'    => 'required|valid_date',
-        'enrollment_status'  => 'required|in_list[pending,enrolled,dropped,withdrawn,completed]',
+        'enrollment_status'  => 'required|in_list[pending,pending_student_approval,pending_teacher_approval,enrolled,rejected,dropped,withdrawn,completed]',
         'enrollment_type'    => 'required|in_list[regular,irregular,retake,cross_enroll,special]',
         'payment_status'     => 'required|in_list[unpaid,partial,paid,scholarship,waived]',
     ];

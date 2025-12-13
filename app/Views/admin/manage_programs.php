@@ -161,7 +161,7 @@
                                                    value="<?= old('program_code') ?>" required 
                                                    minlength="2" maxlength="20" 
                                                    placeholder="e.g., BSIT, BSCS">
-                                            <div class="form-text">📝 Uppercase letters only (e.g., BSIT, BSCS, MIT)</div>
+                                            <div class="form-text text-info"><i class="fas fa-info-circle me-1"></i>Uppercase letters only (e.g., BSIT, BSCS, MIT). No numbers or special characters.</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -171,7 +171,7 @@
                                                    value="<?= old('program_name') ?>" required 
                                                    minlength="3" maxlength="200" 
                                                    placeholder="e.g., Bachelor of Science in Information Technology">
-                                            <div class="form-text">📝 Letters and spaces only</div>
+                                            <div class="form-text text-info"><i class="fas fa-info-circle me-1"></i>Letters and spaces only. No numbers or special characters.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -307,7 +307,7 @@
                                             <input type="text" class="form-control text-uppercase" id="edit_program_code" name="program_code" 
                                                    value="<?= old('program_code', $editProgram['program_code']) ?>" required 
                                                    minlength="2" maxlength="20">
-                                            <div class="form-text">📝 Uppercase letters only (e.g., BSIT, BSCS, MIT)</div>
+                                            <div class="form-text text-info"><i class="fas fa-info-circle me-1"></i>Uppercase letters only (e.g., BSIT, BSCS, MIT). No numbers or special characters.</div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -316,7 +316,7 @@
                                             <input type="text" class="form-control" id="edit_program_name" name="program_name" 
                                                    value="<?= old('program_name', $editProgram['program_name']) ?>" required 
                                                    minlength="3" maxlength="200">
-                                            <div class="form-text">📝 Letters and spaces only</div>
+                                            <div class="form-text text-info"><i class="fas fa-info-circle me-1"></i>Letters and spaces only. No numbers or special characters.</div>
                                         </div>
                                     </div>
                                 </div>

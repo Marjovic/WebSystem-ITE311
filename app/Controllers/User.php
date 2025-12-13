@@ -147,8 +147,11 @@ class User extends BaseController
 
         if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validation->getErrors());
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->back()->withInput();
-        }        // Start database transaction
+        }
+
+        // Start database transaction
         $this->db->transStart();
         
         try {
@@ -199,7 +202,8 @@ class User extends BaseController
                 
                 if (!$this->studentModel->insert($studentData)) {
                     throw new \Exception('Failed to create student record.');
-                }            } elseif ($role === 'teacher') {
+                }            
+            } elseif ($role === 'teacher') {
                 // Prepare instructor data - handle empty department_id
                 $departmentId = $this->request->getPost('department_id');
                 $instructorData = [
@@ -286,6 +290,7 @@ class User extends BaseController
 
             if (!$this->validate($rules)) {
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->back()->withInput();
             }
 
@@ -456,7 +461,13 @@ class User extends BaseController
      */
     private function deleteUser($userID, $currentAdminID)
     {
-        $userToDelete = $this->userModel->find($userID);
+        // Get user with role name from roles table
+        $userToDelete = $this->db->table('users u')
+            ->select('u.*, r.role_name as role')
+            ->join('roles r', 'r.id = u.role_id', 'left')
+            ->where('u.id', $userID)
+            ->get()
+            ->getRowArray();
 
         if (!$userToDelete) {
             $this->session->setFlashdata('error', 'User not found.');
@@ -471,6 +482,44 @@ class User extends BaseController
         if ($userToDelete['is_active'] == 0) {
             $this->session->setFlashdata('error', 'This user is already inactive.');
             return redirect()->to(base_url('admin/manage_users'));
+        }
+
+        // Check referential integrity based on user role
+        $userRole = $userToDelete['role'] ?? '';
+        $userName = $userToDelete['first_name'] . ' ' . $userToDelete['last_name'];
+
+        if ($userRole === 'student') {
+            // Get student record
+            $student = $this->studentModel->where('user_id', $userID)->first();
+            if ($student) {
+                // Check if student has active enrollments
+                $enrollmentsCount = $this->db->table('enrollments')
+                    ->where('student_id', $student['id'])
+                    ->whereNotIn('enrollment_status', ['cancelled', 'dropped', 'completed'])
+                    ->countAllResults();
+                if ($enrollmentsCount > 0) {
+                    $this->session->setFlashdata('error', 'Cannot deactivate student "' . esc($userName) . '". They have ' . $enrollmentsCount . ' active enrollment(s). Please cancel or complete enrollments first.');
+                    return redirect()->to(base_url('admin/manage_users'));
+                }
+            }
+        }
+
+        if ($userRole === 'teacher') {
+            // Get instructor record
+            $instructor = $this->instructorModel->where('user_id', $userID)->first();
+            if ($instructor) {
+                // Check if instructor has assigned courses (current/active offerings)
+                $assignmentsCount = $this->db->table('course_instructors ci')
+                    ->join('course_offerings co', 'co.id = ci.course_offering_id')
+                    ->join('terms t', 't.id = co.term_id')
+                    ->where('ci.instructor_id', $instructor['id'])
+                    ->where('co.status !=', 'closed')
+                    ->countAllResults();
+                if ($assignmentsCount > 0) {
+                    $this->session->setFlashdata('error', 'Cannot deactivate instructor "' . esc($userName) . '". They have ' . $assignmentsCount . ' active course assignment(s). Please remove course assignments first.');
+                    return redirect()->to(base_url('admin/manage_users'));
+                }
+            }
         }
 
         $this->db->transStart();

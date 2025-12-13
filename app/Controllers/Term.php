@@ -89,7 +89,7 @@ class Term extends BaseController
         $rules = [
             'academic_year_id' => 'required|integer',
             'semester_id'      => 'required|integer',
-            'term_name'        => 'required|min_length[3]|max_length[100]',
+            'term_name'        => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ0-9\s]+$/u]',
             'start_date'       => 'permit_empty|valid_date|check_within_academic_year[academic_year_id]|check_date_order[end_date]',
             'end_date'         => 'permit_empty|valid_date|check_within_academic_year[academic_year_id]',
             'enrollment_start' => 'permit_empty|valid_date|check_enrollment_not_past|check_within_academic_year[academic_year_id]|check_date_order[enrollment_end]',
@@ -106,9 +106,10 @@ class Term extends BaseController
                 'integer'  => 'Please select a valid semester.'
             ],
             'term_name' => [
-                'required'   => 'Term name is required.',
-                'min_length' => 'Term name must be at least 3 characters.',
-                'max_length' => 'Term name must not exceed 100 characters.'
+                'required'    => 'Term name is required.',
+                'min_length'  => 'Term name must be at least 3 characters.',
+                'max_length'  => 'Term name must not exceed 100 characters.',
+                'regex_match' => 'Term name can only contain letters (including Ñ/ñ), numbers, and spaces. No special characters allowed.'
             ],
             'start_date' => [
                 'check_within_academic_year' => 'Term start date must be within the selected Academic Year.',
@@ -130,7 +131,7 @@ class Term extends BaseController
 
         if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validator->getErrors());
-            $this->session->setFlashdata('error', 'Please fix the errors below.');
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->to(base_url('admin/manage_terms?action=create'))->withInput();
         }
 
@@ -173,7 +174,7 @@ class Term extends BaseController
             $rules = [
                 'academic_year_id' => 'required|integer',
                 'semester_id'      => 'required|integer',
-                'term_name'        => 'required|min_length[3]|max_length[100]',
+                'term_name'        => 'required|min_length[3]|max_length[100]|regex_match[/^[a-zA-ZñÑ0-9\s]+$/u]',
                 'start_date'       => 'permit_empty|valid_date|check_within_academic_year[academic_year_id]|check_date_order[end_date]',
                 'end_date'         => 'permit_empty|valid_date|check_within_academic_year[academic_year_id]',
                 'enrollment_start' => 'permit_empty|valid_date|check_enrollment_not_past|check_within_academic_year[academic_year_id]|check_date_order[enrollment_end]',
@@ -190,9 +191,10 @@ class Term extends BaseController
                     'integer'  => 'Please select a valid semester.'
                 ],
                 'term_name' => [
-                    'required'   => 'Term name is required.',
-                    'min_length' => 'Term name must be at least 3 characters.',
-                    'max_length' => 'Term name must not exceed 100 characters.'
+                    'required'    => 'Term name is required.',
+                    'min_length'  => 'Term name must be at least 3 characters.',
+                    'max_length'  => 'Term name must not exceed 100 characters.',
+                    'regex_match' => 'Term name can only contain letters (including Ñ/ñ), numbers, and spaces. No special characters allowed.'
                 ],
                 'start_date' => [
                     'check_within_academic_year' => 'Term start date must be within the selected Academic Year.',
@@ -214,7 +216,7 @@ class Term extends BaseController
 
             if (!$this->validate($rules, $messages)) {
                 $this->session->setFlashdata('errors', $this->validator->getErrors());
-                $this->session->setFlashdata('error', 'Please fix the errors below.');
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->to(base_url('admin/manage_terms?action=edit&id=' . $termID))->withInput();
             }
 
@@ -260,7 +262,7 @@ class Term extends BaseController
     }
 
     /**
-     * Delete a term
+     * Delete a term (Soft Delete)
      */
     private function deleteTerm($termID)
     {
@@ -277,11 +279,41 @@ class Term extends BaseController
             return redirect()->to(base_url('admin/manage_terms'));
         }
 
-        // Delete term
-        if ($this->termModel->delete($termID)) {
-            $this->session->setFlashdata('success', 'Term deleted successfully!');
+        // Check if term is already inactive
+        if ($termToDelete['is_active'] == 0) {
+            $this->session->setFlashdata('error', 'This term is already deactivated.');
+            return redirect()->to(base_url('admin/manage_terms'));
+        }
+
+        // Check referential integrity - Course Offerings
+        $offeringsCount = $this->db->table('course_offerings')->where('term_id', $termID)->countAllResults();
+        if ($offeringsCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot delete term "' . esc($termToDelete['term_name']) . '". It has ' . $offeringsCount . ' course offering(s). Please deactivate instead or remove the offerings first.');
+            return redirect()->to(base_url('admin/manage_terms'));
+        }
+
+        // Check referential integrity - Grading Periods
+        $gradingPeriodsCount = $this->db->table('grading_periods')->where('term_id', $termID)->countAllResults();
+        if ($gradingPeriodsCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot delete term "' . esc($termToDelete['term_name']) . '". It has ' . $gradingPeriodsCount . ' grading period(s). Please remove the grading periods first or deactivate instead.');
+            return redirect()->to(base_url('admin/manage_terms'));
+        }
+
+        // Check referential integrity - Enrollments (via course_offerings)
+        $enrollmentsCount = $this->db->table('enrollments e')
+            ->join('course_offerings co', 'co.id = e.course_offering_id')
+            ->where('co.term_id', $termID)
+            ->countAllResults();
+        if ($enrollmentsCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot delete term "' . esc($termToDelete['term_name']) . '". It has ' . $enrollmentsCount . ' student enrollment(s). Please deactivate instead.');
+            return redirect()->to(base_url('admin/manage_terms'));
+        }
+
+        // Soft delete: Set is_active to 0
+        if ($this->termModel->update($termID, ['is_active' => 0])) {
+            $this->session->setFlashdata('success', 'Term "' . esc($termToDelete['term_name']) . '" has been deactivated successfully!');
         } else {
-            $this->session->setFlashdata('error', 'Failed to delete term. Please try again.');
+            $this->session->setFlashdata('error', 'Failed to deactivate term. Please try again.');
         }
 
         return redirect()->to(base_url('admin/manage_terms'));

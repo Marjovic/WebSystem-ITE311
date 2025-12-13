@@ -80,24 +80,25 @@ class AssignmentType extends BaseController
     {
         // Validation rules
         $rules = [
-            'type_name'      => 'required|min_length[2]|max_length[50]',
-            'type_code'      => 'required|min_length[2]|max_length[20]|is_unique[assignment_types.type_code]|regex_match[/^[A-Z0-9_]+$/]',
+            'type_name'      => 'required|min_length[2]|max_length[50]|regex_match[/^[a-zA-ZñÑ\s]+$/u]',
+            'type_code'      => 'required|min_length[2]|max_length[20]|is_unique[assignment_types.type_code]|regex_match[/^[A-Z]{2,10}-[0-9]{1,5}$|^[A-Z0-9_]+$/]',
             'description'    => 'permit_empty|max_length[255]',
             'default_weight' => 'permit_empty|decimal|greater_than_equal_to[0]|less_than_equal_to[100]'
         ];
 
         $messages = [
             'type_name' => [
-                'required'   => 'Assignment type name is required.',
-                'min_length' => 'Assignment type name must be at least 2 characters.',
-                'max_length' => 'Assignment type name must not exceed 50 characters.'
+                'required'    => 'Assignment type name is required.',
+                'min_length'  => 'Assignment type name must be at least 2 characters.',
+                'max_length'  => 'Assignment type name must not exceed 50 characters.',
+                'regex_match' => 'Assignment type name can only contain letters (including Ñ/ñ) and spaces. No numbers or special characters allowed.'
             ],
             'type_code' => [
                 'required'    => 'Type code is required.',
                 'min_length'  => 'Type code must be at least 2 characters.',
                 'max_length'  => 'Type code must not exceed 20 characters.',
                 'is_unique'   => 'This type code already exists.',
-                'regex_match' => 'Type code must contain only uppercase letters, numbers, and underscores.'
+                'regex_match' => 'Type code must follow format: XX-000 (e.g., AT-101) or use uppercase letters, numbers, and underscores (e.g., QUIZ_TYPE).'
             ],
             'description' => [
                 'max_length' => 'Description must not exceed 255 characters.'
@@ -107,8 +108,11 @@ class AssignmentType extends BaseController
                 'greater_than_equal_to'  => 'Default weight must be between 0 and 100.',
                 'less_than_equal_to'     => 'Default weight must be between 0 and 100.'
             ]
-        ];        if (!$this->validate($rules, $messages)) {
+        ];
+
+        if (!$this->validate($rules, $messages)) {
             $this->session->setFlashdata('errors', $this->validation->getErrors());
+            $this->session->setFlashdata('error', 'Please fix the validation errors below.');
             return redirect()->back()->withInput();
         }
 
@@ -174,22 +178,23 @@ class AssignmentType extends BaseController
         // Handle POST request
         if ($this->request->getMethod() === 'POST') {
             $rules = [
-                'type_name'      => 'required|min_length[2]|max_length[50]',
-                'type_code'      => "required|min_length[2]|max_length[20]|is_unique[assignment_types.type_code,id,{$typeID}]|regex_match[/^[A-Z0-9_]+$/]",
+                'type_name'      => 'required|min_length[2]|max_length[50]|regex_match[/^[a-zA-ZñÑ\s]+$/u]',
+                'type_code'      => "required|min_length[2]|max_length[20]|is_unique[assignment_types.type_code,id,{$typeID}]|regex_match[/^[A-Z]{2,10}-[0-9]{1,5}$|^[A-Z0-9_]+$/]",
                 'description'    => 'permit_empty|max_length[255]',
                 'default_weight' => 'permit_empty|decimal|greater_than_equal_to[0]|less_than_equal_to[100]'
             ];            $messages = [
                 'type_name' => [
-                    'required'   => 'Assignment type name is required.',
-                    'min_length' => 'Assignment type name must be at least 2 characters.',
-                    'max_length' => 'Assignment type name must not exceed 50 characters.'
+                    'required'    => 'Assignment type name is required.',
+                    'min_length'  => 'Assignment type name must be at least 2 characters.',
+                    'max_length'  => 'Assignment type name must not exceed 50 characters.',
+                    'regex_match' => 'Assignment type name can only contain letters (including Ñ/ñ) and spaces. No numbers or special characters allowed.'
                 ],
                 'type_code' => [
                     'required'    => 'Type code is required.',
                     'min_length'  => 'Type code must be at least 2 characters.',
                     'max_length'  => 'Type code must not exceed 20 characters.',
                     'is_unique'   => 'This type code already exists.',
-                    'regex_match' => 'Type code must contain only uppercase letters, numbers, and underscores.'
+                    'regex_match' => 'Type code must follow format: XX-000 (e.g., AT-101) or use uppercase letters, numbers, and underscores (e.g., QUIZ_TYPE).'
                 ],
                 'description' => [
                     'max_length' => 'Description must not exceed 255 characters.'
@@ -203,6 +208,7 @@ class AssignmentType extends BaseController
 
             if (!$this->validate($rules, $messages)) {
                 $this->session->setFlashdata('errors', $this->validation->getErrors());
+                $this->session->setFlashdata('error', 'Please fix the validation errors below.');
                 return redirect()->back()->withInput();
             }
 
@@ -287,15 +293,29 @@ class AssignmentType extends BaseController
             ->countAllResults();
 
         if ($assignmentsCount > 0) {
-            $this->session->setFlashdata('error', 'Cannot delete assignment type. It is being used by ' . $assignmentsCount . ' assignment(s). Please deactivate instead.');
+            $this->session->setFlashdata('error', 'Cannot delete assignment type "' . esc($typeToDelete['type_name']) . '". It is being used by ' . $assignmentsCount . ' assignment(s). Please deactivate instead.');
             return redirect()->to(base_url('admin/manage_assignment_types'));
         }
 
+        // Check referential integrity - Grade Components
+        $gradeComponentsCount = $this->db->table('grade_components')->where('assignment_type_id', $typeID)->countAllResults();
+        if ($gradeComponentsCount > 0) {
+            $this->session->setFlashdata('error', 'Cannot delete assignment type "' . esc($typeToDelete['type_name']) . '". It is used in ' . $gradeComponentsCount . ' grade component(s). Please deactivate instead.');
+            return redirect()->to(base_url('admin/manage_assignment_types'));
+        }
+
+        // Check if assignment type is already inactive
+        if ($typeToDelete['is_active'] == 0) {
+            $this->session->setFlashdata('error', 'This assignment type is already deactivated.');
+            return redirect()->to(base_url('admin/manage_assignment_types'));
+        }
+
+        // Soft delete: Set is_active to 0
         $this->db->transStart();
         
         try {
-            if (!$this->assignmentTypeModel->delete($typeID)) {
-                throw new \Exception('Failed to delete assignment type.');
+            if (!$this->assignmentTypeModel->update($typeID, ['is_active' => 0])) {
+                throw new \Exception('Failed to deactivate assignment type.');
             }
 
             $this->db->transComplete();
@@ -304,12 +324,12 @@ class AssignmentType extends BaseController
                 throw new \Exception('Transaction failed.');
             }
 
-            $this->session->setFlashdata('success', 'Assignment type "' . esc($typeToDelete['type_name']) . '" deleted successfully!');
+            $this->session->setFlashdata('success', 'Assignment type "' . esc($typeToDelete['type_name']) . '" has been deactivated successfully!');
 
         } catch (\Exception $e) {
             $this->db->transRollback();
-            log_message('error', 'Assignment type deletion failed: ' . $e->getMessage());
-            $this->session->setFlashdata('error', 'Failed to delete assignment type: ' . $e->getMessage());
+            log_message('error', 'Assignment type deactivation failed: ' . $e->getMessage());
+            $this->session->setFlashdata('error', 'Failed to deactivate assignment type: ' . $e->getMessage());
         }
 
         return redirect()->to(base_url('admin/manage_assignment_types'));

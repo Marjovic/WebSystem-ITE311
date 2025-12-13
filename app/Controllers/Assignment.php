@@ -263,9 +263,10 @@ class Assignment extends BaseController
             'available_until' => $availableUntil,
             'allow_late_submission' => $this->request->getPost('allow_late_submission') ? 1 : 0,
             'late_penalty_percentage' => $this->request->getPost('late_penalty_percentage') ?? 0
-        ];
-
-        if ($this->assignmentModel->update($assignmentId, $data)) {
+        ];        if ($this->assignmentModel->update($assignmentId, $data)) {
+            // Notify students about the update
+            $this->notifyStudentsAssignmentUpdated($assignmentId, $assignment['course_offering_id']);
+            
             return redirect()->to(base_url('teacher/assignments'))->with('success', 'Assignment updated successfully');
         }
 
@@ -282,13 +283,18 @@ class Assignment extends BaseController
             return redirect()->back()->with('error', 'Assignment not found');
         }
 
-        $isInstructor = $this->courseInstructorModel->isUserAssigned($assignment['course_offering_id'], $userID);
-
-        if (!$isInstructor) {
+        $isInstructor = $this->courseInstructorModel->isUserAssigned($assignment['course_offering_id'], $userID);        if (!$isInstructor) {
             return redirect()->back()->with('error', 'Unauthorized access');
         }
 
+        // Store assignment title before deletion
+        $assignmentTitle = $assignment['title'];
+        $courseOfferingId = $assignment['course_offering_id'];
+
         if ($this->assignmentModel->update($assignmentId, ['is_active' => 0])) {
+            // Notify students about deletion
+            $this->notifyStudentsAssignmentDeleted($assignmentId, $courseOfferingId, $assignmentTitle);
+            
             return redirect()->to(base_url('teacher/assignments'))->with('success', 'Assignment deleted successfully');
         }
 
@@ -426,41 +432,167 @@ class Assignment extends BaseController
 
         if (!$isInstructor) {
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized'])->setStatusCode(403);
-        }
-
-        if ($this->submissionModel->gradeSubmission($submissionId, $score, $feedback, $userID)) {
+        }        if ($this->submissionModel->gradeSubmission($submissionId, $score, $feedback, $userID)) {
             $enrollmentData = $this->enrollmentModel->find($submission['enrollment_id']);
-            $studentId = $enrollmentData['student_id'];
             
-            $this->notificationModel->insert([
-                'user_id' => $studentId,
-                'message' => "Your submission for '{$submission['assignment_title']}' has been graded. Score: {$score}/{$assignment['max_score']}",
-                'is_read' => 0,
-                'is_hidden' => 0
-            ]);
+            // Get student user_id from enrollment
+            $db = \Config\Database::connect();
+            $student = $db->table('students')
+                ->where('id', $enrollmentData['student_id'])
+                ->get()
+                ->getRowArray();
+            
+            if ($student) {
+                $percentage = round(($score / $assignment['max_score']) * 100, 2);
+                $gradeEmoji = $percentage >= 90 ? '🌟' : ($percentage >= 80 ? '👏' : ($percentage >= 70 ? '👍' : '📝'));
+                
+                $message = "{$gradeEmoji} Your submission for '{$submission['assignment_title']}' has been graded. Score: {$score}/{$assignment['max_score']} ({$percentage}%)";
+                
+                $this->notificationModel->createNotification(
+                    $student['user_id'],
+                    $message,
+                    'grade',
+                    $submission['assignment_id'],
+                    'assignment'
+                );
+                
+                log_message('info', "Notified student (ID: {$student['user_id']}) about graded submission for assignment: {$submission['assignment_title']}");
+            }
 
             return $this->response->setJSON(['success' => true, 'message' => 'Submission graded successfully']);
         }
 
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to grade submission'])->setStatusCode(500);
-    }
-
+    }    /**
+     * Notify all enrolled students when a new assignment is published
+     */
     private function notifyStudentsNewAssignment($assignmentId, $courseOfferingId)
     {
         $assignment = $this->assignmentModel->getAssignmentWithDetails($assignmentId);
+        
+        // Get all enrolled students in this course
         $enrollments = $this->enrollmentModel
             ->where('course_offering_id', $courseOfferingId)
             ->where('enrollment_status', 'enrolled')
             ->findAll();
 
+        $db = \Config\Database::connect();
+        $notificationCount = 0;
+        
         foreach ($enrollments as $enrollment) {
-            $this->notificationModel->insert([
-                'user_id' => $enrollment['student_id'],
-                'message' => "New assignment posted: '{$assignment['title']}' in {$assignment['course_code']} - Due: " . date('M j, Y', strtotime($assignment['due_date'])),
-                'is_read' => 0,
-                'is_hidden' => 0
-            ]);
+            // Get student user_id
+            $student = $db->table('students')
+                ->where('id', $enrollment['student_id'])
+                ->get()
+                ->getRowArray();
+            
+            if ($student) {
+                $dueDate = date('M j, Y g:i A', strtotime($assignment['due_date']));
+                $message = "📚 New assignment posted: '{$assignment['title']}' in {$assignment['course_code']} - Due: {$dueDate}";
+                
+                $this->notificationModel->createNotification(
+                    $student['user_id'],
+                    $message,
+                    'assignment',
+                    $assignmentId,
+                    'assignment'
+                );
+                
+                $notificationCount++;
+            }
         }
+        
+        log_message('info', "Notified {$notificationCount} student(s) about new assignment: {$assignment['title']}");
+    }
+    
+    /**
+     * Notify students when assignment is updated
+     */
+    private function notifyStudentsAssignmentUpdated($assignmentId, $courseOfferingId)
+    {
+        $assignment = $this->assignmentModel->getAssignmentWithDetails($assignmentId);
+        
+        // Get all enrolled students
+        $enrollments = $this->enrollmentModel
+            ->where('course_offering_id', $courseOfferingId)
+            ->where('enrollment_status', 'enrolled')
+            ->findAll();
+
+        $db = \Config\Database::connect();
+        $notificationCount = 0;
+        
+        foreach ($enrollments as $enrollment) {
+            // Get student user_id
+            $student = $db->table('students')
+                ->where('id', $enrollment['student_id'])
+                ->get()
+                ->getRowArray();
+            
+            if ($student) {
+                $message = "✏️ Assignment updated: '{$assignment['title']}' in {$assignment['course_code']} has been modified. Please review the changes.";
+                
+                $this->notificationModel->createNotification(
+                    $student['user_id'],
+                    $message,
+                    'assignment',
+                    $assignmentId,
+                    'assignment'
+                );
+                
+                $notificationCount++;
+            }
+        }
+        
+        log_message('info', "Notified {$notificationCount} student(s) about assignment update: {$assignment['title']}");
+    }
+    
+    /**
+     * Notify students when assignment is deleted
+     */
+    private function notifyStudentsAssignmentDeleted($assignmentId, $courseOfferingId, $assignmentTitle)
+    {
+        // Get all enrolled students
+        $enrollments = $this->enrollmentModel
+            ->where('course_offering_id', $courseOfferingId)
+            ->where('enrollment_status', 'enrolled')
+            ->findAll();
+
+        $db = \Config\Database::connect();
+        
+        // Get course code
+        $courseInfo = $db->table('course_offerings co')
+            ->select('c.course_code')
+            ->join('courses c', 'c.id = co.course_id')
+            ->where('co.id', $courseOfferingId)
+            ->get()
+            ->getRowArray();
+        
+        $courseCode = $courseInfo ? $courseInfo['course_code'] : 'Unknown';
+        $notificationCount = 0;
+        
+        foreach ($enrollments as $enrollment) {
+            // Get student user_id
+            $student = $db->table('students')
+                ->where('id', $enrollment['student_id'])
+                ->get()
+                ->getRowArray();
+            
+            if ($student) {
+                $message = "🗑️ Assignment deleted: '{$assignmentTitle}' in {$courseCode} has been removed by your instructor.";
+                
+                $this->notificationModel->createNotification(
+                    $student['user_id'],
+                    $message,
+                    'assignment',
+                    $assignmentId,
+                    'assignment'
+                );
+                
+                $notificationCount++;
+            }
+        }
+        
+        log_message('info', "Notified {$notificationCount} student(s) about assignment deletion: {$assignmentTitle}");
     }
 
     // Admin Assignment Management Methods

@@ -143,6 +143,12 @@ $routes->post('/student/submit_assignment', 'Submission::submit');
 $routes->get('/student/download_attachment/(:num)', 'Submission::downloadAttachment/$1');
 $routes->get('/submission/download/(:num)', 'Submission::downloadSubmission/$1');
 
+// Automated Notification Routes (for Cron Jobs/Schedulers)
+$routes->get('/cron/notify-overdue-assignments', 'Submission::notifyOverdueAssignments');
+$routes->get('/cron/notify-upcoming-deadlines', 'Submission::notifyUpcomingDeadlines');
+$routes->cli('/cron/notify-overdue-assignments', 'Submission::notifyOverdueAssignments');
+$routes->cli('/cron/notify-upcoming-deadlines', 'Submission::notifyUpcomingDeadlines');
+
 // API routes for dynamic data
 $routes->get('/api/programs/by-department/(:num)', 'User::getProgramsByDepartment/$1');
 
@@ -157,5 +163,4 @@ $routes->get('/admin/search/programs', 'Program::search');
 $routes->post('/admin/search/programs', 'Program::search');
 $routes->get('/admin/search/users', 'User::search');
 $routes->post('/admin/search/users', 'User::search');
-
 $routes->get('student/search/courses', 'Auth::searchStudentCourses');

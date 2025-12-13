@@ -91,7 +91,7 @@
                     <div class="card-header bg-success text-white border-0">
                         <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Upload New Material</h5>
                     </div>
-                    <div class="card-body p-4">                        <form method="post" action="<?= base_url(($user['role'] === 'admin' ? 'admin' : 'teacher') . '/course/' . $course_id . '/upload') ?>" 
+                    <div class="card-body p-4">                        <form method="post" action="<?= base_url(($user['role'] === 'admin' ? 'admin' : 'teacher') . '/course/' . $course_offering_id . '/upload') ?>" 
                               enctype="multipart/form-data" id="uploadForm">
                             <?= csrf_field() ?>
                               <div class="row">

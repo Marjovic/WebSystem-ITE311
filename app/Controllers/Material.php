@@ -28,12 +28,12 @@ class Material extends BaseController
 
     /**
      * Upload Method - Display file upload form and handle file upload process
-     * Step 4: Implement File Upload Functionality
+     * FIXED: Now accepts course_offering_id instead of course_id
      * 
-     * @param int $course_id Course ID
+     * @param int $course_offering_id Course Offering ID
      * @return ResponseInterface|string View or redirect response
      */
-    public function upload($course_id)
+    public function upload($course_offering_id)
     {
         // 1. AUTHENTICATION CHECK
         if (!$this->session->get('isLoggedIn')) {
@@ -47,17 +47,39 @@ class Material extends BaseController
         }
 
         // 3. INPUT VALIDATION
-        if (!$course_id || !is_numeric($course_id) || $course_id <= 0) {
-            return redirect()->to('/dashboard')->with('error', 'Invalid course ID.');
+        if (!$course_offering_id || !is_numeric($course_offering_id) || $course_offering_id <= 0) {
+            return redirect()->to('/dashboard')->with('error', 'Invalid course offering ID.');
         }
 
-        $course_id = (int)$course_id;
+        $course_offering_id = (int)$course_offering_id;
 
-        // 4. VERIFY COURSE EXISTS
+        // 4. VERIFY COURSE OFFERING EXISTS AND GET COURSE DETAILS
         $db = \Config\Database::connect();
-        $course = $db->table('courses')->where('id', $course_id)->get()->getRowArray();
-        if (!$course) {
-            return redirect()->to('/dashboard')->with('error', 'Course not found.');
+        
+        // Get course offering with course details
+        $courseOffering = $db->table('course_offerings co')
+            ->select('co.*, c.course_code, c.title, c.description, c.credits')
+            ->join('courses c', 'c.id = co.course_id')
+            ->where('co.id', $course_offering_id)
+            ->get()
+            ->getRowArray();
+            
+        if (!$courseOffering) {
+            return redirect()->to('/dashboard')->with('error', 'Course offering not found.');
+        }
+
+        // FOR TEACHERS: Verify they are assigned to this course
+        if ($userRole === 'teacher') {
+            $teacherId = $this->session->get('userID');
+            $isAssigned = $db->table('course_instructors ci')
+                ->join('instructors i', 'i.id = ci.instructor_id')
+                ->where('ci.course_offering_id', $course_offering_id)
+                ->where('i.user_id', $teacherId)
+                ->countAllResults() > 0;
+                
+            if (!$isAssigned) {
+                return redirect()->to('/teacher/courses')->with('error', 'You are not assigned to this course.');
+            }
         }
 
         // Step 4.1: Check for POST request (file upload submission)
@@ -67,13 +89,14 @@ class Material extends BaseController
             $validation = \Config\Services::validation();
             
             // Step 4.3: Configure upload preferences (upload path, allowed file types, maximum file size)
-            $uploadPath = WRITEPATH . 'uploads/materials/course_' . $course_id . '/';
+            $uploadPath = WRITEPATH . 'uploads/materials/course_offering_' . $course_offering_id . '/';
             
             // Create upload directory if it doesn't exist
             if (!is_dir($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
-              // Configure validation rules for file upload (PDF and PPT only)
+            
+            // Configure validation rules for file upload (PDF and PPT only)
             $validationRules = [
                 'material_file' => [
                     'label' => 'Material File',
@@ -108,22 +131,24 @@ class Material extends BaseController
                         // Move uploaded file to destination directory
                         $uploadedFile->move($uploadPath, $uniqueName);
                         
-                        // Prepare data (course_id, file_name, file_path) for database
+                        // Prepare data (course_offering_id, file_name, file_path) for database
                         $materialData = [
-                            'course_id' => $course_id,
+                            'course_offering_id' => $course_offering_id,
                             'file_name' => $originalName,
-                            'file_path' => 'uploads/materials/course_' . $course_id . '/' . $uniqueName
+                            'file_path' => 'uploads/materials/course_offering_' . $course_offering_id . '/' . $uniqueName
                         ];
-                          // Save to database using MaterialModel
+                        
+                        // Save to database using MaterialModel
                         $materialId = $this->materialModel->insertMaterial($materialData);
-                          if ($materialId) {
+                        
+                        if ($materialId) {
                             // Step 7: Generate notifications for enrolled students when material is uploaded
                             try {
                                 // Get course name for notification
-                                $courseName = $course['course_name'] ?? $course['title'] ?? 'your course';
+                                $courseName = $courseOffering['course_code'] . ' - ' . $courseOffering['title'];
                                 
-                                // Get all students enrolled in this course
-                                $enrolledStudents = $this->enrollmentModel->getEnrolledStudents($course_id);
+                                // Get all students enrolled in this course offering
+                                $enrolledStudents = $this->enrollmentModel->getEnrolledStudents($course_offering_id);
                                 
                                 // Create notification for each enrolled student
                                 if (!empty($enrolledStudents)) {
@@ -145,15 +170,9 @@ class Material extends BaseController
                             // Step 4.5: Set success flash message and redirect based on user role
                             $this->session->setFlashdata('success', 'Material "' . $originalName . '" uploaded successfully!');
                             
-                            // Redirect based on user role
-                            if ($userRole === 'admin') {
-                                return redirect()->to('/admin/manage_courses');
-                            } elseif ($userRole === 'teacher') {
-                                return redirect()->to('/teacher/courses');
-                            } else {
-                                // Fallback to upload page
-                                return redirect()->to('/material/upload/' . $course_id);
-                            }
+                            // Redirect back to the upload page to show the updated materials list
+                            return redirect()->to('material/upload/' . $course_offering_id);
+                            
                         } else {
                             // Database insert failed - remove uploaded file to clean up
                             if (file_exists($uploadPath . $uniqueName)) {
@@ -181,11 +200,13 @@ class Material extends BaseController
         }
 
         // Display upload form (GET request or after POST processing)
-        $existingMaterials = $this->materialModel->getMaterialsByCourse($course_id);        $data = [
-            'title' => 'Upload Materials - ' . $course['title'],
-            'course' => $course,
+        $existingMaterials = $this->materialModel->getOfferingMaterials($course_offering_id);
+        
+        $data = [
+            'title' => 'Upload Materials - ' . $courseOffering['course_code'] . ' ' . $courseOffering['title'],
+            'course' => $courseOffering,
+            'course_offering_id' => $course_offering_id,
             'materials' => $existingMaterials,
-            'course_id' => $course_id,
             'user' => [
                 'userID' => $this->session->get('userID'),
                 'name'   => $this->session->get('name'),
@@ -262,12 +283,19 @@ class Material extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'Material deletion error: ' . $e->getMessage());
             $this->session->setFlashdata('error', 'Delete failed due to server error.');
-        }        // Redirect back to the course upload page or dashboard
+        }
+
+        // Redirect back to the course upload page
         $course_offering_id = $material['course_offering_id'] ?? null;
         if ($course_offering_id) {
-            return redirect()->to('/material/upload/' . $course_offering_id);
+            return redirect()->to('material/upload/' . $course_offering_id);
         }
-        return redirect()->to('/dashboard');
+        
+        // Fallback redirect based on role
+        if ($userRole === 'teacher') {
+            return redirect()->to('teacher/courses');
+        }
+        return redirect()->to('admin/manage_courses');
     }
 
     /**
@@ -297,7 +325,9 @@ class Material extends BaseController
             $material = $this->materialModel->find($material_id);
             if (!$material) {
                 return redirect()->to('/dashboard')->with('error', 'Material not found.');
-            }            // Convert to array if needed
+            }
+
+            // Convert to array if needed
             if (is_object($material)) {
                 $material = (array) $material;
             }
@@ -325,24 +355,25 @@ class Material extends BaseController
 
             // 5. CHECK IF FILE EXISTS ON SERVER
             $filePath = WRITEPATH . $material['file_path'];
-            if (!file_exists($filePath)) {
-                log_message('error', 'Material file not found: ' . $filePath);
+            
+            // SECURITY: Validate path to prevent path traversal
+            $realPath = realpath($filePath);
+            if (!$realPath || strpos($realPath, realpath(WRITEPATH)) !== 0) {
+                log_message('error', 'Path traversal attempt detected: ' . $filePath);
+                return redirect()->to('/dashboard')->with('error', 'Invalid file path.');
+            }
+            
+            if (!file_exists($realPath)) {
+                log_message('error', 'Material file not found: ' . $realPath);
                 return redirect()->to('/dashboard')->with('error', 'File not found on server.');
             }
 
             // 6. SERVE FILE DOWNLOAD
             $fileName = $material['file_name'];
-            $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+            $mimeType = mime_content_type($realPath) ?: 'application/octet-stream';
             
             // Set appropriate headers for file download
-            $this->response->setHeader('Content-Type', $mimeType);
-            $this->response->setHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"');
-            $this->response->setHeader('Content-Length', (string)filesize($filePath));
-            $this->response->setHeader('Cache-Control', 'no-cache, must-revalidate');
-            $this->response->setHeader('Pragma', 'no-cache');
-
-            // Stream file content to user
-            return $this->response->setBody(file_get_contents($filePath));
+            return $this->response->download($realPath, null)->setFileName($fileName);
 
         } catch (\Exception $e) {
             log_message('error', 'Material download error: ' . $e->getMessage());
@@ -377,7 +408,9 @@ class Material extends BaseController
             $material = $this->materialModel->find($material_id);
             if (!$material) {
                 return redirect()->to('/dashboard')->with('error', 'Material not found.');
-            }            // Convert to array if needed
+            }
+
+            // Convert to array if needed
             if (is_object($material)) {
                 $material = (array) $material;
             }
@@ -405,15 +438,23 @@ class Material extends BaseController
 
             // 5. CHECK IF FILE EXISTS ON SERVER
             $filePath = WRITEPATH . $material['file_path'];
-            if (!file_exists($filePath)) {
-                log_message('error', 'Material file not found: ' . $filePath);
+            
+            // SECURITY: Validate path to prevent path traversal
+            $realPath = realpath($filePath);
+            if (!$realPath || strpos($realPath, realpath(WRITEPATH)) !== 0) {
+                log_message('error', 'Path traversal attempt detected: ' . $filePath);
+                return redirect()->to('/dashboard')->with('error', 'Invalid file path.');
+            }
+            
+            if (!file_exists($realPath)) {
+                log_message('error', 'Material file not found: ' . $realPath);
                 return redirect()->to('/dashboard')->with('error', 'File not found on server.');
             }
 
             // 6. DETERMINE FILE TYPE AND SERVE APPROPRIATELY
             $fileName = $material['file_name'];
             $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-            $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+            $mimeType = mime_content_type($realPath) ?: 'application/octet-stream';
             
             // For viewable files (images, PDFs), display inline
             $inlineViewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
@@ -422,21 +463,14 @@ class Material extends BaseController
                 // Set headers for inline viewing
                 $this->response->setHeader('Content-Type', $mimeType);
                 $this->response->setHeader('Content-Disposition', 'inline; filename="' . $fileName . '"');
-                $this->response->setHeader('Content-Length', (string)filesize($filePath));
+                $this->response->setHeader('Content-Length', (string)filesize($realPath));
                 $this->response->setHeader('Cache-Control', 'private, max-age=3600');
                 
                 // Stream file content for inline viewing
-                return $this->response->setBody(file_get_contents($filePath));
+                return $this->response->setBody(file_get_contents($realPath));
             } else {
                 // For non-viewable files, force download
-                $this->response->setHeader('Content-Type', $mimeType);
-                $this->response->setHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"');
-                $this->response->setHeader('Content-Length', (string)filesize($filePath));
-                $this->response->setHeader('Cache-Control', 'no-cache, must-revalidate');
-                $this->response->setHeader('Pragma', 'no-cache');
-
-                // Stream file content to user
-                return $this->response->setBody(file_get_contents($filePath));
+                return $this->response->download($realPath, null)->setFileName($fileName);
             }
 
         } catch (\Exception $e) {

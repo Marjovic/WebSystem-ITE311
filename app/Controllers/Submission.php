@@ -237,12 +237,20 @@ class Submission extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Student record not found'])->setStatusCode(404);
         }
         $studentId = $student['id'];
-        
-        $assignmentId = $this->request->getPost('assignment_id');
+          $assignmentId = $this->request->getPost('assignment_id');
         $enrollmentId = $this->request->getPost('enrollment_id');
         $submissionText = $this->request->getPost('submission_text');
 
-        $assignment = $this->assignmentModel->find($assignmentId);
+        // Get assignment with course details
+        $db = \Config\Database::connect();
+        $assignment = $db->table('assignments a')
+            ->select('a.*, c.course_code, c.title as course_title')
+            ->join('course_offerings co', 'co.id = a.course_offering_id')
+            ->join('courses c', 'c.id = co.course_id')
+            ->where('a.id', $assignmentId)
+            ->get()
+            ->getRowArray();
+            
         if (!$assignment) {
             return $this->response->setJSON(['success' => false, 'message' => 'Assignment not found'])->setStatusCode(404);
         }
@@ -347,9 +355,7 @@ class Submission extends BaseController
             'submitted_at' => $now,
             'is_late' => $isLate,
             'status' => 'submitted'
-        ];
-
-        if ($existingSubmission) {
+        ];        if ($existingSubmission) {
             if ($existingSubmission['status'] === 'graded') {
                 return $this->response->setJSON([
                     'success' => false, 
@@ -358,12 +364,53 @@ class Submission extends BaseController
             }
 
             if ($this->submissionModel->update($existingSubmission['id'], $submissionData)) {
+                // Notify teacher about resubmission
                 $this->notifyTeacherNewSubmission($assignmentId, $assignment['course_offering_id'], $studentId);
+                
+                // Notify student about successful resubmission
+                $db = \Config\Database::connect();
+                $studentUser = $db->table('students')->where('id', $studentId)->get()->getRowArray();
+                if ($studentUser) {
+                    $statusMessage = $isLate ? '⚠️ Late resubmission accepted' : '✅ Resubmission successful';
+                    $message = "{$statusMessage} for assignment '{$assignment['title']}' in {$assignment['course_code']}";
+                    
+                    $this->notificationModel->createNotification(
+                        $studentUser['user_id'],
+                        $message,
+                        'submission',
+                        $assignmentId,
+                        'assignment'
+                    );
+                }
+                
                 return $this->response->setJSON(['success' => true, 'message' => 'Assignment resubmitted successfully']);
             }
         } else {
             if ($this->submissionModel->insert($submissionData)) {
+                // Notify teacher about new submission
                 $this->notifyTeacherNewSubmission($assignmentId, $assignment['course_offering_id'], $studentId);
+                
+                // Notify student about successful submission
+                $db = \Config\Database::connect();
+                $studentUser = $db->table('students')->where('id', $studentId)->get()->getRowArray();
+                if ($studentUser) {
+                    if ($isLate) {
+                        $lateMessage = $assignment['allow_late_submission'] 
+                            ? "⚠️ Late submission accepted for assignment '{$assignment['title']}' in {$assignment['course_code']}. Late penalty may apply." 
+                            : "⚠️ Late submission recorded for assignment '{$assignment['title']}' in {$assignment['course_code']}'";
+                    } else {
+                        $lateMessage = "✅ Assignment '{$assignment['title']}' in {$assignment['course_code']}' submitted successfully on time!";
+                    }
+                    
+                    $this->notificationModel->createNotification(
+                        $studentUser['user_id'],
+                        $lateMessage,
+                        'submission',
+                        $assignmentId,
+                        'assignment'
+                    );
+                }
+                
                 return $this->response->setJSON(['success' => true, 'message' => 'Assignment submitted successfully']);
             }
         }
@@ -421,30 +468,184 @@ class Submission extends BaseController
         }
 
         return $this->response->download($filePath, null)->setFileName(basename($filePath));
-    }
-
+    }    /**
+     * Notify teachers when a student submits an assignment
+     */
     private function notifyTeacherNewSubmission($assignmentId, $courseOfferingId, $studentId)
     {
         $assignment = $this->assignmentModel->getAssignmentWithDetails($assignmentId);
         
         $db = \Config\Database::connect();
-        $student = $db->table('users u')
-            ->select("CONCAT(u.first_name, ' ', COALESCE(u.middle_name, ''), ' ', u.last_name) as full_name")
-            ->where('u.id', $studentId)
+        
+        // Get student info
+        $student = $db->table('students s')
+            ->select("CONCAT(u.first_name, ' ', COALESCE(u.middle_name, ''), ' ', u.last_name) as full_name, s.student_id_number")
+            ->join('users u', 'u.id = s.user_id')
+            ->where('s.id', $studentId)
             ->get()
             ->getRowArray();
         
-        $instructors = $this->courseInstructorModel
-            ->where('course_offering_id', $courseOfferingId)
-            ->findAll();
-
-        foreach ($instructors as $instructor) {
-            $this->notificationModel->insert([
-                'user_id' => $instructor['instructor_id'],
-                'message' => "New submission from {$student['full_name']} for assignment '{$assignment['title']}' in {$assignment['course_code']}",
-                'is_read' => 0,
-                'is_hidden' => 0
-            ]);
+        if (!$student) {
+            return;
         }
+        
+        // Get all instructors for this course
+        $instructors = $db->table('course_instructors ci')
+            ->select('i.user_id, CONCAT(u.first_name, " ", u.last_name) as instructor_name')
+            ->join('instructors i', 'i.id = ci.instructor_id')
+            ->join('users u', 'u.id = i.user_id')
+            ->where('ci.course_offering_id', $courseOfferingId)
+            ->get()
+            ->getResultArray();
+
+        // Notify each instructor
+        foreach ($instructors as $instructor) {
+            $message = "📝 New submission from {$student['full_name']} ({$student['student_id_number']}) for assignment '{$assignment['title']}' in {$assignment['course_code']}";
+            
+            $this->notificationModel->createNotification(
+                $instructor['user_id'],
+                $message,
+                'assignment',
+                $assignmentId,
+                'assignment'
+            );
+        }
+        
+        log_message('info', "Notified " . count($instructors) . " instructor(s) about new submission for assignment ID: {$assignmentId}");
+    }
+    
+    /**
+     * Notify student when assignment is overdue (called by cron job or scheduler)
+     */
+    public function notifyOverdueAssignments()
+    {
+        $db = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+        
+        // Get all overdue assignments that haven't been submitted
+        $overdueAssignments = $db->table('assignments a')
+            ->select('a.id as assignment_id, a.title, a.due_date, a.course_offering_id,
+                      c.course_code, e.id as enrollment_id, s.user_id as student_user_id,
+                      CONCAT(u.first_name, " ", u.last_name) as student_name')
+            ->join('course_offerings co', 'co.id = a.course_offering_id')
+            ->join('courses c', 'c.id = co.course_id')
+            ->join('enrollments e', 'e.course_offering_id = co.id')
+            ->join('students s', 's.id = e.student_id')
+            ->join('users u', 'u.id = s.user_id')
+            ->where('a.is_active', 1)
+            ->where('a.is_published', 1)
+            ->where('a.due_date <', $now)
+            ->where('e.enrollment_status', 'enrolled')
+            ->where('NOT EXISTS (
+                SELECT 1 FROM submissions sub 
+                WHERE sub.assignment_id = a.id 
+                AND sub.enrollment_id = e.id
+            )')
+            ->get()
+            ->getResultArray();
+        
+        $notificationCount = 0;
+        
+        foreach ($overdueAssignments as $assignment) {
+            // Check if student was already notified about this overdue assignment
+            $existingNotification = $db->table('notifications')
+                ->like('message', "⚠️ OVERDUE: Assignment '{$assignment['title']}'")
+                ->where('user_id', $assignment['student_user_id'])
+                ->where('created_at >', date('Y-m-d H:i:s', strtotime('-24 hours')))
+                ->get()
+                ->getRowArray();
+            
+            if (!$existingNotification) {
+                $daysOverdue = floor((strtotime($now) - strtotime($assignment['due_date'])) / 86400);
+                $message = "⚠️ OVERDUE: Assignment '{$assignment['title']}' in {$assignment['course_code']} was due " . 
+                          ($daysOverdue == 0 ? 'today' : "{$daysOverdue} day(s) ago") . ". Please submit as soon as possible!";
+                
+                $this->notificationModel->createNotification(
+                    $assignment['student_user_id'],
+                    $message,
+                    'warning',
+                    $assignment['assignment_id'],
+                    'assignment'
+                );
+                
+                $notificationCount++;
+            }
+        }
+        
+        log_message('info', "Sent {$notificationCount} overdue assignment notification(s)");
+        
+        return [
+            'success' => true,
+            'message' => "Sent {$notificationCount} overdue assignment notification(s)",
+            'count' => $notificationCount
+        ];
+    }
+    
+    /**
+     * Notify students about upcoming assignment deadlines (24 hours before due)
+     */
+    public function notifyUpcomingDeadlines()
+    {
+        $db = \Config\Database::connect();
+        $tomorrow = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        $now = date('Y-m-d H:i:s');
+        
+        // Get assignments due in the next 24 hours
+        $upcomingAssignments = $db->table('assignments a')
+            ->select('a.id as assignment_id, a.title, a.due_date, a.course_offering_id,
+                      c.course_code, e.id as enrollment_id, s.user_id as student_user_id,
+                      CONCAT(u.first_name, " ", u.last_name) as student_name')
+            ->join('course_offerings co', 'co.id = a.course_offering_id')
+            ->join('courses c', 'c.id = co.course_id')
+            ->join('enrollments e', 'e.course_offering_id = co.id')
+            ->join('students s', 's.id = e.student_id')
+            ->join('users u', 'u.id = s.user_id')
+            ->where('a.is_active', 1)
+            ->where('a.is_published', 1)
+            ->where('a.due_date >', $now)
+            ->where('a.due_date <=', $tomorrow)
+            ->where('e.enrollment_status', 'enrolled')
+            ->where('NOT EXISTS (
+                SELECT 1 FROM submissions sub 
+                WHERE sub.assignment_id = a.id 
+                AND sub.enrollment_id = e.id
+            )')
+            ->get()
+            ->getResultArray();
+        
+        $notificationCount = 0;
+        
+        foreach ($upcomingAssignments as $assignment) {
+            // Check if already notified about this deadline
+            $existingNotification = $db->table('notifications')
+                ->like('message', "⏰ REMINDER: Assignment '{$assignment['title']}'")
+                ->where('user_id', $assignment['student_user_id'])
+                ->where('created_at >', date('Y-m-d H:i:s', strtotime('-12 hours')))
+                ->get()
+                ->getRowArray();
+            
+            if (!$existingNotification) {
+                $hoursRemaining = round((strtotime($assignment['due_date']) - time()) / 3600);
+                $message = "⏰ REMINDER: Assignment '{$assignment['title']}' in {$assignment['course_code']} is due in {$hoursRemaining} hour(s). Don't forget to submit!";
+                
+                $this->notificationModel->createNotification(
+                    $assignment['student_user_id'],
+                    $message,
+                    'reminder',
+                    $assignment['assignment_id'],
+                    'assignment'
+                );
+                
+                $notificationCount++;
+            }
+        }
+        
+        log_message('info', "Sent {$notificationCount} deadline reminder notification(s)");
+        
+        return [
+            'success' => true,
+            'message' => "Sent {$notificationCount} deadline reminder notification(s)",
+            'count' => $notificationCount
+        ];
     }
 }

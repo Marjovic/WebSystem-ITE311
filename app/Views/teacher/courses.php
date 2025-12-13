@@ -311,7 +311,8 @@
                                                 </a>
                                             </div>
                                         </div>
-                                    </div>                                </div>
+                                    </div>                                
+                                </div>
                                 <?php endforeach; ?>
                                 
                                 <!-- No Results Message -->

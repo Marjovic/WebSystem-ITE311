@@ -236,7 +236,8 @@
                                    data-bs-toggle="dropdown" 
                                    aria-expanded="false">
                                     📚 Courses
-                                </a>                                <ul class="dropdown-menu shadow" aria-labelledby="teacherCoursesDropdown">
+                                </a>                                
+                                <ul class="dropdown-menu shadow" aria-labelledby="teacherCoursesDropdown">
                                     <li>
                                         <a class="dropdown-item <?= (strpos($currentUri, 'teacher/courses') !== false && strpos($currentUri, 'all_courses') === false) ? 'active fw-bold' : '' ?>" 
                                            href="<?= base_url('teacher/courses') ?>">
@@ -434,12 +435,16 @@
     <!-- Include jQuery before Bootstrap -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" 
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
-            crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
+            crossorigin="anonymous"></script>    
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" 
             crossorigin="anonymous"></script>
+    
+    <!-- Meta tag for base URL (used by notifications.js) -->
+    <meta name="base-url" content="<?= base_url() ?>">
       <?php if ($isLoggedIn): ?>
-    <!-- Notification System jQuery Implementation - Step 6 Complete -->
+    <!-- Notification System - Enhanced with Real-time Updates -->
+    <script src="<?= base_url('public/js/notifications.js') ?>"></script>
     <script>
         $(document).ready(function() {
             // Step 6.1: Load notifications on page load

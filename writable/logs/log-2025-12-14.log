@@ -17,3 +17,58 @@ Stack trace:
 #14 {main}
 ERROR - 2025-12-14 07:30:44 --> Enrollment validation errors: {"CodeIgniter\\Database\\MySQLi\\Connection":"Duplicate entry '1-4' for key 'enrollments.student_id_course_offering_id'"}
 ERROR - 2025-12-14 07:30:44 --> Enrollment error: Failed to create enrollment record: {"CodeIgniter\\Database\\MySQLi\\Connection":"Duplicate entry '1-4' for key 'enrollments.student_id_course_offering_id'"}
+ERROR - 2025-12-14 15:14:18 --> Student materials browser error: Undefined array key "uploaded_at"
+ERROR - 2025-12-14 15:14:18 --> Stack trace: #0 C:\xampp\htdocs\ITE311-ALEJADO\app\Views\student\materials.php(219): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array...', 'C:\\xampp\\htdocs...', 219)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\View\View.php(226): include('C:\\xampp\\htdocs...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\View\View.php(229): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Common.php(1167): CodeIgniter\View\View->render('student/materia...', Array, true)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(1197): view('student/materia...', Array)
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->studentMaterials()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#11 {main}
+ERROR - 2025-12-14 15:30:08 --> Failed to enroll student ID: 1. Errors: {"enrollment_status":"The enrollment_status field is required."}
+ERROR - 2025-12-14 15:30:11 --> Failed to enroll student ID: 1. Errors: {"enrollment_status":"The enrollment_status field is required."}
+ERROR - 2025-12-14 15:30:15 --> Failed to enroll student ID: 1. Errors: {"enrollment_status":"The enrollment_status field is required."}
+ERROR - 2025-12-14 15:49:16 --> Student materials browser error: Undefined array key "uploaded_at"
+ERROR - 2025-12-14 15:49:16 --> Stack trace: #0 C:\xampp\htdocs\ITE311-ALEJADO\app\Views\student\materials.php(219): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array...', 'C:\\xampp\\htdocs...', 219)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\View\View.php(226): include('C:\\xampp\\htdocs...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\View\View.php(229): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Common.php(1167): CodeIgniter\View\View->render('student/materia...', Array, true)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(1197): view('student/materia...', Array)
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->studentMaterials()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#11 {main}
+ERROR - 2025-12-14 16:07:45 --> Student materials browser error: Undefined array key "uploaded_at"
+ERROR - 2025-12-14 16:07:45 --> Stack trace: #0 C:\xampp\htdocs\ITE311-ALEJADO\app\Views\student\materials.php(219): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array...', 'C:\\xampp\\htdocs...', 219)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\View\View.php(226): include('C:\\xampp\\htdocs...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\View\View.php(229): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Common.php(1167): CodeIgniter\View\View->render('student/materia...', Array, true)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(1197): view('student/materia...', Array)
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->studentMaterials()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#11 {main}
+ERROR - 2025-12-14 16:08:03 --> Student materials browser error: Undefined array key "uploaded_at"
+ERROR - 2025-12-14 16:08:03 --> Stack trace: #0 C:\xampp\htdocs\ITE311-ALEJADO\app\Views\student\materials.php(219): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array...', 'C:\\xampp\\htdocs...', 219)
+#1 C:\xampp\htdocs\ITE311-ALEJADO\system\View\View.php(226): include('C:\\xampp\\htdocs...')
+#2 C:\xampp\htdocs\ITE311-ALEJADO\system\View\View.php(229): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+#3 C:\xampp\htdocs\ITE311-ALEJADO\system\Common.php(1167): CodeIgniter\View\View->render('student/materia...', Array, true)
+#4 C:\xampp\htdocs\ITE311-ALEJADO\app\Controllers\Auth.php(1197): view('student/materia...', Array)
+#5 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(933): App\Controllers\Auth->studentMaterials()
+#6 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Auth))
+#7 C:\xampp\htdocs\ITE311-ALEJADO\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#8 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#9 C:\xampp\htdocs\ITE311-ALEJADO\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#10 C:\xampp\htdocs\ITE311-ALEJADO\index.php(204): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#11 {main}

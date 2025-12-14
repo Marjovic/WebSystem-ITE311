@@ -536,7 +536,7 @@
                                     </p>
                                     <small class="text-muted d-block">
                                         <i class="fas fa-clock me-1"></i>
-                                        ${notification.formatted_date}
+                                        ${formatToPhilippineTime(notification.created_at || notification.formatted_date)}
                                     </small>
                                     <div class="mt-2">
                                         ${notification.is_unread ? `
@@ -710,6 +710,27 @@
         function showToast(title, message, type = 'info') {
             // Simple console log for now - can be enhanced with Bootstrap toasts
             console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
+        }
+
+        function formatToPhilippineTime(dateString) {
+            if (!dateString) return '';
+            // If dateString is "YYYY-MM-DD HH:MM:SS", convert to "YYYY-MM-DDTHH:MM:SSZ" (treat as UTC)
+            let isoString = dateString.replace(' ', 'T');
+            if (!isoString.endsWith('Z') && !isoString.includes('+')) {
+                isoString += 'Z';
+            }
+            const date = new Date(isoString);
+            // Format for Asia/Manila
+            const options = {
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            };
+            return date.toLocaleString('en-PH', options);
         }
     </script>
     <?php endif; ?>

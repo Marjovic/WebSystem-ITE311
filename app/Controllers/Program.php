@@ -718,13 +718,32 @@ class Program extends BaseController
             return redirect()->to('/admin/manage_curriculum');
         }
 
+        // Get the curriculum entry to find the program_id if not provided
+        $curriculum = $this->curriculumModel->find($curriculumId);
+        $targetProgramId = $programId ?: ($curriculum['program_id'] ?? null);
+
+        // Validation: Prevent deletion if there are students enrolled in this program
+        if ($targetProgramId) {
+            $db = \Config\Database::connect();
+            $studentCount = $db->table('students')
+                ->join('users', 'users.id = students.user_id')
+                ->where('students.program_id', $targetProgramId)
+                ->where('users.is_active', 1)
+                ->countAllResults();
+
+            if ($studentCount > 0) {
+                $this->session->setFlashdata('error', 'Cannot delete this curriculum entry because there are ' . $studentCount . ' active student(s) enrolled in the program. Please reassign or remove students first.');
+                return redirect()->to('/admin/manage_curriculum' . ($targetProgramId ? '?program_id=' . $targetProgramId : ''));
+            }
+        }
+
         if ($this->curriculumModel->delete($curriculumId)) {
             $this->session->setFlashdata('success', 'Curriculum entry deleted successfully!');
         } else {
             $this->session->setFlashdata('error', 'Failed to delete curriculum entry.');
         }
 
-        return redirect()->to('/admin/manage_curriculum' . ($programId ? '?program_id=' . $programId : ''));
+        return redirect()->to('/admin/manage_curriculum' . ($targetProgramId ? '?program_id=' . $targetProgramId : ''));
     }
 
     /**

@@ -148,7 +148,7 @@ function populateNotifications(notifications) {
                             </p>
                             <small class="text-muted d-block">
                                 <i class="fas fa-clock me-1"></i>
-                                ${notification.formatted_date}
+                                ${formatToPhilippineTime(notification.created_at || notification.formatted_date)}
                             </small>
                             ${notification.is_unread ? `
                                 <button class="btn btn-sm btn-primary mt-2 mark-read-btn" 
@@ -396,6 +396,23 @@ function animateNotificationIcon() {
             bellIcon.removeClass('notification-pulse');
         }, 2000);
     }
+}
+
+function formatToPhilippineTime(dateString) {
+    if (!dateString) return '';
+    // Parse as UTC, then convert to Asia/Manila
+    const date = new Date(dateString);
+    // Options for formatting
+    const options = {
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    };
+    return date.toLocaleString('en-PH', options);
 }
 
 // Add CSS for notification pulse animation if not already present

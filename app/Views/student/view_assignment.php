@@ -230,7 +230,7 @@ $isOverdue = $dueDate < $now;
                             <?php if ($submissionType === 'text'): ?>
                                 <span class="badge bg-primary">Text Only</span> - Submit your answer as text
                             <?php elseif ($submissionType === 'file'): ?>
-                                <span class="badge bg-success">File Upload Only</span> - Upload PDF or Word document
+                                <span class="badge bg-success">File Upload Only</span> - Upload PDF or PPT presentation
                             <?php else: ?>
                                 <span class="badge bg-warning text-dark">Text & File</span> - You can submit text, file, or both
                             <?php endif; ?>
@@ -258,8 +258,8 @@ $isOverdue = $dueDate < $now;
                                     <i class="fas fa-file-upload me-2"></i>File Upload <?= $submissionType === 'file' ? '<span class="text-danger">*</span>' : '(Optional)' ?>
                                 </label>
                                 <input type="file" name="submission_file" class="form-control" 
-                                       accept=".pdf,.doc,.docx" <?= $submissionType === 'file' ? 'required' : '' ?>>
-                                <small class="text-muted">Accepted formats: PDF, Word (DOC, DOCX). Max size: 10MB</small>
+                                       accept=".pdf,.ppt,.pptx" <?= $submissionType === 'file' ? 'required' : '' ?>>
+                                <small class="text-muted">Accepted formats: PDF, PPT. Max size: 10MB</small>
                             </div>
                             <?php endif; ?>
 

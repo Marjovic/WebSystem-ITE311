@@ -153,11 +153,11 @@ class Assignment extends BaseController
         $attachmentFile = $this->request->getFile('attachment_file');
         
         if ($attachmentFile && $attachmentFile->isValid() && !$attachmentFile->hasMoved()) {
-            $allowedExtensions = ['pdf', 'doc', 'docx'];
+            $allowedExtensions = ['pdf', 'ppt', 'pptx'];
             $fileExtension = $attachmentFile->getExtension();
             
             if (!in_array(strtolower($fileExtension), $allowedExtensions)) {
-                return redirect()->back()->with('error', 'Only PDF and Word documents are allowed for attachments');
+                return redirect()->back()->with('error', 'Only PDF and PowerPoint documents are allowed for attachments');
             }
             
             $maxSize = 10 * 1024 * 1024; // 10MB
@@ -263,7 +263,9 @@ class Assignment extends BaseController
             'available_until' => $availableUntil,
             'allow_late_submission' => $this->request->getPost('allow_late_submission') ? 1 : 0,
             'late_penalty_percentage' => $this->request->getPost('late_penalty_percentage') ?? 0
-        ];        if ($this->assignmentModel->update($assignmentId, $data)) {
+        ];        
+        
+        if ($this->assignmentModel->update($assignmentId, $data)) {
             // Notify students about the update
             $this->notifyStudentsAssignmentUpdated($assignmentId, $assignment['course_offering_id']);
             
@@ -428,6 +430,14 @@ class Assignment extends BaseController
 
         $assignment = $this->assignmentModel->find($submission['assignment_id']);
 
+        // Validate score
+        if (!is_numeric($score) || $score < 0 || $score > $assignment['max_score']) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Score must be a number between 0 and ' . $assignment['max_score']
+            ])->setStatusCode(400);
+        }
+
         $isInstructor = $this->courseInstructorModel->isUserAssigned($assignment['course_offering_id'], $userID);
 
         if (!$isInstructor) {
@@ -463,7 +473,8 @@ class Assignment extends BaseController
         }
 
         return $this->response->setJSON(['success' => false, 'message' => 'Failed to grade submission'])->setStatusCode(500);
-    }    /**
+    }    
+    /**
      * Notify all enrolled students when a new assignment is published
      */
     private function notifyStudentsNewAssignment($assignmentId, $courseOfferingId)
@@ -738,11 +749,11 @@ class Assignment extends BaseController
         $attachmentFile = $this->request->getFile('attachment_file');
         
         if ($attachmentFile && $attachmentFile->isValid() && !$attachmentFile->hasMoved()) {
-            $allowedExtensions = ['pdf', 'doc', 'docx'];
+            $allowedExtensions = ['pdf', 'ppt', 'pptx'];
             $fileExtension = $attachmentFile->getExtension();
             
             if (!in_array(strtolower($fileExtension), $allowedExtensions)) {
-                return redirect()->back()->with('error', 'Only PDF and Word documents are allowed for attachments');
+                return redirect()->back()->with('error', 'Only PDF and PowerPoint documents are allowed for attachments');
             }
             
             $maxSize = 10 * 1024 * 1024;
@@ -877,11 +888,11 @@ class Assignment extends BaseController
         $attachmentFile = $this->request->getFile('attachment_file');
         
         if ($attachmentFile && $attachmentFile->isValid() && !$attachmentFile->hasMoved()) {
-            $allowedExtensions = ['pdf', 'doc', 'docx'];
+            $allowedExtensions = ['pdf', 'ppt', 'pptx'];
             $fileExtension = $attachmentFile->getExtension();
             
             if (!in_array(strtolower($fileExtension), $allowedExtensions)) {
-                return redirect()->back()->with('error', 'Only PDF and Word documents are allowed for attachments');
+                return redirect()->back()->with('error', 'Only PDF and PowerPoint documents are allowed for attachments');
             }
             
             $maxSize = 10 * 1024 * 1024;

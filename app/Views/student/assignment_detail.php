@@ -120,12 +120,11 @@
                                         Preview not available in browser. Please download the file to view the assignment attachment.
                                     </div>
                                 <?php else: ?>
-                                    <!-- Word Document -->
                                     <div class="d-flex align-items-center mb-3">
                                         <i class="fas fa-file-word fa-3x text-primary me-3"></i>
                                         <div>
                                             <p class="mb-1 fw-bold"><?= $fileName ?></p>
-                                            <p class="mb-0 text-muted">Word document - Download to view</p>
+                                            <p class="mb-0 text-muted">PPT presentation - Download to view</p>
                                         </div>
                                     </div>
                                     <div class="alert alert-info">
@@ -154,11 +153,11 @@
                                 echo '<i class="fas fa-keyboard me-1"></i> Text submission only';
                                 break;
                             case 'file':
-                                echo '<i class="fas fa-file me-1"></i> File upload only (PDF, DOC, DOCX)';
+                                echo '<i class="fas fa-file me-1"></i> File upload only (PDF, PPT)';
                                 break;
                             case 'both':
                             default:
-                                echo '<i class="fas fa-keyboard me-1"></i> Text submission OR <i class="fas fa-file me-1"></i> File upload (PDF, DOC, DOCX)';
+                                echo '<i class="fas fa-keyboard me-1"></i> Text submission OR <i class="fas fa-file me-1"></i> File upload (PDF, PPT)';
                                 break;
                         }
                         ?>
@@ -232,10 +231,10 @@
                                             <?php endif; ?>
                                         </label>
                                         <input type="file" name="submission_file" class="form-control" 
-                                               accept=".pdf,.doc,.docx"
+                                               accept=".pdf,.ppt,.pptx"
                                                <?= $submissionType === 'file' ? 'required' : '' ?>>
                                         <small class="form-text text-muted">
-                                            Accepted formats: PDF, DOC, DOCX (Max 10MB)
+                                            Accepted formats: PDF, PPT (Max 10MB)
                                         </small>
                                         <?php if ($submission && $submission['file_path']): ?>
                                             <p class="mt-2">

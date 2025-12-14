@@ -232,8 +232,8 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Assignment Attachment</label>
-                        <input type="file" name="attachment_file" class="form-control" accept=".pdf,.doc,.docx">
-                        <small class="text-muted">Optional: Upload a PDF or Word document as reference material (Max 10MB)</small>
+                        <input type="file" name="attachment_file" class="form-control" accept=".pdf, .ppt,.pptx">
+                        <small class="text-muted">Optional: Upload a PDF or PPT document as reference material (Max 10MB)</small>
                     </div>
 
                     <div class="mb-3">
@@ -241,7 +241,7 @@
                         <select name="submission_type" class="form-select" required>
                             <option value="both">Both Text & File Upload</option>
                             <option value="text">Text Only</option>
-                            <option value="file">File Upload Only (PDF/Word)</option>
+                            <option value="file">File Upload Only (PDF/PPT)</option>
                         </select>
                         <small class="text-muted">Choose what type of submission students can make</small>
                     </div>
@@ -307,7 +307,7 @@
 <div class="modal fade" id="editAssignmentModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="POST" action="<?= base_url('teacher/assignments') ?>" id="editAssignmentForm">
+            <form method="POST" action="<?= base_url('teacher/assignments') ?>" id="editAssignmentForm" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="edit">
                 <input type="hidden" name="assignment_id" id="edit_assignment_id">
@@ -354,11 +354,18 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Assignment Attachment</label>
+                        <div id="edit_attachment_current"></div>
+                        <input type="file" name="attachment_file" id="edit_attachment_file" class="form-control" accept=".pdf,.ppt,.pptx">
+                        <small class="text-muted">Optional: Upload PDF, or PowerPoint (Max 10MB). Uploading a new file will replace the current attachment.</small>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Submission Type <span class="text-danger">*</span></label>
                         <select name="submission_type" id="edit_submission_type" class="form-select" required>
                             <option value="both">Both Text & File Upload</option>
                             <option value="text">Text Only</option>
-                            <option value="file">File Upload Only (PDF/Word)</option>
+                            <option value="file">File Upload Only (PDF/PPT)</option>
                         </select>
                         <small class="text-muted">Choose what type of submission students can make</small>
                     </div>
@@ -540,6 +547,15 @@ function editAssignment(assignment) {
     document.getElementById('edit_allow_late').checked = assignment.allow_late_submission == 1;
     document.getElementById('edit_late_penalty').value = assignment.late_penalty_percentage || 0;
     document.getElementById('editLatePenaltyDiv').style.display = assignment.allow_late_submission == 1 ? 'block' : 'none';
+    
+    // Show current attachment if exists
+    const attachmentDiv = document.getElementById('edit_attachment_current');
+    if (assignment.attachment_path) {
+        const fileName = assignment.attachment_path.split('/').pop();
+        attachmentDiv.innerHTML = `<a href='${assignment.attachment_path}' target='_blank' class='btn btn-sm btn-outline-primary'><i class='fas fa-paperclip me-1'></i> ${fileName}</a>`;
+    } else {
+        attachmentDiv.innerHTML = '<span class="text-muted">No attachment uploaded.</span>';
+    }
     
     new bootstrap.Modal(document.getElementById('editAssignmentModal')).show();
 }

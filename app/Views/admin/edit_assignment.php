@@ -99,7 +99,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Assignment Attachment</label>
-                        <input type="file" name="attachment_file" class="form-control" accept=".pdf,.doc,.docx">
+                        <input type="file" name="attachment_file" class="form-control" accept=".pdf,.ppt,.pptx">
                         <small class="text-muted">Optional: Upload a new file to replace the existing attachment (Max 10MB)</small>
                         <?php if ($assignment['attachment_path']): ?>
                             <p class="mt-2">

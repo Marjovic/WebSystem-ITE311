@@ -95,8 +95,8 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Assignment Attachment</label>
-                        <input type="file" name="attachment_file" class="form-control" accept=".pdf,.doc,.docx">
-                        <small class="text-muted">Optional: Upload a PDF or Word document as reference material (Max 10MB)</small>
+                        <input type="file" name="attachment_file" class="form-control" accept=".pdf,.ppt,.pptx">
+                        <small class="text-muted">Optional: Upload a PDF or PPT document as reference material (Max 10MB)</small>
                     </div>
 
                     <div class="mb-3">
@@ -104,7 +104,7 @@
                         <select name="submission_type" class="form-select" required>
                             <option value="both">Both Text & File Upload</option>
                             <option value="text">Text Only</option>
-                            <option value="file">File Upload Only (PDF/Word)</option>
+                            <option value="file">File Upload Only (PDF/PPT)</option>
                         </select>
                     </div>
 

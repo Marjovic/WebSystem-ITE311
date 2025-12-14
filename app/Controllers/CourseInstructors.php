@@ -205,6 +205,17 @@ class CourseInstructors extends BaseController
         $offeringId = $assignment['course_offering_id'];
         $instructorName = $this->courseInstructorModel->getInstructorName($assignment['instructor_id']);
 
+        // Validation: Prevent removal if there are enrolled students
+        $enrolledCount = $this->db->table('enrollments')
+            ->where('course_offering_id', $offeringId)
+            ->where('enrollment_status', 'enrolled')
+            ->countAllResults();
+
+        if ($enrolledCount > 0) {
+            $this->session->setFlashdata('error', "Cannot remove instructor {$instructorName} because there are enrolled students in this course offering.");
+            return redirect()->to(base_url('admin/manage_course_instructors?offering_id=' . $offeringId));
+        }
+
         if ($this->courseInstructorModel->delete($assignmentID)) {
             $this->session->setFlashdata('success', "Instructor {$instructorName} removed successfully!");
         } else {
